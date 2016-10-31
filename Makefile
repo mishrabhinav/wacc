@@ -1,4 +1,19 @@
-all:
-	echo "TODO: setup this script to build your WACC compiler"
+BINARY := wacc_34
 
-.PHONY: all
+SRC := $(shell find . -name '*.go' -not -path '*/vendor/*')
+
+all: $(BINARY)
+
+$(BINARY): $(SRC) glide.lock
+	go build
+
+vendor:
+	glide install
+
+clean:
+	go clean
+
+lint:
+	gometalinter.v1 --exclude=vendor
+
+.PHONY: all clean vendor lint

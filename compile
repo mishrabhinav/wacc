@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-echo "TODO: setup this script to call your WACC compiler"
+CURRENT_DIR="$( dirname "${BASH_SOURCE[0]}" )"
+./wacc_34 "$@"
