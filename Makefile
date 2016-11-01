@@ -13,7 +13,10 @@ vendor:
 clean:
 	go clean
 
+format:
+	go fmt
+
 lint:
 	gometalinter.v1 --exclude=vendor
 
-.PHONY: all clean vendor lint
+.PHONY: all clean vendor lint format
