@@ -4,11 +4,14 @@ SRC := $(shell find . -name '*.go' -not -path '*/vendor/*')
 
 all: $(BINARY)
 
-$(BINARY): $(SRC) glide.lock
+$(BINARY): $(SRC) glide.lock .vendor
 	go build
 
-vendor:
+vendor: .vendor
+
+.vendor:
 	glide install
+	touch .vendor
 
 clean:
 	go clean
