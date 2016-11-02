@@ -19,8 +19,8 @@ STATP		<- SKIP
 		/ FREE EXPR
 		/ RETURN EXPR
 		/ EXIT EXPR
-		/ PRINT EXPR
 		/ PRINTLN EXPR
+		/ PRINT EXPR
 		/ IF EXPR THEN STAT ELSE STAT FI
 		/ WHILE EXPR DO STAT DONE
 		/ BEGIN STAT END
@@ -89,7 +89,7 @@ BINARYOPER	<- STAR
 		/ ANDAND
 		/ OROR
 
-IDENT		<- ([_a-zA-Z])([_a-zA-Z0-9])*
+IDENT		<- ('_' / [a-z] / [A_Z])('_' / [a-z] / [A_Z] / [0-9])* SPACE
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
@@ -107,7 +107,7 @@ CHARLITER	<- SINQUO CHARACTER SINQUO
 
 STRLITER	<- DOUQUO CHARACTER* DOUQUO
 
-CHARACTER	<- [~\'"]
+CHARACTER	<- ([a-z] / [A-Z] / [0-9] / '!' / ' ')
 		/ (BACKSL ESCAPEDCHAR)
 
 ESCAPEDCHAR	<- NULLCHR
@@ -128,11 +128,14 @@ PAIRLITER	<- NULL
 # Spacing Characters
 #-------------------------------------------------------------------------------
 
-SPACE		<- ( WHITESPACE
+SPDEF		<- ( WHITESPACE
 		/ LONGCOMMENT
 		/ LINECOMMENT
 		/ PRAGMA
-		)*
+		)
+
+SPACE		<- SPDEF*
+CSPACE		<- SPDEF+
 
 WHITESPACE	<- [ \n\r\t]
 
@@ -146,38 +149,38 @@ PRAGMA		<- '#'  (!'\n' .)*
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'      SPACE
-BOOL		<- 'bool'       SPACE
-CALL		<- 'call'       SPACE
-CHAR		<- 'char'       SPACE
-CHR		<- 'chr'        SPACE
-DO		<- 'do'         SPACE
-DONE		<- 'done'       SPACE
-ELSE		<- 'else'       SPACE
+BEGIN		<- 'begin'      CSPACE
+BOOL		<- 'bool'       CSPACE
+CALL		<- 'call'       CSPACE
+CHAR		<- 'char'       CSPACE
+CHR		<- 'chr'        CSPACE
+DO		<- 'do'         CSPACE
+DONE		<- 'done'       CSPACE
+ELSE		<- 'else'       CSPACE
 END		<- 'end'        SPACE
-EXIT		<- 'exit'       SPACE
-FALSE		<- 'false'      SPACE
-FI		<- 'fi'         SPACE
-FREE		<- 'free'       SPACE
-FST		<- 'fst'        SPACE
-IF		<- 'if'         SPACE
-IS		<- 'is'         SPACE
-INT		<- 'int'        SPACE
-LEN		<- 'len'        SPACE
-NEWPAIR		<- 'newpair'    SPACE
-NULL		<- 'null'       SPACE
-ORD		<- 'ord'        SPACE
-PAIR		<- 'pair'       SPACE
-PRINT		<- 'print'      SPACE
-PRINTLN 	<- 'println'    SPACE  
-READ		<- 'read'       SPACE
-RETURN		<- 'return'     SPACE
-SKIP		<- 'skip'       SPACE
-SND		<- 'snd'        SPACE
-STRING		<- 'string'     SPACE
-THEN		<- 'then'       SPACE
-TRUE		<- 'true'       SPACE
-WHILE		<- 'while'      SPACE
+EXIT		<- 'exit'       CSPACE
+FALSE		<- 'false'      CSPACE
+FI		<- 'fi'         CSPACE
+FREE		<- 'free'       CSPACE
+FST		<- 'fst'        CSPACE
+IF		<- 'if'         CSPACE
+IS		<- 'is'         CSPACE
+INT		<- 'int'        CSPACE
+LEN		<- 'len'        CSPACE
+NEWPAIR		<- 'newpair'    CSPACE
+NULL		<- 'null'       CSPACE
+ORD		<- 'ord'        CSPACE
+PAIR		<- 'pair'       CSPACE
+PRINT		<- 'print'      CSPACE
+PRINTLN 	<- 'println'    CSPACE  
+READ		<- 'read'       CSPACE
+RETURN		<- 'return'     CSPACE
+SKIP		<- 'skip'       CSPACE
+SND		<- 'snd'        CSPACE
+STRING		<- 'string'     CSPACE
+THEN		<- 'then'       CSPACE
+TRUE		<- 'true'       CSPACE
+WHILE		<- 'while'      CSPACE
 
 #-------------------------------------------------------------------------------
 # Punctuators
