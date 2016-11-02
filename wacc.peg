@@ -38,7 +38,7 @@ ASSIGNRHS	<- EXPR
 		/ PAIRELEM
 		/ CALL IDENT LPAR ARGLIST? RPAR
 
-ARGLIST		<- EXPR (COMMA EXPR )*
+ARGLIST		<- EXPR (COMMA EXPR)*
 
 PAIRELEM	<- FST EXPR
 		/ SND EXPR
@@ -89,11 +89,11 @@ BINARYOPER	<- STAR
 		/ ANDAND
 		/ OROR
 
-IDENT		<- ('_' / [a-z] / [A_Z])('_' / [a-z] / [A_Z] / [0-9])* SPACE
+IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])* SPACE*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
-INTLITER	<- INTSIGN? DIGIT+
+INTLITER	<- INTSIGN? DIGIT+ SPACE*
 
 DIGIT		<- [0-9]
 
@@ -107,7 +107,7 @@ CHARLITER	<- SINQUO CHARACTER SINQUO
 
 STRLITER	<- DOUQUO CHARACTER* DOUQUO
 
-CHARACTER	<- ([a-z] / [A-Z] / [0-9] / '!' / ' ')
+CHARACTER	<- [^\'"]
 		/ (BACKSL ESCAPEDCHAR)
 
 ESCAPEDCHAR	<- NULLCHR
@@ -128,87 +128,75 @@ PAIRLITER	<- NULL
 # Spacing Characters
 #-------------------------------------------------------------------------------
 
-SPDEF		<- ( WHITESPACE
-		/ LONGCOMMENT
-		/ LINECOMMENT
-		/ PRAGMA
-		)
-
-SPACE		<- SPDEF*
-CSPACE		<- SPDEF+
-
-WHITESPACE	<- [ \n\r\t]
-
-LONGCOMMENT	<- '/*' (!'*/'.)* '*/'
-
-LINECOMMENT	<- '//' (!'\n' .)*
-
-PRAGMA		<- '#'  (!'\n' .)*
+SPACE		<- ( [ \t\r\n]+
+      		/ '/*' (!'*/' .)* '*/'
+      		/ '//' (![\r\n] .)* [\r\n]
+      		)
 
 #-------------------------------------------------------------------------------
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'      CSPACE
-BOOL		<- 'bool'       CSPACE
-CALL		<- 'call'       CSPACE
-CHAR		<- 'char'       CSPACE
-CHR		<- 'chr'        CSPACE
-DO		<- 'do'         CSPACE
-DONE		<- 'done'       CSPACE
-ELSE		<- 'else'       CSPACE
-END		<- 'end'        SPACE
-EXIT		<- 'exit'       CSPACE
-FALSE		<- 'false'      CSPACE
-FI		<- 'fi'         CSPACE
-FREE		<- 'free'       CSPACE
-FST		<- 'fst'        CSPACE
-IF		<- 'if'         CSPACE
-IS		<- 'is'         CSPACE
-INT		<- 'int'        CSPACE
-LEN		<- 'len'        CSPACE
-NEWPAIR		<- 'newpair'    CSPACE
-NULL		<- 'null'       CSPACE
-ORD		<- 'ord'        CSPACE
-PAIR		<- 'pair'       CSPACE
-PRINT		<- 'print'      CSPACE
-PRINTLN 	<- 'println'    CSPACE  
-READ		<- 'read'       CSPACE
-RETURN		<- 'return'     CSPACE
-SKIP		<- 'skip'       CSPACE
-SND		<- 'snd'        CSPACE
-STRING		<- 'string'     CSPACE
-THEN		<- 'then'       CSPACE
-TRUE		<- 'true'       CSPACE
-WHILE		<- 'while'      CSPACE
+BEGIN		<- 'begin'      SPACE+
+BOOL		<- 'bool'       SPACE+
+CALL		<- 'call'       SPACE+
+CHAR		<- 'char'       SPACE+
+CHR		<- 'chr'        SPACE+
+DO		<- 'do'         SPACE+
+DONE		<- 'done'       SPACE+
+ELSE		<- 'else'       SPACE+
+END		<- 'end'        SPACE*
+EXIT		<- 'exit'       SPACE+
+FALSE		<- 'false'      SPACE+
+FI		<- 'fi'         SPACE+
+FREE		<- 'free'       SPACE+
+FST		<- 'fst'        SPACE+
+IF		<- 'if'         SPACE+
+IS		<- 'is'         SPACE+
+INT		<- 'int'        SPACE+
+LEN		<- 'len'        SPACE+
+NEWPAIR		<- 'newpair'    SPACE+
+NULL		<- 'null'       SPACE+
+ORD		<- 'ord'        SPACE+
+PAIR		<- 'pair'       SPACE+
+PRINT		<- 'print'      SPACE+
+PRINTLN 	<- 'println'    SPACE+  
+READ		<- 'read'       SPACE+
+RETURN		<- 'return'     SPACE+
+SKIP		<- 'skip'       SPACE+
+SND		<- 'snd'        SPACE+
+STRING		<- 'string'     SPACE+
+THEN		<- 'then'       SPACE+
+TRUE		<- 'true'       SPACE+
+WHILE		<- 'while'      SPACE+
 
 #-------------------------------------------------------------------------------
 # Punctuators
 #-------------------------------------------------------------------------------
 
-LBRK      	<-  '['          SPACE
-RBRK      	<-  ']'          SPACE
-LPAR      	<-  '('          SPACE
-RPAR      	<-  ')'          SPACE
-STAR      	<-  '*'  ![=]    SPACE
-PLUS      	<-  '+'  ![+=]   SPACE
-MINUS     	<-  '-'  ![\-=>] SPACE
-BANG      	<-  '!'  ![=]    SPACE
-DIV       	<-  '/'  ![=]    SPACE
-MOD       	<-  '%'  ![=>]   SPACE
-LT        	<-  '<'  ![=]    SPACE
-GT        	<-  '>'  ![=]    SPACE
-LE        	<-  '<='         SPACE
-GE        	<-  '>='         SPACE
-EQUEQU    	<-  '=='         SPACE
-BANGEQU   	<-  '!='         SPACE
-ANDAND    	<-  '&&'         SPACE
-OROR      	<-  '||'         SPACE
-SEMI      	<-  ';'          SPACE
-EQU       	<-  '='  !"="    SPACE
-COMMA     	<-  ','          SPACE
-SINQUO		<-  '\''         SPACE
-DOUQUO		<-  '\"'         SPACE
+LBRK      	<-  '['          SPACE*
+RBRK      	<-  ']'          SPACE*
+LPAR      	<-  '('          SPACE*
+RPAR      	<-  ')'          SPACE*
+STAR      	<-  '*'  ![=]    SPACE*
+PLUS      	<-  '+'  ![+=]   SPACE*
+MINUS     	<-  '-'  ![\-=>] SPACE*
+BANG      	<-  '!'  ![=]    SPACE*
+DIV       	<-  '/'  ![=]    SPACE*
+MOD       	<-  '%'  ![=>]   SPACE*
+LT        	<-  '<'  ![=]    SPACE*
+GT        	<-  '>'  ![=]    SPACE*
+LE        	<-  '<='         SPACE*
+GE        	<-  '>='         SPACE*
+EQUEQU    	<-  '=='         SPACE*
+BANGEQU   	<-  '!='         SPACE*
+ANDAND    	<-  '&&'         SPACE*
+OROR      	<-  '||'         SPACE*
+SEMI      	<-  ';'          SPACE*
+EQU       	<-  '='  !"="    SPACE*
+COMMA     	<-  ','          SPACE*
+SINQUO		<-  '\''         SPACE*
+DOUQUO		<-  '\"'         SPACE*
 
 #-------------------------------------------------------------------------------
 # Escape Characters
