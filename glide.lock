@@ -1,4 +1,10 @@
-hash: f30b05fd250a8d519bb9b54b498cb2c882479d6305eac5b7f3e63294b438ffec
-updated: 2016-10-31T21:10:09.070321594Z
-imports: []
+hash: bddcb2f168e0c08cfdb62b2198a299386b585dec61af63d61fd0e210b8b5e923
+updated: 2016-11-02T16:01:18.553148429Z
+imports:
+- name: github.com/pointlander/compress
+  version: d7fa31532a5638be521dfae104093f9b8bf31d35
+- name: github.com/pointlander/jetset
+  version: 9fd33a8bde5de043fecdc66c13801b52a966e5f4
+- name: github.com/pointlander/peg
+  version: 58700b5efaa51d444ea98fbf81a514517f8cc019
 testImports: []
