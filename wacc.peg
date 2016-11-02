@@ -1,0 +1,222 @@
+package main
+
+type WACC Peg {
+
+}
+
+WACC		<- BEGIN FUNC* STAT END EOT
+
+FUNC		<- TYPE IDENT LPAR PARAMLIST? RPAR IS STAT END
+
+PARAMLIST	<- PARAM ( COMMA PARAM )*
+
+PARAM		<- TYPE IDENT
+
+STAT		<- SKIP
+		/ TYPE IDENT EQU ASSIGNRHS
+		/ ASSIGNLHS EQU ASSIGNRHS
+		/ READ ASSIGNLHS
+		/ FREE EXPR
+		/ RETURN EXPR
+		/ EXIT EXPR
+		/ PRINT EXPR
+		/ PRINTLN EXPR
+		/ IF EXPR THEN STAT ELSE STAT FI
+		/ WHILE EXPR DO STAT DONE
+		/ BEGIN STAT END
+		/ STAT SEMI STAT
+
+ASSIGNLHS	<- IDENT
+		/ ARRAYELEM
+		/ PAIRELEM
+
+ASSIGNRHS	<- EXPR
+		/ ARRAYLITER
+		/ NEWPAIR LPAR EXPR COMMA EXPR RPAR
+		/ PAIRELEM
+		/ CALL IDENT LPAR ARGLIST? RPAR
+
+ARGLIST		<- EXPR (COMMA EXPR )*
+
+PAIRELEM	<- FST EXPR
+		/ SND EXPR
+
+TYPE		<- BASETYPE
+		/ ARRAYTYPE
+		/ PAIRTYPE
+
+BASETYPE	<- INT
+		/ BOOL
+		/ CHAR
+		/ STRING
+
+ARRAYTYPE	<- TYPE LBRK RBRK
+
+PAIRTYPE	<- PAIR LPAR PAIRELEMTYPE COMMA PAIRELEMTYPE RPAR
+
+PAIRELEMTYPE	<- BASETYPE
+		/ ARRAYTYPE
+		/ PAIR
+
+EXPR		<- INTLITER
+		/ BOOLLITER
+		/ CHARLITER
+		/ STRLITER
+		/ PAIRLITER
+		/ IDENT
+		/ ARRAYELEM
+		/ UNARYOPER EXPR
+		/ EXPR BINARYOPER EXPR
+		/ LPAR EXPR RPAR
+
+UNARYOPER	<- BANG
+		/ MINUS
+		/ LEN
+		/ ORD
+		/ CHR
+
+BINARYOPER	<- STAR
+		/ DIV
+		/ MOD
+		/ PLUS
+		/ MINUS
+		/ GT
+		/ GE
+		/ LT
+		/ LE
+		/ EQUEQU
+		/ BANGEQU
+		/ ANDAND
+		/ OROR
+
+IDENT		<- ([_a-zA-Z])([_a-zA-Z0-9])*
+
+ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
+
+INTLITER	<- INTSIGN? DIGIT+
+
+DIGIT		<- [0-9]
+
+INTSIGN		<- PLUS
+		/ MINUS
+
+BOOLLITER	<- TRUE
+		/ FALSE
+
+CHARLITER	<- SINQUO CHARACTER SINQUO
+
+STRLITER	<- DOUQUO CHARACTER* DOUQUO
+
+CHARACTER	<- [~\'"]
+		/ (BACKSL ESCAPEDCHAR)
+
+ESCAPEDCHAR	<- NULLCHR
+		/ BACKSP
+		/ TAB
+		/ NEWLN
+		/ FRMFD
+		/ CRRET
+		/ DOUQUO
+		/ SINQUO
+		/ BACKSL
+
+ARRAYLITER	<- LBRK ( EXPR (COMMA EXPR)* )? RBRK
+
+PAIRLITER	<- NULL
+
+#-------------------------------------------------------------------------------
+# Spacing Characters
+#-------------------------------------------------------------------------------
+
+SPACE		<- ( WHITESPACE
+		/ LONGCOMMENT
+		/ LINECOMMENT
+		/ PRAGMA
+		)*
+
+WHITESPACE	<- [ \n\r\t]
+
+LONGCOMMENT	<- '/*' (!'*/'.)* '*/'
+
+LINECOMMENT	<- '//' (!'\n' .)*
+
+PRAGMA		<- '#'  (!'\n' .)*
+
+#-------------------------------------------------------------------------------
+# Keywords
+#-------------------------------------------------------------------------------
+
+BEGIN		<- 'begin'
+BOOL		<- 'bool'
+CALL		<- 'call'
+CHAR		<- 'char'
+CHR		<- 'chr'
+DO		<- 'do'
+DONE		<- 'done'
+ELSE		<- 'else'
+END		<- 'end'
+EXIT		<- 'exit'
+FALSE		<- 'false'
+FI		<- 'fi'
+FREE		<- 'free'
+FST		<- 'fst'
+IF		<- 'if'
+IS		<- 'is'
+INT		<- 'int'
+LEN		<- 'len'
+NEWPAIR		<- 'newpair'
+NULL		<- 'null'
+ORD		<- 'ord'
+PAIR		<- 'pair'
+PRINT		<- 'print'
+PRINTLN 	<- 'println'
+READ		<- 'read'
+RETURN		<- 'return'
+SKIP		<- 'skip'
+SND		<- 'snd'
+STRING		<- 'string'
+THEN		<- 'then'
+TRUE		<- 'true'
+WHILE		<- 'while'
+
+#-------------------------------------------------------------------------------
+# Punctuators
+#-------------------------------------------------------------------------------
+
+LBRK      	<-  '['          SPACE
+RBRK      	<-  ']'          SPACE
+LPAR      	<-  '('          SPACE
+RPAR      	<-  ')'          SPACE
+STAR      	<-  '*'  ![=]    SPACE
+PLUS      	<-  '+'  ![+=]   SPACE
+MINUS     	<-  '-'  ![\-=>] SPACE
+BANG      	<-  '!'  ![=]    SPACE
+DIV       	<-  '/'  ![=]    SPACE
+MOD       	<-  '%'  ![=>]   SPACE
+LT        	<-  '<'  ![=]    SPACE
+GT        	<-  '>'  ![=]    SPACE
+LE        	<-  '<='         SPACE
+GE        	<-  '>='         SPACE
+EQUEQU    	<-  '=='         SPACE
+BANGEQU   	<-  '!='         SPACE
+ANDAND    	<-  '&&'         SPACE
+OROR      	<-  '||'         SPACE
+SEMI      	<-  ';'          SPACE
+EQU       	<-  '='  !"="    SPACE
+COMMA     	<-  ','          SPACE
+SINQUO		<-  '\''         SPACE
+DOUQUO		<-  '\"'         SPACE
+
+#-------------------------------------------------------------------------------
+# Escape Characters
+#-------------------------------------------------------------------------------
+
+BACKSP		<-  'b'
+BACKSL		<-  '\\'
+TAB		<-  't'
+NEWLN		<-  'n'
+CRRET		<-  'r'
+FRMFD		<-  'f'
+NULLCHR		<-  '0'
+
+EOT <- !.
