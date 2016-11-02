@@ -25,7 +25,7 @@ STATP		<- SKIP
 		/ WHILE EXPR DO STAT DONE
 		/ BEGIN STAT END
 
-STAT		<- STATP* (SEMI STATP*)*
+STAT		<- STATP (SEMI STAT)*
 
 
 ASSIGNLHS	<- IDENT
@@ -57,7 +57,7 @@ PAIRTYPE	<- PAIR LPAR PAIRELEMTYPE COMMA PAIRELEMTYPE RPAR
 PAIRELEMTYPE	<- BASETYPE ARRAYTYPE*
 		/ PAIR
 
-EXPR		<- INTLITER
+EXPRP		<- INTLITER
 		/ BOOLLITER
 		/ CHARLITER
 		/ STRLITER
@@ -65,8 +65,9 @@ EXPR		<- INTLITER
 		/ IDENT
 		/ ARRAYELEM
 		/ UNARYOPER EXPR
-		/ EXPR BINARYOPER EXPR
 		/ LPAR EXPR RPAR
+
+EXPR		<- EXPRP (BINARYOPER EXPR)*
 
 UNARYOPER	<- BANG
 		/ MINUS
@@ -145,38 +146,38 @@ PRAGMA		<- '#'  (!'\n' .)*
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'
-BOOL		<- 'bool'
-CALL		<- 'call'
-CHAR		<- 'char'
-CHR		<- 'chr'
-DO		<- 'do'
-DONE		<- 'done'
-ELSE		<- 'else'
-END		<- 'end'
-EXIT		<- 'exit'
-FALSE		<- 'false'
-FI		<- 'fi'
-FREE		<- 'free'
-FST		<- 'fst'
-IF		<- 'if'
-IS		<- 'is'
-INT		<- 'int'
-LEN		<- 'len'
-NEWPAIR		<- 'newpair'
-NULL		<- 'null'
-ORD		<- 'ord'
-PAIR		<- 'pair'
-PRINT		<- 'print'
-PRINTLN 	<- 'println'
-READ		<- 'read'
-RETURN		<- 'return'
-SKIP		<- 'skip'
-SND		<- 'snd'
-STRING		<- 'string'
-THEN		<- 'then'
-TRUE		<- 'true'
-WHILE		<- 'while'
+BEGIN		<- 'begin'      SPACE
+BOOL		<- 'bool'       SPACE
+CALL		<- 'call'       SPACE
+CHAR		<- 'char'       SPACE
+CHR		<- 'chr'        SPACE
+DO		<- 'do'         SPACE
+DONE		<- 'done'       SPACE
+ELSE		<- 'else'       SPACE
+END		<- 'end'        SPACE
+EXIT		<- 'exit'       SPACE
+FALSE		<- 'false'      SPACE
+FI		<- 'fi'         SPACE
+FREE		<- 'free'       SPACE
+FST		<- 'fst'        SPACE
+IF		<- 'if'         SPACE
+IS		<- 'is'         SPACE
+INT		<- 'int'        SPACE
+LEN		<- 'len'        SPACE
+NEWPAIR		<- 'newpair'    SPACE
+NULL		<- 'null'       SPACE
+ORD		<- 'ord'        SPACE
+PAIR		<- 'pair'       SPACE
+PRINT		<- 'print'      SPACE
+PRINTLN 	<- 'println'    SPACE  
+READ		<- 'read'       SPACE
+RETURN		<- 'return'     SPACE
+SKIP		<- 'skip'       SPACE
+SND		<- 'snd'        SPACE
+STRING		<- 'string'     SPACE
+THEN		<- 'then'       SPACE
+TRUE		<- 'true'       SPACE
+WHILE		<- 'while'      SPACE
 
 #-------------------------------------------------------------------------------
 # Punctuators
