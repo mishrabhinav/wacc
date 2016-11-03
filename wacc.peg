@@ -4,7 +4,7 @@ type WACC Peg {
 
 }
 
-WACC		<- BEGIN FUNC* STAT END EOT
+WACC		<- SPACE* BEGIN FUNC* STAT END EOT
 
 FUNC		<- TYPE IDENT LPAR PARAMLIST? RPAR IS STAT END
 
@@ -129,8 +129,7 @@ PAIRLITER	<- NULL
 #-------------------------------------------------------------------------------
 
 SPACE		<- ( [ \t\r\n]+
-      		/ '/*' (!'*/' .)* '*/'
-      		/ '//' (![\r\n] .)* [\r\n]
+      		/ '#' (![\r\n] .)* [\r\n]
       		)
 
 #-------------------------------------------------------------------------------
