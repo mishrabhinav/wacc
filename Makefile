@@ -1,28 +1,34 @@
 BINARY := wacc_34
 
+GOGLIDE := $(GOPATH)/bin/glide
+GOLINTER := $(GOPATH)/bin/gometalinter.v1
+
 SRC := $(shell find . -name '*.go' -not -path '*/vendor/*')
 
 all: $(BINARY)
 
-$(BINARY): $(SRC) glide.lock .vendor
+$(BINARY): $(SRC) vendor
 	go build
 
-vendor: .vendor
-
-.vendor:
-	glide install
-	touch .vendor
-
-clean:
-	go clean
+vendor: $(GOGLIDE) glide.lock
+	$(GOGLIDE) install
 
 format:
 	go fmt
 
-lint:
-	gometalinter.v1 --exclude=vendor
+lint: $(GOLINTER)
+	$(GOLINTER) --exclude=vendor
 
 install: $(BINARY)
 	go install
 
-.PHONY: all clean vendor lint format
+clean:
+	go clean
+
+$(GOGLIDE):
+	go get -u github.com/Masterminds/glide
+
+$(GOLINTER):
+	go get -u gopkg.in/alecthomas/gometalinter.v1
+
+.PHONY: all clean lint format
