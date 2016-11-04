@@ -22,4 +22,7 @@ format:
 lint:
 	gometalinter.v1 --exclude=vendor
 
+install: $(BINARY)
+	go install
+
 .PHONY: all clean vendor lint format
