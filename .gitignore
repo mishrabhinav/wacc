@@ -1,6 +1,7 @@
 # Output executable
 wacc_34
 .vendor
+*.peg.go
 
 # Created by https://www.gitignore.io/api/go
 
