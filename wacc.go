@@ -26,5 +26,8 @@ func main() {
 	if err := wacc.Parse(); err != nil {
 		log.Fatal(err)
 	}
-	wacc.PrintSyntaxTree()
+
+        if len(os.Args) == 3 && os.Args[2] == "-t" {
+          wacc.PrintSyntaxTree()
+        }
 }

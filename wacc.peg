@@ -32,11 +32,11 @@ ASSIGNLHS	<- IDENT
 		/ ARRAYELEM
 		/ PAIRELEM
 
-ASSIGNRHS	<- EXPR
+ASSIGNRHS	<- NEWPAIR LPAR EXPR COMMA EXPR RPAR
 		/ ARRAYLITER
-		/ NEWPAIR LPAR EXPR COMMA EXPR RPAR
 		/ PAIRELEM
 		/ CALL IDENT LPAR ARGLIST? RPAR
+		/ EXPR
 
 ARGLIST		<- EXPR (COMMA EXPR)*
 
@@ -93,7 +93,7 @@ IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])* SPACE*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
-INTLITER	<- INTSIGN? DIGIT+ SPACE*
+INTLITER	<- INTSIGN? <DIGIT+> SPACE* { _, err := strconv.ParseInt(buffer[begin:end], 0, 32); if err != nil { fmt.Println(err) }}
 
 DIGIT		<- [0-9]
 
@@ -107,18 +107,10 @@ CHARLITER	<- SINQUO CHARACTER SINQUO
 
 STRLITER	<- DOUQUO CHARACTER* DOUQUO
 
-CHARACTER	<- [^\'"]
-		/ (BACKSL ESCAPEDCHAR)
+CHARACTER       <- ESCAPE 
+                / !['\n\\] .
 
-ESCAPEDCHAR	<- NULLCHR
-		/ BACKSP
-		/ TAB
-		/ NEWLN
-		/ FRMFD
-		/ CRRET
-		/ DOUQUO
-		/ SINQUO
-		/ BACKSL
+ESCAPE          <- '\\' ['\"?\\abfnrtv0]
 
 ARRAYLITER	<- LBRK ( EXPR (COMMA EXPR)* )? RBRK
 
@@ -128,7 +120,7 @@ PAIRLITER	<- NULL
 # Spacing Characters
 #-------------------------------------------------------------------------------
 
-SPACE		<- ( [ \t\r\n]+
+SPACE		<- ( [ \t\r\n]
       		/ '#' (![\r\n] .)* [\r\n]
       		)
 
@@ -136,38 +128,38 @@ SPACE		<- ( [ \t\r\n]+
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'      SPACE+
-BOOL		<- 'bool'       SPACE+
-CALL		<- 'call'       SPACE+
-CHAR		<- 'char'       SPACE+
-CHR		<- 'chr'        SPACE+
-DO		<- 'do'         SPACE+
-DONE		<- 'done'       SPACE+
-ELSE		<- 'else'       SPACE+
+BEGIN		<- 'begin'      SPACE*
+BOOL		<- 'bool'       SPACE*
+CALL		<- 'call'       SPACE*
+CHAR		<- 'char'       SPACE*
+CHR		<- 'chr'        SPACE*
+DO		<- 'do'         SPACE*
+DONE		<- 'done'       SPACE*
+ELSE		<- 'else'       SPACE*
 END		<- 'end'        SPACE*
-EXIT		<- 'exit'       SPACE+
-FALSE		<- 'false'      SPACE+
-FI		<- 'fi'         SPACE+
-FREE		<- 'free'       SPACE+
-FST		<- 'fst'        SPACE+
-IF		<- 'if'         SPACE+
-IS		<- 'is'         SPACE+
-INT		<- 'int'        SPACE+
-LEN		<- 'len'        SPACE+
-NEWPAIR		<- 'newpair'    SPACE+
-NULL		<- 'null'       SPACE+
-ORD		<- 'ord'        SPACE+
-PAIR		<- 'pair'       SPACE+
-PRINT		<- 'print'      SPACE+
-PRINTLN 	<- 'println'    SPACE+  
-READ		<- 'read'       SPACE+
-RETURN		<- 'return'     SPACE+
-SKIP		<- 'skip'       SPACE+
-SND		<- 'snd'        SPACE+
-STRING		<- 'string'     SPACE+
-THEN		<- 'then'       SPACE+
-TRUE		<- 'true'       SPACE+
-WHILE		<- 'while'      SPACE+
+EXIT		<- 'exit'       SPACE*
+FALSE		<- 'false'      SPACE*
+FI		<- 'fi'         SPACE*
+FREE		<- 'free'       SPACE*
+FST		<- 'fst'        SPACE*
+IF		<- 'if'         SPACE*
+IS		<- 'is'         SPACE*
+INT		<- 'int'        SPACE*
+LEN		<- 'len'        SPACE*
+NEWPAIR		<- 'newpair'    SPACE*
+NULL		<- 'null'       SPACE*
+ORD		<- 'ord'        SPACE*
+PAIR		<- 'pair'       SPACE*
+PRINT		<- 'print'      SPACE*
+PRINTLN 	<- 'println'    SPACE*
+READ		<- 'read'       SPACE*
+RETURN		<- 'return'     SPACE*
+SKIP		<- 'skip'       SPACE*
+SND		<- 'snd'        SPACE*
+STRING		<- 'string'     SPACE*
+THEN		<- 'then'       SPACE*
+TRUE		<- 'true'       SPACE*
+WHILE		<- 'while'      SPACE*
 
 #-------------------------------------------------------------------------------
 # Punctuators
@@ -201,12 +193,12 @@ DOUQUO		<-  '\"'         SPACE*
 # Escape Characters
 #-------------------------------------------------------------------------------
 
-BACKSP		<-  'b'
-BACKSL		<-  '\\'
-TAB		<-  't'
-NEWLN		<-  'n'
-CRRET		<-  'r'
-FRMFD		<-  'f'
-NULLCHR		<-  '0'
+BACKSP		<-  '\b'
+BACKSL		<-  '\\\\'
+TAB		<-  '\t'
+NEWLN		<-  '\n'
+CRRET		<-  '\r'
+FRMFD		<-  '\f'
+NULLCHR		<-  '\0'
 
 EOT <- !.
