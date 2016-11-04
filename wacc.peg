@@ -125,38 +125,38 @@ SPACE		<- ( [ \t\r\n]
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'      SPACE
-BOOL		<- 'bool'       SPACE
-CALL		<- 'call'       SPACE
-CHAR		<- 'char'       SPACE
-CHR		<- 'chr'        SPACE
-DO		<- 'do'         SPACE
-DONE		<- 'done'       SPACE
-ELSE		<- 'else'       SPACE
-END		<- 'end'        SPACE
-EXIT		<- 'exit'       SPACE
-FALSE		<- 'false'      SPACE
-FI		<- 'fi'         SPACE
-FREE		<- 'free'       SPACE
-FST		<- 'fst'        SPACE
-IF		<- 'if'         SPACE
-IS		<- 'is'         SPACE
-INT		<- 'int'        SPACE
-LEN		<- 'len'        SPACE
-NEWPAIR		<- 'newpair'    SPACE
-NULL		<- 'null'       SPACE
-ORD		<- 'ord'        SPACE
-PAIR		<- 'pair'       SPACE
-PRINT		<- 'print'      SPACE
-PRINTLN 	<- 'println'    SPACE
-READ		<- 'read'       SPACE
-RETURN		<- 'return'     SPACE
-SKIP		<- 'skip'       SPACE
-SND		<- 'snd'        SPACE
-STRING		<- 'string'     SPACE
-THEN		<- 'then'       SPACE
-TRUE		<- 'true'       SPACE
-WHILE		<- 'while'      SPACE
+BEGIN		<- 'begin'     !IDCHAR SPACE
+BOOL		<- 'bool'      !IDCHAR SPACE
+CALL		<- 'call'      !IDCHAR SPACE
+CHAR		<- 'char'      !IDCHAR SPACE
+CHR		<- 'chr'       !IDCHAR SPACE
+DO		<- 'do'        !IDCHAR SPACE
+DONE		<- 'done'      !IDCHAR SPACE
+ELSE		<- 'else'      !IDCHAR SPACE
+END		<- 'end'       !IDCHAR SPACE
+EXIT		<- 'exit'      !IDCHAR SPACE
+FALSE		<- 'false'     !IDCHAR SPACE
+FI		<- 'fi'        !IDCHAR SPACE
+FREE		<- 'free'      !IDCHAR SPACE
+FST		<- 'fst'       !IDCHAR SPACE
+IF		<- 'if'        !IDCHAR SPACE
+IS		<- 'is'        !IDCHAR SPACE
+INT		<- 'int'       !IDCHAR SPACE
+LEN		<- 'len'       !IDCHAR SPACE
+NEWPAIR		<- 'newpair'   !IDCHAR SPACE
+NULL		<- 'null'      !IDCHAR SPACE
+ORD		<- 'ord'       !IDCHAR SPACE
+PAIR		<- 'pair'      !IDCHAR SPACE
+PRINT		<- 'print'     !IDCHAR SPACE
+PRINTLN 	<- 'println'   !IDCHAR SPACE
+READ		<- 'read'      !IDCHAR SPACE
+RETURN		<- 'return'    !IDCHAR SPACE
+SKIP		<- 'skip'      !IDCHAR SPACE
+SND		<- 'snd'       !IDCHAR SPACE
+STRING		<- 'string'    !IDCHAR SPACE
+THEN		<- 'then'      !IDCHAR SPACE
+TRUE		<- 'true'      !IDCHAR SPACE
+WHILE		<- 'while'     !IDCHAR SPACE
 
 KEYWORD         <- ('begin'  
                 / 'bool'   
@@ -190,8 +190,9 @@ KEYWORD         <- ('begin'
                 / 'then'   
                 / 'true'   
                 / 'while'  
-                )
+                ) !IDCHAR
 
+IDCHAR          <- [a-z] / [A-Z] / [0-9] / [_]
 
 #-------------------------------------------------------------------------------
 # Punctuators
