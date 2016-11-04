@@ -4,16 +4,16 @@ type WACC Peg {
 
 }
 
-WACC		<- SPACE* BEGIN FUNC* STAT END EOT
+WACC		<- SPACE BEGIN FUNC* STAT END EOT
 
 FUNC		<- TYPE IDENT LPAR PARAMLIST? RPAR IS STAT END
 
 PARAMLIST	<- PARAM ( COMMA PARAM )*
 
-PARAM		<- TYPE IDENT
+PARAM		<- TYPE IDENT SPACE
 
 STAT		<- (SKIP
-		/ TYPE IDENT EQU ASSIGNRHS
+		/ TYPE IDENT SPACE EQU ASSIGNRHS
 		/ ASSIGNLHS EQU ASSIGNRHS
 		/ READ ASSIGNLHS
 		/ FREE EXPR
@@ -25,9 +25,9 @@ STAT		<- (SKIP
 		/ WHILE EXPR DO STAT DONE
 		/ BEGIN STAT END) (SEMI STAT)*
 
-ASSIGNLHS	<- PAIRELEM
+ASSIGNLHS	<- (PAIRELEM
 		/ ARRAYELEM
-		/ IDENT
+		/ IDENT) SPACE
 
 ASSIGNRHS	<- NEWPAIR LPAR EXPR COMMA EXPR RPAR
 		/ ARRAYLITER
@@ -62,7 +62,7 @@ EXPR		<- (INTLITER
 		/ PAIRLITER
 		/ ARRAYELEM
 		/ LPAR EXPR RPAR
-		/ IDENT) (BINARYOPER EXPR)*
+		/ IDENT) SPACE (BINARYOPER EXPR)*
 
 UNARYOPER	<- BANG
 		/ MINUS
@@ -84,13 +84,11 @@ BINARYOPER	<- STAR
 		/ ANDAND
 		/ OROR
 
-IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])* SPACE*
+IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
-INTLITER	<- INTSIGN? <DIGIT+> SPACE*
-
-DIGIT		<- [0-9]
+INTLITER	<- INTSIGN? [0-9]+
 
 INTSIGN		<- PLUS
 		/ MINUS
@@ -98,12 +96,16 @@ INTSIGN		<- PLUS
 BOOLLITER	<- TRUE
 		/ FALSE
 
-CHARLITER	<- SINQUO CHARACTER SINQUO SPACE*
+CHARLITER	<- SINQUO CH SINQUO
 
-STRLITER	<- DOUQUO CHARACTER* DOUQUO SPACE*
-
-CHARACTER       <- ESCAPE
+CH              <- ESCAPE 
                 / (![\\'"] .)
+
+STRLITER	<- DOUQUO STR DOUQUO
+
+STR             <- (ESCAPE
+                / (![\\'"] .)
+                )*
 
 ESCAPE          <- '\\' ['\"?\\abfnrtv0]
 
@@ -117,70 +119,70 @@ PAIRLITER	<- NULL
 
 SPACE		<- ( [ \t\r\n]
       		/ '#' (![\r\n] .)* [\r\n]
-      		)
+      		)*
 
 #-------------------------------------------------------------------------------
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'      SPACE*
-BOOL		<- 'bool'       SPACE*
-CALL		<- 'call'       SPACE*
-CHAR		<- 'char'       SPACE*
-CHR		<- 'chr'        SPACE*
-DO		<- 'do'         SPACE*
-DONE		<- 'done'       SPACE*
-ELSE		<- 'else'       SPACE*
-END		<- 'end'        SPACE*
-EXIT		<- 'exit'       SPACE*
-FALSE		<- 'false'      SPACE*
-FI		<- 'fi'         SPACE*
-FREE		<- 'free'       SPACE*
-FST		<- 'fst'        SPACE*
-IF		<- 'if'         SPACE*
-IS		<- 'is'         SPACE*
-INT		<- 'int'        SPACE*
-LEN		<- 'len'        SPACE*
-NEWPAIR		<- 'newpair'    SPACE*
-NULL		<- 'null'       SPACE*
-ORD		<- 'ord'        SPACE*
-PAIR		<- 'pair'       SPACE*
-PRINT		<- 'print'      SPACE*
-PRINTLN 	<- 'println'    SPACE*
-READ		<- 'read'       SPACE*
-RETURN		<- 'return'     SPACE*
-SKIP		<- 'skip'       SPACE*
-SND		<- 'snd'        SPACE*
-STRING		<- 'string'     SPACE*
-THEN		<- 'then'       SPACE*
-TRUE		<- 'true'       SPACE*
-WHILE		<- 'while'      SPACE*
+BEGIN		<- 'begin'      SPACE
+BOOL		<- 'bool'       SPACE
+CALL		<- 'call'       SPACE
+CHAR		<- 'char'       SPACE
+CHR		<- 'chr'        SPACE
+DO		<- 'do'         SPACE
+DONE		<- 'done'       SPACE
+ELSE		<- 'else'       SPACE
+END		<- 'end'        SPACE
+EXIT		<- 'exit'       SPACE
+FALSE		<- 'false'      SPACE
+FI		<- 'fi'         SPACE
+FREE		<- 'free'       SPACE
+FST		<- 'fst'        SPACE
+IF		<- 'if'         SPACE
+IS		<- 'is'         SPACE
+INT		<- 'int'        SPACE
+LEN		<- 'len'        SPACE
+NEWPAIR		<- 'newpair'    SPACE
+NULL		<- 'null'       SPACE
+ORD		<- 'ord'        SPACE
+PAIR		<- 'pair'       SPACE
+PRINT		<- 'print'      SPACE
+PRINTLN 	<- 'println'    SPACE
+READ		<- 'read'       SPACE
+RETURN		<- 'return'     SPACE
+SKIP		<- 'skip'       SPACE
+SND		<- 'snd'        SPACE
+STRING		<- 'string'     SPACE
+THEN		<- 'then'       SPACE
+TRUE		<- 'true'       SPACE
+WHILE		<- 'while'      SPACE
 
 #-------------------------------------------------------------------------------
 # Punctuators
 #-------------------------------------------------------------------------------
 
-LBRK      	<-  '['          SPACE*
-RBRK      	<-  ']'          SPACE*
-LPAR      	<-  '('          SPACE*
-RPAR      	<-  ')'          SPACE*
-STAR      	<-  '*'  ![=]    SPACE*
-PLUS      	<-  '+'  ![=]    SPACE*
-MINUS     	<-  '-'  ![=>]   SPACE*
-BANG      	<-  '!'  ![=]    SPACE*
-DIV       	<-  '/'  ![=]    SPACE*
-MOD       	<-  '%'  ![=>]   SPACE*
-LT        	<-  '<'  ![=]    SPACE*
-GT        	<-  '>'  ![=]    SPACE*
-LE        	<-  '<='         SPACE*
-GE        	<-  '>='         SPACE*
-EQUEQU    	<-  '=='         SPACE*
-BANGEQU   	<-  '!='         SPACE*
-ANDAND    	<-  '&&'         SPACE*
-OROR      	<-  '||'         SPACE*
-SEMI      	<-  ';'          SPACE*
-EQU       	<-  '='  !"="    SPACE*
-COMMA     	<-  ','          SPACE*
+LBRK      	<-  '['          SPACE
+RBRK      	<-  ']'          SPACE
+LPAR      	<-  '('          SPACE
+RPAR      	<-  ')'          SPACE
+STAR      	<-  '*'  ![=]    SPACE
+PLUS      	<-  '+'  ![=]    SPACE
+MINUS     	<-  '-'  ![=>]   SPACE
+BANG      	<-  '!'  ![=]    SPACE
+DIV       	<-  '/'  ![=]    SPACE
+MOD       	<-  '%'  ![=>]   SPACE
+LT        	<-  '<'  ![=]    SPACE
+GT        	<-  '>'  ![=]    SPACE
+LE        	<-  '<='         SPACE
+GE        	<-  '>='         SPACE
+EQUEQU    	<-  '=='         SPACE
+BANGEQU   	<-  '!='         SPACE
+ANDAND    	<-  '&&'         SPACE
+OROR      	<-  '||'         SPACE
+SEMI      	<-  ';'          SPACE
+EQU       	<-  '='  !"="    SPACE
+COMMA     	<-  ','          SPACE
 SINQUO		<-  '\''
 DOUQUO		<-  '\"'
 
