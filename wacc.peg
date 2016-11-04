@@ -13,6 +13,7 @@ PARAMLIST	<- PARAM ( COMMA PARAM )*
 PARAM		<- TYPE IDENT SPACE
 
 STAT		<- (SKIP
+                / BEGIN STAT END
 		/ TYPE IDENT SPACE EQU ASSIGNRHS
 		/ ASSIGNLHS EQU ASSIGNRHS
 		/ READ ASSIGNLHS
@@ -22,8 +23,7 @@ STAT		<- (SKIP
 		/ PRINTLN EXPR
 		/ PRINT EXPR
 		/ IF EXPR THEN STAT ELSE STAT FI
-		/ WHILE EXPR DO STAT DONE
-		/ BEGIN STAT END) (SEMI STAT)*
+		/ WHILE EXPR DO STAT DONE) (SEMI STAT)*
 
 ASSIGNLHS	<- (PAIRELEM
 		/ ARRAYELEM
@@ -84,7 +84,7 @@ BINARYOPER	<- STAR
 		/ ANDAND
 		/ OROR
 
-IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])*
+IDENT		<- (!KEYWORD) ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
@@ -157,6 +157,41 @@ STRING		<- 'string'     SPACE
 THEN		<- 'then'       SPACE
 TRUE		<- 'true'       SPACE
 WHILE		<- 'while'      SPACE
+
+KEYWORD         <- ('begin'  
+                / 'bool'   
+                / 'call'   
+                / 'char'   
+                / 'chr'    
+                / 'do'     
+                / 'done'   
+                / 'else'   
+                / 'end'    
+                / 'exit'   
+                / 'false'  
+                / 'fi'     
+                / 'free'   
+                / 'fst'    
+                / 'if'     
+                / 'is'     
+                / 'int'    
+                / 'len'    
+                / 'newpair'
+                / 'null'   
+                / 'ord'    
+                / 'pair'   
+                / 'print'  
+                / 'println'
+                / 'read'   
+                / 'return' 
+                / 'skip'   
+                / 'snd'    
+                / 'string' 
+                / 'then'   
+                / 'true'   
+                / 'while'  
+                )
+
 
 #-------------------------------------------------------------------------------
 # Punctuators
