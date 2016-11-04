@@ -2,7 +2,3 @@ package: gitlab.doc.ic.ac.uk/lab1617_autumn/wacc_34
 import:
 - package: github.com/pointlander/peg
   version: ^1.0.0
-- package: github.com/pointlander/jetset
-  version: ^1.0.0
-- package: github.com/pointlander/compress
-  version: ^1.0.0
