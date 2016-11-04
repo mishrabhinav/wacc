@@ -30,5 +30,6 @@ $(GOGLIDE):
 
 $(GOLINTER):
 	go get -u gopkg.in/alecthomas/gometalinter.v1
+	$(GOLINTER) --install
 
 .PHONY: all clean lint format
