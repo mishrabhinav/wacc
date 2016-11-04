@@ -28,9 +28,9 @@ STATP		<- SKIP
 STAT		<- STATP (SEMI STAT)*
 
 
-ASSIGNLHS	<- IDENT
+ASSIGNLHS	<- PAIRELEM
 		/ ARRAYELEM
-		/ PAIRELEM
+		/ IDENT
 
 ASSIGNRHS	<- NEWPAIR LPAR EXPR COMMA EXPR RPAR
 		/ ARRAYLITER
@@ -58,14 +58,14 @@ PAIRELEMTYPE	<- BASETYPE ARRAYTYPE*
 		/ PAIR
 
 EXPRP		<- INTLITER
+		/ UNARYOPER EXPR
 		/ BOOLLITER
 		/ CHARLITER
 		/ STRLITER
 		/ PAIRLITER
-		/ IDENT
 		/ ARRAYELEM
-		/ UNARYOPER EXPR
 		/ LPAR EXPR RPAR
+		/ IDENT
 
 EXPR		<- EXPRP (BINARYOPER EXPR)*
 
@@ -93,7 +93,7 @@ IDENT		<- ([_] / [a-z] / [A-Z])([_] / [a-z] / [A-Z] / [0-9])* SPACE*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
 
-INTLITER	<- INTSIGN? <DIGIT+> SPACE* { _, err := strconv.ParseInt(buffer[begin:end], 0, 32); if err != nil { fmt.Println(err) }}
+INTLITER	<- INTSIGN? <DIGIT+> SPACE*
 
 DIGIT		<- [0-9]
 
@@ -103,12 +103,12 @@ INTSIGN		<- PLUS
 BOOLLITER	<- TRUE
 		/ FALSE
 
-CHARLITER	<- SINQUO CHARACTER SINQUO
+CHARLITER	<- SINQUO CHARACTER SINQUO SPACE*
 
-STRLITER	<- DOUQUO CHARACTER* DOUQUO
+STRLITER	<- DOUQUO CHARACTER* DOUQUO SPACE*
 
-CHARACTER       <- ESCAPE 
-                / !['\n\\] .
+CHARACTER       <- ESCAPE
+                / (![\\'"] .)
 
 ESCAPE          <- '\\' ['\"?\\abfnrtv0]
 
@@ -170,8 +170,8 @@ RBRK      	<-  ']'          SPACE*
 LPAR      	<-  '('          SPACE*
 RPAR      	<-  ')'          SPACE*
 STAR      	<-  '*'  ![=]    SPACE*
-PLUS      	<-  '+'  ![+=]   SPACE*
-MINUS     	<-  '-'  ![\-=>] SPACE*
+PLUS      	<-  '+'  ![=]    SPACE*
+MINUS     	<-  '-'  ![=>]   SPACE*
 BANG      	<-  '!'  ![=]    SPACE*
 DIV       	<-  '/'  ![=]    SPACE*
 MOD       	<-  '%'  ![=>]   SPACE*
@@ -186,8 +186,8 @@ OROR      	<-  '||'         SPACE*
 SEMI      	<-  ';'          SPACE*
 EQU       	<-  '='  !"="    SPACE*
 COMMA     	<-  ','          SPACE*
-SINQUO		<-  '\''         SPACE*
-DOUQUO		<-  '\"'         SPACE*
+SINQUO		<-  '\''
+DOUQUO		<-  '\"'
 
 #-------------------------------------------------------------------------------
 # Escape Characters
