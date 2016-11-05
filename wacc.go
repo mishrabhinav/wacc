@@ -24,7 +24,8 @@ func main() {
 	wacc.Init()
 
 	if err := wacc.Parse(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+                os.Exit(100)
 	}
 
         if len(os.Args) == 3 && os.Args[2] == "-t" {
