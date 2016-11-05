@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"fmt"
 )
 
 func main() {
@@ -25,10 +25,10 @@ func main() {
 
 	if err := wacc.Parse(); err != nil {
 		log.Print(err)
-                os.Exit(100)
+		os.Exit(100)
 	}
 
-        if len(os.Args) == 3 && os.Args[2] == "-t" {
-          wacc.PrintSyntaxTree()
-        }
+	if len(os.Args) == 3 && os.Args[2] == "-t" {
+		wacc.PrintSyntaxTree()
+	}
 }
