@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-echo "---------- WACC Compiler Testing ----------"
+echo -e "---------- WACC Compiler Testing ----------"
 
 RED='\033[0;31m'
 LRED='\033[1;31m'
@@ -18,7 +18,7 @@ testFiles() {
   do
     OUT=$OUT"${BROWN}File: ${CYAN}$f${NC} : "
 
-    echo "File: $f " >> log.txt 2>&1
+    echo -e "File: $f " >> log.txt 2>&1
     ./compile $f >> log.txt 2>&1
 
     if [ $? == $2 ]; then
@@ -29,8 +29,8 @@ testFiles() {
 
     OUT=$OUT" $RESULT"
 
-    echo "Result: $RESULT " >> log.txt 2>&1
-    echo $OUT
+    echo -e"Result: $RESULT " >> log.txt 2>&1
+    echo -e $OUT
 
     OUT=""
   done
@@ -38,13 +38,13 @@ testFiles() {
   rm log.txt
 }
 
-echo "\n${LRED}===== Valid Testcases =====${NC}"
+echo -e "\n${LRED}===== Valid Testcases =====${NC}"
 testFiles $VALID 0
 
-echo "\n${LRED}===== Invalid Tescases - Syntax Error =====${NC}"
+echo -e "\n${LRED}===== Invalid Tescases - Syntax Error =====${NC}"
 testFiles $INVALID_SYNTAX 100
 
-echo "\n${LRED}===== Invalid Tescases - Semantic Error =====${NC}"
+echo -e "\n${LRED}===== Invalid Tescases - Semantic Error =====${NC}"
 testFiles $INVALID_SEMANTIC 200
 
-echo "---------- Testing Complete ----------"
+echo -e "---------- Testing Complete ----------"
