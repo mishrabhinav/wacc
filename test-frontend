@@ -16,7 +16,7 @@ VALID="$1/valid"
 testFiles() {
   find $1 -name '*.wacc' | while read f;
   do
-    OUT=$OUT"${BROWN}File: ${CYAN}$f${NC} : "
+    OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
 
     echo -e "File: $f " >> log.txt 2>&1
     ./compile $f >> log.txt 2>&1
