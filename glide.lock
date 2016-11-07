@@ -1,6 +1,4 @@
 hash: bddcb2f168e0c08cfdb62b2198a299386b585dec61af63d61fd0e210b8b5e923
 updated: 2016-11-02T16:01:18.553148429Z
 imports:
-- name: github.com/pointlander/peg
-  version: 58700b5efaa51d444ea98fbf81a514517f8cc019
 testImports: []
