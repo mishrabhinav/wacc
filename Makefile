@@ -39,6 +39,6 @@ $(GOLINTER):
 	$(GOLINTER) --install
 
 $(GOPEG):
-	go get -u github.com/pointlander/peg
+	go get -u gitlab.doc.ic.ac.uk/ss14615/peg
 
 .PHONY: all clean lint format
