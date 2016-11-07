@@ -185,7 +185,7 @@ func parseLHS(node *node32) (LHS, error) {
 		target := new(ArrayLHS)
 
 		identNode := nextNode(node.up, ruleIDENT)
-		target.ident = identNode.token32.String()
+		target.ident = identNode.match
 
 		for exprNode := nextNode(node.up, ruleEXPR); exprNode != nil; exprNode = nextNode(exprNode.next, ruleEXPR) {
 			var expr Expression
@@ -198,9 +198,9 @@ func parseLHS(node *node32) (LHS, error) {
 
 		return target, nil
 	case ruleIDENT:
-		return &VarLHS{ident: node.token32.String()}, nil
+		return &VarLHS{ident: node.match}, nil
 	default:
-		return nil, fmt.Errorf("Unexpected %s", node.String())
+		return nil, fmt.Errorf("Unexpected %s", node.match)
 	}
 }
 
@@ -254,7 +254,7 @@ func parseRHS(node *node32) (RHS, error) {
 		call := new(FunctionCallRHS)
 
 		identNode := nextNode(node, ruleIDENT)
-		call.ident = identNode.token32.String()
+		call.ident = identNode.match
 
 		arglistNode := nextNode(node, ruleARGLIST)
 		if arglistNode == nil {
@@ -286,7 +286,7 @@ func parseRHS(node *node32) (RHS, error) {
 
 		return exprRHS, nil
 	default:
-		return nil, fmt.Errorf("Unexpected rule %s", node.token32.String())
+		return nil, fmt.Errorf("Unexpected rule %s", node.match)
 	}
 }
 
@@ -301,7 +301,7 @@ func parseBaseType(node *node32) (Type, error) {
 	case ruleSTRING:
 		return &ArrayType{base: &CharType{}}, nil
 	default:
-		return nil, fmt.Errorf("Unknown type: %s", node.up.String())
+		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
 }
 
@@ -376,7 +376,7 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		identNode := nextNode(node, ruleIDENT)
-		decl.ident = identNode.token32.String()
+		decl.ident = identNode.match
 
 		rhsNode := nextNode(node, ruleASSIGNRHS)
 		if decl.rhs, err = parseRHS(rhsNode.up); err != nil {
@@ -486,7 +486,7 @@ func parseStatement(node *node32) (Statement, error) {
 
 		stm = whiles
 	default:
-		return nil, fmt.Errorf("unexpected %s", node.String())
+		return nil, fmt.Errorf("unexpected %s", node.match)
 	}
 
 	if semi := nextNode(node, ruleSEMI); semi != nil {
@@ -513,7 +513,7 @@ func parseWACC(node *node32) (*AST, error) {
 			}
 			return ast, nil
 		default:
-			return nil, fmt.Errorf("Unexpected %s", node.String())
+			return nil, fmt.Errorf("Unexpected %s", node.match)
 		}
 	}
 
