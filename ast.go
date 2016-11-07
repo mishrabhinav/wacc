@@ -81,16 +81,21 @@ type PairLiterRHS struct {
 }
 
 type ArrayLiterRHS struct {
-	array ArrayLiteral
+	elements []Expression
 }
 
 type PairElemRHS struct {
-	elem PairElem
+	snd  bool
+	expr Expression
 }
 
 type FunctionCallRHS struct {
 	ident string
 	args  []Expression
+}
+
+type ExpressionRHS struct {
+	expr Expression
 }
 
 type AssignStatement struct {
@@ -199,9 +204,90 @@ func parseLHS(node *node32) (LHS, error) {
 	}
 }
 
-func parseRHS(node *node32) (Expression, error) {
-	// TODO implement
-	return nil, fmt.Errorf("Not implemented")
+func parseRHS(node *node32) (RHS, error) {
+	switch node.pegRule {
+	case ruleNEWPAIR:
+		var err error
+		pair := new(PairLiterRHS)
+
+		fstNode := nextNode(node, ruleEXPR)
+		if pair.fst, err = parseExpr(fstNode.up); err != nil {
+			return nil, err
+		}
+
+		sndNode := nextNode(fstNode.next, ruleEXPR)
+		if pair.snd, err = parseExpr(sndNode.up); err != nil {
+			return nil, err
+		}
+
+		return pair, nil
+	case ruleARRAYLITER:
+		node = node.up
+
+		arr := new(ArrayLiterRHS)
+
+		for node = nextNode(node, ruleEXPR); node != nil; node = nextNode(node.next, ruleEXPR) {
+			var err error
+			var expr Expression
+
+			if expr, err = parseExpr(node.up); err != nil {
+				return nil, err
+			}
+			arr.elements = append(arr.elements, expr)
+		}
+
+		return arr, nil
+	case rulePAIRELEM:
+		target := new(PairElemRHS)
+
+		fstNode := nextNode(node.up, ruleFST)
+		target.snd = fstNode == nil
+
+		exprNode := nextNode(node.up, ruleEXPR)
+		var err error
+		if target.expr, err = parseExpr(exprNode.up); err != nil {
+			return nil, err
+		}
+
+		return target, nil
+	case ruleCALL:
+		call := new(FunctionCallRHS)
+
+		identNode := nextNode(node, ruleIDENT)
+		call.ident = identNode.token32.String()
+
+		arglistNode := nextNode(node, ruleARGLIST)
+		if arglistNode == nil {
+			return call, nil
+		}
+
+		for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode, ruleEXPR) {
+			var err error
+			var expr Expression
+
+			if expr, err = parseExpr(argNode.up); err != nil {
+				return nil, err
+			}
+
+			call.args = append(call.args, expr)
+		}
+
+		return call, nil
+	case ruleEXPR:
+		exprRHS := new(ExpressionRHS)
+
+		var err error
+		var expr Expression
+		if expr, err = parseExpr(node.up); err != nil {
+			return nil, err
+		}
+
+		exprRHS.expr = expr
+
+		return exprRHS, nil
+	default:
+		return nil, fmt.Errorf("Unexpected rule %s", node.token32.String())
+	}
 }
 
 func parseBaseType(node *node32) (Type, error) {
