@@ -1,0 +1,657 @@
+\documentclass[a4paper]{article}
+
+\setcounter{tocdepth}{3}
+
+% latex package inclusions here
+\usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage{tabulary}
+\usepackage{amsthm}
+\usepackage{textcomp}
+\usepackage{soul}
+\usepackage{color}
+
+% set up more commands for highlighting
+\soulregister\lit7
+
+% set up BNF generator
+\usepackage{syntax}
+\setlength{\grammarparsep}{10pt plus 1pt minus 1pt}
+\setlength{\grammarindent}{10em} 
+
+% set up source code inclusion
+\usepackage{listings}
+\lstset{
+  tabsize=2,
+  basicstyle = \ttfamily\small,
+  columns=fullflexible
+}
+
+% in-line code styling
+\newcommand{\shell}[1]{\lstinline{#1}}
+
+\theoremstyle{definition}
+\newtheorem{question}{Gap}
+
+% tagged boxes for fill the gap exercise
+\newcommand{\fillgap}[2]{
+  \begin{center}
+  \fbox{
+    \begin{minipage}{4in}
+      \begin{question}
+        {\it #1} \hfill ({\bf #2})
+      \end{question}
+    \end{minipage}
+  }
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\title{The WACC Language Specification}
+\date{}
+\author{
+Second Year Computing Laboratory \\ 
+Department of Computing \\ 
+Imperial College London
+}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{What is WACC?}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+WACC (pronounced ``whack'') is a simple variant on the While family of languages encountered in many program reasoning/verification courses
+(in particular in the Models of Computation course taught to our 2nd year undergraduates).
+It features all of the common language constructs you would expect of a While-like language, 
+such as program variables, simple expressions, conditional branching, looping and no-ops.
+It also features a rich set of extra constructs, such as simple types, functions, arrays and basic tuple creation on the heap.
+
+The WACC language is intended to help unify the material taught in our more theoretical courses (such as Models of Computation) 
+with the material taught in our more practical courses (such as Compilers).
+The core of the language should be simple enough to reason about 
+and the extensions should pose some interesting challenges and design choices for anyone implementing it.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{WACC Language Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We give the syntax of the WACC language in Backus-Naur Form (BNF) 
+extended with some basic regular expression notation that simplifies the presentation:
+\begin{itemize}
+ \item $(x$-$y)$ stands for `range', meaning any value from $x$ to $y$ inclusive;
+ \item $(x)$? stands for `optional', meaning that $x$ can occur zero or one times;
+ \item $(x)$+ stands for `repeatable', meaning that $x$ can occur one or more times;
+ \item $(x)$* stands for `optional and repeatable', meaning that $x$ can occur zero or more times.
+\end{itemize}
+
+\subsection{BNF}
+%%%%%%%%%%%%%%%%%%
+\begin{grammar}
+  <program> ::= `begin' <func>* <stat> `end' 
+
+  <func> ::= <type> <ident> `(' <param-list>? `)' `is' <stat> `end'
+
+  <param-list> ::= <param> ( `,' <param> )*   
+
+  <param> ::= <type> <ident>    
+  
+  <stat>  ::= `skip'
+    \alt <type> <ident> `=' <assign-rhs> 
+    \alt <assign-lhs> `=' <assign-rhs> 
+    \alt `read' <assign-lhs>
+    \alt `free' <expr>    
+    \alt `return' <expr>
+    \alt `exit' <expr>
+    \alt `print' <expr> 
+    \alt `println' <expr>      
+    \alt `if' <expr> `then' <stat> `else' <stat> `fi'
+    \alt `while' <expr> `do' <stat> `done'     
+    \alt `begin' <stat> `end'    
+    \alt <stat> `;' <stat> 
+
+  <assign-lhs> ::= <ident>
+    \alt <array-elem>
+    \alt <pair-elem>    
+    
+  <assign-rhs> ::= <expr>
+    \alt <array-liter>
+    \alt `newpair' `(' <expr> `,' <expr> `)'
+    \alt <pair-elem>
+    \alt `call' <ident> `(' <arg-list>? `)'
+    
+  <arg-list> ::= <expr> (`,' <expr> )*    
+  
+  <pair-elem> ::= `fst' <expr>
+    \alt `snd' <expr>
+
+  <type> ::= <base-type>
+    \alt <array-type>
+    \alt <pair-type>
+
+  <base-type> ::= `int' 
+    \alt `bool'
+    \alt `char'
+    \alt `string'    
+
+  <array-type> ::= <type> `[' `]'   
+    
+  <pair-type> ::= `pair' `(' <pair-elem-type> `,' <pair-elem-type> `)'
+
+  <pair-elem-type> ::= <base-type> 
+    \alt <array-type>
+    \alt `pair'
+
+  <expr> ::= <int-liter>
+    \alt <bool-liter>
+    \alt <char-liter>
+    \alt <str-liter>
+    \alt <pair-liter>
+    \alt <ident>
+    \alt <array-elem> 
+    \alt <unary-oper> <expr>
+    \alt <expr> <binary-oper> <expr>
+    \alt `(' <expr> `)'    
+    
+  <unary-oper> ::= `!' | `-' | `len' | `ord' | `chr' 
+
+  <binary-oper> ::= `*' | `/' | `\%' | `+' | `-' | `>' | `>=' | `<' | `<=' | `==' | `!=' | `&&' | `||'         
+
+  <ident> ::= ( `\_' | `a'-`z' | `A'-`Z' ) ( `\_' | `a'-`z' | `A'-`Z' | `0'-`9' )*      
+  
+  <array-elem> ::= <ident> (`[' <expr> `]')+ 
+  
+  <int-liter> ::= <int-sign>? <digit>+ 
+
+  <digit> ::= (`0'-`9')
+  
+  <int-sign> ::= `+' | `-'  
+  
+  <bool-liter> ::= `true' | `false'
+  
+  <char-liter> ::= `\'' <character> `\''  
+
+  <str-liter> ::= `\"' <character>* `\"'  
+  
+  <character> ::= "any-ASCII-character-except-`\\'-`\''-`\"'" 
+    \alt `\\' <escaped-char>   
+
+  <escaped-char> ::= `0' | `b' | `t' | `n' | `f' | `r' | `\"' | `\'' | `\\'
+
+  <array-liter> ::= `[' ( <expr> (`,' <expr>)* )? `]' 
+
+  <pair-liter> ::= `null'
+    
+  <comment> ::= `#' ("any-character-except-EOL")* <EOL>  
+\end{grammar}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{WACC Language Semantics}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We now go through each of the language components and explain their behaviour and purpose in more detail.
+
+\subsection{Types}
+%%%%%%%%%%%%%%%%%%
+The WACC language is both statically and strongly typed.
+\begin{itemize}
+  \item Static, in that, once declared, the type of a variable is fixed for the duration of the program. 
+  \item Strong, in that the compiler should not coerce between types.
+\end{itemize}
+There is also no explicit typecasting.
+
+\paragraph{Basic Types:} 
+The basic types in the WACC language are:
+\begin{itemize}
+ \item \lit*{int}: The Integer type. Integers in the WACC language can take any value from $-2^{31}$ to $2^{31} - 1$ inclusive.
+ \item \lit*{bool}: The Boolean type (\shell{true} or \shell{false}).
+ \item \lit*{char}: The Character type. The WACC language supports only the ASCII characters.
+ \item \lit*{string}: The String type. 
+\end{itemize}
+We write \lit{T} to denote an arbitrary type.
+
+\paragraph{Arrays:} 
+As well as the basic types given above, the WACC language also supports the array type.
+We write \lit{T[]} to denote an array whose elements are of type \lit{T}.
+Note that \lit{T} can be of any type, including another array type, which allows for nested arrays.
+In the WACC language, arrays of characters are treated like strings.
+Arrays are allocated on the heap.
+As well as their elements, each array also tracks its length, which is set when it is created.
+ 
+\paragraph{Pairs:}
+Pairs are allocated on the heap and contain two elements that can be of any type. 
+We write \lit{pair(T$_1$, T$_2$)} to donate a pair whose first element is of type \lit{T$_1$} and second element is of type \lit{T$_2$} 
+(these need not be the same). 
+Note that if either \lit{T$_1$} or \lit{T$_2$} is a pair type, we do not write the type of the sub-elements. 
+For example, a pair whose first element is an integer
+and whose second element is a pair of characters is written as \lit{pair(int, pair)} and not as \lit{pair(int, pair(char, char))}. 
+It is obvious that we lose some typing information in this way. 
+
+\subsection{Program Scopes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The WACC language includes explicit scoping.
+Various statements introduce new program scopes, which have an effect on the visibility of program variables.
+
+Whenever a new variable is declared it is added to the current program scope.
+When a program scope is exited, every variable created within that scope is destroyed.
+This means that variables are not accessible by statements outside the scope of their creation,
+although they are accessible in child scopes.
+
+The main, or global scope is created at the start of a WACC program and is exited at the end of the program.
+Functions can only be created at the beginning of this global scope, but they may be called from within any child scope.
+
+We will see that several other program constructs, including functions, while loops and conditional branches, 
+introduce new program scopes during their execution.
+
+\subsection{Programs}
+%%%%%%%%%%%%%%%%%%%%%%
+A WACC program \synt{program} consists of zero or more function definitions followed by the body of the main function. 
+The whole program is written between the \lit{begin} and \lit{end} tokens, denoting the main or global program scope.
+
+\subsection{Function Definitions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A function definition \synt{func} consists of a return type, a function name 
+and zero or more typed parameters followed by the function's body.
+A function's body, which is denoted by the \lit{is} and \lit{end} tokens, is executed in its own scope 
+containing only the parameters passed into the function.
+
+Functions can only be defined at the beginning of the global scope, before the body of the main function.
+Functions may, however, be both recursive and mutually recursive.
+
+Any execution path through the body of the function should end with a \lit{return} statement 
+whose expression type should match the function's return type. Otherwise, it must end with an \lit{exit} statement.
+
+\subsection{Statements}
+%%%%%%%%%%%%%%%%%%%%%%%%
+A statement \synt{stat} consists of: 
+a no-op,
+a variable definition,
+an assignment,
+an input read,
+a memory free,
+a function return,
+an exit call,
+a print command,
+a conditional branch,
+a while loop,
+a scope introduction
+or the sequential composition of two statements.
+
+We discuss each of these in more detail below.
+
+\paragraph{No-op Statements:}
+A no-op statement \lit{skip} does not do anything. 
+It is used where a statement is expected but we do not want to do anything. 
+For example, in an \lit*{if} statement where we want to have an empty \lit*{else} clause.
+
+\paragraph{Variable Declaration Statements:}
+A variable declaration statement creates a new program variable in the current scope setting its static type and initial value.
+The statement must be given a valid WACC type \synt{type}, a variable name \synt{ident} and an initial assignment value \synt{assign-rhs}.
+
+Variable names must not clash with \hl{keywords, function names, and variables declared within the same scope.}
+
+They can consist \hl{of alphanumeric characters and underscores but cannot start with a number.}
+
+The initial assignment to a variable follows all of the assignment restrictions discussed in detail in the assignment statement section below.
+
+A variable must be declared before \hl{use.}
+
+Any attempt to access an undeclared variable results in \hl{a compile time (semantic) error.}
+
+Additionally, every use of a variable must match the type assigned to that variable when it was declared.
+
+A variable can only be accessed within the scope of its declaration (or any child scope) and it is destroyed when exiting this scope.
+Variables must be unique within their scope, so a variable cannot be redefined within the same scope.
+Variables can, however, be redefined within a child scope.
+In this case \hl{the outer variable is shadowed.}
+
+Once the child scope is exited, \hl{the outer variable is used.}
+
+\fillgap{Complete the above paragraph}{5 marks}
+
+\paragraph{Assignment Statements:}
+An assignment statement updates its target (the left-hand side of the \lit{=}) with a new value (the right-hand side of the \lit{=}).
+The target of an assignment can be either a program variable, an array element or a pair element.
+The assignment value can be one of five possible types: an expression, an array literal, a function call, a pair constructor or a pair element.
+\begin{itemize}
+ \item If the assignment value is an expression \synt{expr} then 
+       the target and the expression must have the same type.
+       The expression is then evaluated and the resulting value is copied into the target.
+ \item If the assignment value is an array literal \synt{array-liter} then the target and value arrays must have the same element type, 
+       but the length can be different. 
+       The value array is then allocated on the heap with each element initialised to the given value. After that, the reference of the value array is copied to the reference of the target array.
+       For more details on array literals, see the expressions section.
+ \item If the assignment value is a function call \lit{call} then the target and function return value must have the same type. 
+       The number and types of the function's arguments must also match the function's definition.
+       A function is called by its name and its arguments are passed by value (for basic types) or by reference (for arrays and pairs).
+       When called, the function's body is executed in a new scope, not related to the current scope.
+       The only declared variables are the function's parameters, whose types are set by the function definition and whose values are set by the function call's arguments.
+       When the execution of the function body terminates, the function's return value is then copied into the assignment target.
+ \item If the assignment value is pair constructor \lit{newpair} then the target must be of type \lit{pair(T$_1$, T$_2$)}.
+       The pair constructor is passed two expressions that must match {\tt T}$_1$ and {\tt T}$_2$ respectively.
+       A \lit{newpair} assignment allocates enough memory on the heap to store the pair structure and its elements.
+       It then initialises each element of the pair using the evaluation of the first expression for the first element 
+       and the evaluation of the second expression for the second element.
+       Pairs, in the WACC language, are always used by reference, so a reference to the pair is copied into the target, rather than the actual content of the pair.
+ \item If the assignment value is a pair element \synt{pair-elem} then the expression passed to the pair element must be of type \lit{pair} 
+       and the target must have the same type as the first (or second) element of the pair when using \lit{fst} (or \lit{snd}) keyword.
+       The pair expression is evaluated to obtain a reference to a pair and this is dereferenced to find the corresponding pair element,
+       which is then copied into the target.
+ \end{itemize}
+
+\paragraph{Read Statements:}
+A read statement \lit{read} is a special assignment statement that takes its value from the standard input and writes it to its argument.
+Unlike a general assignment statement, a read statement can only target a program variable, an array element or a pair element. 
+Additionally, the read statement can only handle character or integer input.
+
+The read statement determines how it will interpret the value from the standard input based on the type of the target.
+For example, if the target is a variable of type \lit{int} then it will convert the input string into an integer.
+
+\paragraph{Memory Free Statements:}
+A memory free statement \lit{free} is used to free the heap memory allocated for a pair or array and its immediate content. 
+The statement is given an expression that must be of type \lit{pair(T$_1$, T$_2$)} or \lit{T[]} (for some {\tt T}, {\tt T}$_1$, {\tt T}$_2$). 
+The expression must evaluate to a valid reference to a pair or array, otherwise a segmentation fault will occur at runtime.
+
+If the reference is valid, then the memory for each element of the pair/array is freed, so long as the element is not a reference to another pair or another array
+(i.e. free is not recursive). 
+Then the memory that stores the pair/array itself is also freed.
+
+\paragraph{Function Return Statements:}
+A return statement can only be present in the body of a non-main function and is used to return a value from that function. 
+The type of the expression given to the return statement must match the return type of the function. 
+Once the return statement is executed, the function is immediately exited.
+
+\paragraph{Exit Statements:}
+\hl{
+An exit statement can be present in the body of both main and non-main functions.
+In both cases it exits the program with the value given truncated to an 8-bit unsigned value.
+}
+
+\fillgap{define exit statements}{2 marks}
+
+\paragraph{Print Statements:}
+There are two types of print command in the WACC language.
+The \lit{print} command takes an expression and prints the result of its evaluation to the standard output.
+The \lit{println} command is similar, but additionally prints out a new line afterwards.
+
+The output representation of each expression evaluation depends on the type of the expression.
+The behaviour of the print statements for each type of expression is shown in Table~\ref{tab:print}, along with some example cases.
+
+\fillgap{Fill in Table \ref{tab:print}}{3 marks}
+%
+\begin{table}
+  \centering
+  \begin{tabulary}{\textwidth}{C|L|C|C}
+    \hline
+    Expression Type & Behaviour & Example Expression & Example Output \\
+    \hline
+    \lit*{int} & Output the integer converted to a decimal string. & \lit*{10} & ``10'' \\
+    \hline
+    \lit*{bool} & Output ``true'' if the boolean is \lit*{true} and ``false'' otherwise. & \lit*{false} & ``false'' \\
+    \hline
+    \lit*{char} & Output a single-character string. & \lit*{\textquotesingle c\textquotesingle} & ``c'' \\
+    \hline
+    \lit*{string} or \lit*{char[]} & \hl{Output the string itself} & \lit*{\hl{"Hello World"}} & \hl{``Hello World''} \\
+    \hline
+    Other Array Types & \hl{Output the address of the array} & \lit*{\hl{[1, 2, 3]}}\footnotemark[1] & \hl{``0x12008`''} \\
+    \hline
+    \lit*{pair} & \hl{Output the address of the pair or (nil) for null} & \lit*{newpair(a, b)}\footnotemark[1] & \hl{``0x12008''} or \hl{``(nil)''} \\
+    \hline
+  \end{tabulary}
+  \caption{The behaviour of the print statements for each type of expression.}
+  \label{tab:print}
+\end{table}
+
+\footnotetext[1]{This is not exactly an expression because it can only appears on the right hand side of an assignment. However, it gives the best example here.}
+
+\paragraph{Conditional Branch Statements:}
+A conditional branch statement \lit{if} evaluates an expression and determines which program path to follow. 
+The statement is given a condition expression, that must be of type \lit{bool}, and two body statements, one for the \lit{then} branch and one for the \lit{else} branch.
+
+If the condition evaluates to \lit{true}, then the \lit{then} body statement is executed.
+Otherwise, the \lit{else} body statement is executed.
+Each of the program branches is executed in its own scope, which are denoted by the \lit{then} and \lit{else} tokens and the \lit{else} and \lit{fi} tokens, respectively.
+
+\paragraph{While Loop Statements:}
+\hl{
+A while loop statement \lit{while} evaluates an expression and determines whether or not to execute the loop body.
+The statement is given a condition expression, that must be of type \lit{bool}, and a body statement.
+}
+
+\hl{
+If the condition evaluates to \lit{true}, then the body statement is executed.
+Otherwise, execution continues after the while statement, after \lit{done}.
+The loop body is executed in its own scope, which is denoted by the \lit{do} and \lit{done} tokens.
+}
+\fillgap{Define/describe while loop statements}{6 marks}
+
+\paragraph{Scoping Statements:}
+A scoping statement introduces a new program scope, which is denoted by the \lit{begin} and \lit{end} tokens.
+
+\paragraph{Sequential Composition:}
+\hl{
+Given two statements, \lit{stat1} and \lit{stat2} sequential composition combines the two statements into a compound statement by the \lit{;} token.
+Execution of the statements follows a strict order, first \lit{stat1} with all side effects, then \lit{stat2} with all side effects.
+}
+\fillgap{Define/describe sequential composition \\- i.e. \lit*{<stat> ; <stat>} }{2 marks}
+
+\subsection{Expressions}
+%%%%%%%%%%%%%%%%%%%%%%%%%
+A expression \synt{expr} consists of
+a literal (integer, boolean, character, string or pair),
+a variable,
+an array element,
+a unary expression,
+a binary expression
+or an expression enclosed by parenthesis.
+
+We discuss the meaning of each of these expressions in more detail below.
+
+The expressions of the WACC language have been chosen to be side-effect free.
+\hl{
+This means that during the evaluation of the expression no observable change
+can occur to the state of the program. That is, the value of variables cannot
+be modified.
+}
+\fillgap{Define side-effect free expressions}{1 mark}
+
+\paragraph{Integer Literals:}
+An integer literal \synt{int-liter} consists of a sequence of decimal digits. 
+Optionally, the sequence can be preceded by a \lit{+} or a \lit{-} symbol. 
+
+\paragraph{Boolean Literals:}
+A boolean literal \synt{bool-liter} is either \lit{true} or \lit{false}.
+
+\paragraph{Character Literals:}
+A character literal \synt{char-liter} is a single ASCII character between two \lit{\char`'} symbols. 
+A \lit{\char`\\} can be used to escape the character that immediately follows the \lit{\char`\\}. 
+The meaning of each escaped character is shown in Table~\ref{tab:escapedcharacters}. 
+\fillgap{Fill in Table~\ref{tab:escapedcharacters}}{2 marks}
+%
+\begin{table}
+  \centering
+  \begin{tabular}{cclc}
+    \hline
+    Representation & ASCII Value & Description & Symbol \\
+    \hline
+    \lit*{\textbackslash 0} & \lit*{0x00} & null terminator & NUL \\
+    \lit*{\hl{\textbackslash b}} & \lit*{0x08} & \hl{backspace} & \hl{BS} \\
+    \lit*{\hl{\textbackslash t}} & \lit*{0x09} & \hl{horizontal tab} & \hl{TAB} \\
+    \lit*{\hl{\textbackslash n}} & \lit*{0x0a} & \hl{line feed} & \hl{LF} \\
+    \lit*{\hl{\textbackslash f}} & \lit*{0x0c} & \hl{form feed} & \hl{FF} \\
+    \lit*{\textbackslash r} & \lit*{\hl{0x0d}} & carriage return & CR \\
+    \lit*{\textbackslash "} & \lit*{\hl{0x22}} & double quote & " \\
+    \lit*{\textbackslash '} & \lit*{\hl{0x27}} & single quote & ' \\
+    \lit*{\textbackslash \textbackslash} & \lit*{\hl{0x5c}} & backslash & \textbackslash \\
+    \hline
+  \end{tabular}
+  \caption{The escaped-characters available in the WACC language.}
+  \label{tab:escapedcharacters}
+\end{table}
+%
+
+\paragraph{String Literals:}
+A string literal \synt{str-liter} is az sequence of characters between two \lit{"} symbols. 
+Each character in the string literal can be escaped in the same way as in character literal.
+
+\paragraph{Pair Literals:}
+The only pair literal \synt{pair-liter} is \lit{null} which represents a reference that does not point to any pair. 
+To see how pairs are created, read the \lit{newpair} case of the assignment statement.
+
+\paragraph{Array Literals:} Array literals cannot occur directly in expressions, but they do occur in the WACC language as assignment values.
+An array literal starts with a \lit{[} token and ends with a \lit{]} token. 
+The elements of the array (zero or more) are given between these brackets and are separated by \lit{,} tokens. 
+All elements of an array must be of the same type, so the type of any non-empty array literal can be statically determined.
+If, however, an array literal is empty, we allow it to be of any array type.
+For example, the array \lit{[]} can be of type \lit{int[]},\lit{bool[]}, \lit{char[]}, etc... depending on the context, but the array \lit{[1]} must be of type \lit{int[]}.
+
+\paragraph{Variables:}
+When a variable expression \synt{ident} is evaluated it returns the value of that variable. 
+If the variable is of type \lit{T} then the return type of the expression is also \lit{T}.
+
+\paragraph{Array Elements:}
+An array element expression evaluates to return an element from an array.
+The expression consists of two sub-expressions, the first of which must be of type \lit{T[]} and the second of which must be of type \lit{int}.
+The return type of the overall expression is \lit{T}.
+
+The first expression is evaluated to find an array \lit{a} and the second is evaluated to find an index \lit{i}.
+The overall expression returns the element at the index \lit{i} of array \lit{a}, that is, \lit{a[i]}.
+
+If the array has length $l$ then the index \lit{i} must be between $0$ and $(l - 1)$, 
+otherwise the expression will generate a runtime error. 
+
+\paragraph{Unary Operators:}
+A unary operator \synt{unary-oper} has a single sub-expression.
+The unary operators available in the WACC language are shown in Table~\ref{tab:unary}.
+All unary operators have the same precedence, they are evaluated from right to left.
+\fillgap{Fill in Table~\ref{tab:unary}}{2 marks}
+%
+\begin{table}
+  \centering
+  \begin{tabulary}{\textwidth}{CCCL}
+    \hline
+    Operator & Argument Type & Return Type & Meaning \\
+    \hline 
+    \lit{!} & \lit*{bool} & \lit*{bool} & Logical Not \\
+    \lit{-} & \lit*{int} & \lit*{int} & Negation \\
+    \lit{len} & T\lit*{[]} & \lit*{int} & Array Length \\
+    \lit{ord} & \lit*{\hl{char}} & \lit*{\hl{int}} & \hl{ASCII value for character} \\
+    \lit{chr} & \lit*{\hl{int}} & \lit*{\hl{char}} & \hl{character for ASCII value} \\
+    \hline
+  \end{tabulary}
+  \caption{The unary operators of the WACC language with their types and meanings.}
+  \label{tab:unary}
+\end{table}
+
+\begin{itemize}
+\item The \lit{!} operator performs a logical Not operation on the result of evaluating its sub-expression,
+returning \lit{true} if the sub-expression evaluates to \lit{false} and vice-versa.
+
+\item The \lit{-} operator inverts the sign of the evaluation of its sub-expression.
+
+\item The \lit{len} operator returns the length of the array referenced by the evaluation of its sub-expression.
+
+\item The \lit{ord} operator \hl{takes a character value and returns its ASCII value which is its position in the ASCII table.}
+\fillgap{Define/describe the \lit{ord} operator}{1 mark}
+
+\item The \lit{chr} operator \hl{is the inverse of \lit{ord}, it takes a position in the ASCII table and returns the correspoing character.}
+\fillgap{Define/describe the \lit{chr} operator}{1 mark} 
+
+\end{itemize}
+
+\paragraph{Binary Operators:}
+A binary operator is used in in-fix style between two sub-expressions.
+The binary operators available in the WACC language are shown in Table~\ref{tab:binary}.
+The operators have different precedences, as illustrated in the table, 
+with 1 being the highest and 6 being the lowest.
+\fillgap{Fill in Table~\ref{tab:binary}}{2 marks}
+%
+\begin{table}
+  \centering
+  \begin{tabulary}{\textwidth}{CCCCCL}
+    \hline
+    Operator & Precedence & Argument 1 Type & Argument 2 Type & Return Type & Meaning \\
+    \hline 
+    \lit{*}    & 1 & \lit*{int}       & \lit*{int}       & \lit*{int}       & Multiply \\
+    \lit{/}    & 1 & \lit*{int}       & \lit*{int}       & \lit*{int}       & Divide \\
+    \lit{\%}   & 1 & \lit*{int}       & \lit*{int}       & \lit*{int}       & Modulus \\
+    \lit{+}    & 2 & \lit*{int}       & \lit*{int}       & \lit*{int}       & Plus \\
+    \lit{-}    & 2 & \lit*{int}       & \lit*{int}       & \lit*{int}       & Minus \\
+    \lit{>}    & 3 & \lit*{\hl{int}}  & \lit*{\hl{int}}  & \lit*{\hl{bool}} & Greater Than \\
+    \lit{>}    & 3 & \lit*{\hl{char}} & \lit*{\hl{char}} & \lit*{\hl{bool}} & Greater Than \\
+    \lit{>=}   & 3 & \lit*{\hl{int}}  & \lit*{\hl{int}}  & \lit*{\hl{bool}} & Greater Than or Equal \\
+    \lit{>=}   & 3 & \lit*{\hl{char}} & \lit*{\hl{char}} & \lit*{\hl{bool}} & Greater Than or Equal \\
+    \lit{<}    & 3 & \lit*{\hl{int}}  & \lit*{\hl{int}}  & \lit*{\hl{bool}} & Less Than \\
+    \lit{<}    & 3 & \lit*{\hl{char}} & \lit*{\hl{char}} & \lit*{\hl{bool}} & Less Than \\
+    \lit{<=}   & 3 & \lit*{\hl{int}}  & \lit*{\hl{int}}  & \lit*{\hl{bool}} & Less Than or Equal \\
+    \lit{<=}   & 3 & \lit*{\hl{char}} & \lit*{\hl{char}} & \lit*{\hl{bool}} & Less Than or Equal \\
+    \lit{==}   & 4 & \hl{any}         & \hl{any (same)}  & \lit*{\hl{bool}} & Equality \\
+    \lit{!=}   & 4 & \hl{any}         & \hl{any (same)}  & \lit*{\hl{bool}} & Inequality \\
+    \lit{\&\&} & 5 & \lit*{bool}      & \lit*{bool}      & \lit*{bool}      & Logical And \\
+    \lit{||}   & 6 & \lit*{bool}      & \lit*{bool}      & \lit*{bool}      & Logical Or \\
+    \hline
+  \end{tabulary}
+  \caption{The binary operators of the WACC language, with their types and meanings.}
+  \label{tab:binary}
+\end{table}
+%
+
+\begin{itemize}
+\item The \lit{*}, \lit{/}, \lit{\%}, \lit{+} and \lit{-} operators 
+all have their standard mathematical behaviour, where integer underflow/overflow results in a runtime error.
+If the divisor of a division (\lit{/}) or modulus (\lit{\%}) operator is evaluated to \lit{0}, then this also results in a runtime error.
+The result of a division operation is positive if both its dividend and divisor have the same sign, and negative otherwise.
+The result of a modulus operation has the same sign as its dividend.
+
+\item The \lit{>}, \lit{>=}, \lit{<} and \lit{<=} operators perform a comparison test on the evaluations of their sub expressions.
+They accept expressions of type \lit{int} or \lit{char}, but both expressions must have the same type.
+The result is \lit{true} if the comparison of the evaluated expressions is true.
+Otherwise, the result it \lit{false}.
+
+\item The \lit{==} operator performs an equality test on the evaluations of its sub-expressions.
+It accepts any two expressions of the same type.
+When applied to expressions of type \lit{int}, \lit{bool} or \lit{char}, the result is \lit{true} iff the content of the two arguments are the same.
+When applied to expressions of type \lit{T[]} or \lit{pair}, the result is \lit{true} iff the two references point to the same object of the same type.
+Otherwise, the result is \lit{false}. 
+
+\item The \lit{!=} operator returns the opposite result to the \lit{==} operator. 
+
+\item The \lit{\&\&} operator performs a logical And operation on the result of evaluating its sub-expressions,
+returning \lit{true} if both sub-expressions evaluate to \lit{true} and \lit{false} otherwise. 
+
+\item The \lit{||} operator performs a logical Or operation on the result of evaluating its sub-expressions,
+returning \lit{true} if either sub-expression evaluates to \lit{true} and \lit{false} otherwise.
+\end{itemize}
+
+\paragraph{Parenthesis:}
+We can introduce a pair of parenthesis around an expression to control its evaluation. 
+The expression in a parenthesis is always evaluated first, regardless of the operator precedence. 
+
+\subsection{Whitespace and Comments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Whitespace is used in the WACC language to delimit keywords and variables.
+For example, \lit{if a == 13} denotes the start of an \lit{if} statement with boolean condition \lit{a == 13}, 
+whereas \lit{ifa == 13} denotes a boolean expression comparing the variable \lit{ifa} with the value \lit{13}.
+Any other type of occurrence of whitespace is ignored by the compiler.
+Note, in particular, that the code indentation in the example programs has no meaning, it simply aids readability. 
+Also note that whitespace inside a string or character literal is preserved by the compiler. 
+
+\hl{
+Comments begin with the \lit{\#} character and extend to the end of the line.
+They can appear anywhere on the line and from that point the rest of the line is
+discarded as a comment.
+If \lit{\#} appears in a character or string literal it does not denote a comment
+but forms part of the literal itself.
+}
+
+\fillgap{Define/describe comments}{3 marks}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Acknowledgements}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The WACC language was developed by Tienchai Wirojsaksaree as part of a UROP placement over the summer in 2013.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

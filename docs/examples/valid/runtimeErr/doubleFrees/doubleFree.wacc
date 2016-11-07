@@ -1,0 +1,16 @@
+# Create and double free a pair
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 134
+
+# Program:
+
+begin
+  pair(int, char) a = newpair(10, 'a') ;
+  free a ;
+  free a
+end
+

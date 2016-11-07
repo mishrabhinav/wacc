@@ -1,0 +1,118 @@
+# Output:
+# ========= Tic Tac Toe ================
+# =  Because we know you want to win   =
+# ======================================
+# =                                    =
+# = Who would you like to be?          =
+# =   x  (play first)                  =
+# =   o  (play second)                 =
+# =   q  (quit)                        =
+# =                                    =
+# ======================================
+# Which symbol you would like to choose: #input#
+# You have chosen: x
+# Initialising AI. Please wait, this may take a few minutes.
+#  1 2 3
+# 1 | | 
+#  -+-+-
+# 2 | | 
+#  -+-+-
+# 3 | | 
+# 
+# What is your next move?
+#  row (1-3): #input#
+#  column (1-3): #input#
+# 
+# AI is cleaning up its memory...
+#  1 2 3
+# 1 | | 
+#  -+-+-
+# 2 |x| 
+#  -+-+-
+# 3 | | 
+# 
+# AI is cleaning up its memory...
+# The AI played at row 1 column 1
+#  1 2 3
+# 1o| | 
+#  -+-+-
+# 2 |x| 
+#  -+-+-
+# 3 | | 
+# 
+# What is your next move?
+#  row (1-3): #input#
+#  column (1-3): #input#
+# 
+# AI is cleaning up its memory...
+#  1 2 3
+# 1o| |x
+#  -+-+-
+# 2 |x| 
+#  -+-+-
+# 3 | | 
+# 
+# AI is cleaning up its memory...
+# The AI played at row 3 column 1
+#  1 2 3
+# 1o| |x
+#  -+-+-
+# 2 |x| 
+#  -+-+-
+# 3o| | 
+# 
+# What is your next move?
+#  row (1-3): #input#
+#  column (1-3): #input#
+# 
+# AI is cleaning up its memory...
+#  1 2 3
+# 1o| |x
+#  -+-+-
+# 2x|x| 
+#  -+-+-
+# 3o| | 
+# 
+# AI is cleaning up its memory...
+# The AI played at row 2 column 3
+#  1 2 3
+# 1o| |x
+#  -+-+-
+# 2x|x|o
+#  -+-+-
+# 3o| | 
+# 
+# What is your next move?
+#  row (1-3): #input#
+#  column (1-3): #input#
+# 
+# AI is cleaning up its memory...
+#  1 2 3
+# 1o| |x
+#  -+-+-
+# 2x|x|o
+#  -+-+-
+# 3o|x| 
+# 
+# AI is cleaning up its memory...
+# The AI played at row 1 column 2
+#  1 2 3
+# 1o|o|x
+#  -+-+-
+# 2x|x|o
+#  -+-+-
+# 3o|x| 
+# 
+# What is your next move?
+#  row (1-3): #input#
+#  column (1-3): #input#
+# 
+# AI is cleaning up its memory...
+#  1 2 3
+# 1o|o|x
+#  -+-+-
+# 2x|x|o
+#  -+-+-
+# 3o|x|x
+# 
+# Stalemate!
