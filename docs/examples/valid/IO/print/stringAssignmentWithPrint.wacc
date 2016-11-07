@@ -1,0 +1,14 @@
+# string assignment followed by print
+
+# Output:
+# foo
+# bar
+
+# Program:
+
+begin
+  string s = "foo" ;
+  println s ;
+  s = "bar" ;
+  println s
+end

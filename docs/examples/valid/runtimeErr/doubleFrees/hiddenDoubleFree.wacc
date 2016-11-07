@@ -1,0 +1,17 @@
+# Create and double free a pair indirectly
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 134
+
+# Program:
+
+begin
+  pair(int, char) a = newpair(10, 'a') ;
+  pair(int, char) b = a ;
+  free a ;
+  free b
+end
+

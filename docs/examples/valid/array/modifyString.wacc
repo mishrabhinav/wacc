@@ -1,0 +1,17 @@
+# create and modify string
+
+# Output:
+# hello world!
+# Hello world!
+# Hi!
+
+# Program:
+
+begin
+  string s = "hello world!" ;
+  println s ;
+  s[0] = 'H' ;
+  println s ;
+  s = "Hi!" ;
+  println s
+end

@@ -1,0 +1,31 @@
+# Output:
+# Please input an integer: #input#
+# echo input: 1
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
+# Please input an integer: #input#
+# echo input: 2
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
+# Please input an integer: #input#
+# echo input: 3
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
+# Please input an integer: #input#
+# echo input: 4
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
+# Please input an integer: #input#
+# echo input: 5
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
+# Please input an integer: #input#
+# echo input: 142
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# #input#
