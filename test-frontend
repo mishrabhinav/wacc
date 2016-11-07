@@ -9,9 +9,18 @@ BROWN='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-INVALID_SYNTAX="$1/invalid/syntaxErr"
-INVALID_SEMANTIC="$1/invalid/semanticErr"
-VALID="$1/valid"
+DEFAULT_PATH="docs/examples"
+
+if [ $# -eq 0 ]; then
+  EXAMPLES_PATH=$DEFAULT_PATH
+else
+  EXAMPLES_PATH=$1
+fi
+
+INVALID_SYNTAX="$EXAMPLES_PATH/invalid/syntaxErr"
+INVALID_SEMANTIC="$EXAMPLES_PATH/invalid/semanticErr"
+VALID="$EXAMPLES_PATH/valid"
+
 
 testFiles() {
   find $1 -name '*.wacc' | while read f;
