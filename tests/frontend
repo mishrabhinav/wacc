@@ -25,6 +25,7 @@ VALID="$EXAMPLES_PATH/valid"
 testFiles() {
   find $1 -name '*.wacc' | while read f;
   do
+    PASSED=0
     OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
 
     echo -e "File: $f " >> log.txt 2>&1
@@ -32,6 +33,7 @@ testFiles() {
 
     if [ $? == $2 ]; then
       RESULT="${GREEN}Pass${NC}"
+      PASSED=1
     else
       RESULT="${RED}Fail${NC}"
     fi
@@ -39,7 +41,10 @@ testFiles() {
     OUT=$OUT" $RESULT"
 
     echo -e"Result: $RESULT " >> log.txt 2>&1
-    echo -e $OUT
+
+    if [ $PASSED == 0 ]; then
+      echo -e $OUT
+    fi
 
     OUT=""
   done
