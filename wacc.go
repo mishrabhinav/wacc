@@ -50,4 +50,11 @@ func main() {
 	} else if len(os.Args) == 3 && os.Args[2] == "-s" {
 		fmt.Println(ast)
 	}
+
+	if retErrs := ast.CheckFunctionCodePaths(); len(retErrs) > 0 {
+		for _, err := range retErrs {
+			fmt.Println(err.Error())
+		}
+		os.Exit(100)
+	}
 }
