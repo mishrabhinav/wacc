@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 type Type interface{}
@@ -76,8 +77,7 @@ type VarLHS struct {
 type RHS interface{}
 
 type PairLiterRHS struct {
-	fst Expression
-	snd Expression
+	PairLiteral
 }
 
 type ArrayLiterRHS struct {
@@ -161,9 +161,416 @@ func nextNode(node *node32, rule pegRule) *node32 {
 	return nil
 }
 
+func parseArrayElem(node *node32) (Expression, error) {
+	arrElem := &ArrayElem{}
+
+	arrElem.ident = node.match
+
+	for enode := nextNode(node, ruleEXPR); enode != nil; enode = nextNode(enode.next, ruleEXPR) {
+		var exp Expression
+		var err error
+		if exp, err = parseExpr(enode.up); err != nil {
+			return nil, err
+		}
+		arrElem.indexes = append(arrElem.indexes, exp)
+	}
+
+	return arrElem, nil
+}
+
+type Ident struct {
+	ident string
+}
+
+type IntLiteral struct {
+	value int
+}
+
+type BoolLiteralTrue struct{}
+
+type BoolLiteralFalse struct{}
+
+type CharLiteral struct {
+	char string
+}
+
+type StringLiteral struct {
+	str string
+}
+
+type PairLiteral struct {
+	fst Expression
+	snd Expression
+}
+
+type NullPair struct{}
+
+type ArrayElem struct {
+	ident   string
+	indexes []Expression
+}
+
+type UnaryOperator interface {
+	GetExpression() Expression
+	SetExpression(Expression)
+}
+
+type UnaryOperatorBase struct {
+	expr Expression
+}
+
+func (m *UnaryOperatorBase) GetExpression() Expression {
+	return m.expr
+}
+
+func (m *UnaryOperatorBase) SetExpression(exp Expression) {
+	m.expr = exp
+}
+
+type UnaryOperatorNot struct {
+	UnaryOperatorBase
+}
+
+type UnaryOperatorNegate struct {
+	UnaryOperatorBase
+}
+
+type UnaryOperatorLen struct {
+	UnaryOperatorBase
+}
+
+type UnaryOperatorOrd struct {
+	UnaryOperatorBase
+}
+
+type UnaryOperatorChr struct {
+	UnaryOperatorBase
+}
+
+type BinaryOperator interface {
+	GetRHS() Expression
+	SetRHS(Expression)
+	GetLHS() Expression
+	SetLHS(Expression)
+}
+
+type BinaryOperatorBase struct {
+	lhs Expression
+	rhs Expression
+}
+
+func (m *BinaryOperatorBase) GetLHS() Expression {
+	return m.lhs
+}
+
+func (m *BinaryOperatorBase) SetLHS(exp Expression) {
+	m.lhs = exp
+}
+
+func (m *BinaryOperatorBase) GetRHS() Expression {
+	return m.rhs
+}
+
+func (m *BinaryOperatorBase) SetRHS(exp Expression) {
+	m.rhs = exp
+}
+
+type BinaryOperatorMult struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorDiv struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorMod struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorAdd struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorSub struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorGreaterThan struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorGreaterEqual struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorLessThan struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorLessEqual struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorEqual struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorNotEqual struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorAnd struct {
+	BinaryOperatorBase
+}
+
+type BinaryOperatorOr struct {
+	BinaryOperatorBase
+}
+
+type ExprLPar struct{}
+
+type ExprRPar struct{}
+
+func exprStream(node *node32) <-chan *node32 {
+	out := make(chan *node32)
+	go func() {
+		for ; node != nil; node = node.next {
+			switch node.pegRule {
+			case ruleSPACE:
+			case ruleBOOLLITER:
+				out <- node.up
+			case ruleEXPR:
+				for inode := range exprStream(node.up) {
+					out <- inode
+				}
+			default:
+				out <- node
+			}
+		}
+		close(out)
+	}()
+	return out
+}
+
 func parseExpr(node *node32) (Expression, error) {
-	// TODO implement
-	return nil, fmt.Errorf("Not implemented")
+	var stack []Expression
+	var opstack []Expression
+
+	push := func(e Expression) {
+		stack = append(stack, e)
+	}
+
+	pop := func() (ret Expression) {
+		ret, stack = stack[len(stack)-1], stack[:len(stack)-1]
+		return
+	}
+
+	pushop := func(e Expression) {
+		opstack = append(opstack, e)
+	}
+
+	peekop := func() Expression {
+		if len(opstack) == 0 {
+			return nil
+		}
+		return opstack[len(opstack)-1]
+	}
+
+	popop := func() {
+		var exp Expression
+
+		exp, opstack = opstack[len(opstack)-1], opstack[:len(opstack)-1]
+
+		switch t := exp.(type) {
+		case UnaryOperator:
+			t.SetExpression(pop())
+		case BinaryOperator:
+			t.SetRHS(pop())
+			t.SetLHS(pop())
+		case *ExprLPar, ExprRPar:
+			exp = nil
+		}
+
+		if exp != nil {
+			push(exp)
+		}
+	}
+
+	prio := func(exp Expression) int {
+		switch exp.(type) {
+		case *UnaryOperatorNot:
+			return 2
+		case *UnaryOperatorNegate:
+			return 2
+		case *UnaryOperatorLen:
+			return 2
+		case *UnaryOperatorOrd:
+			return 2
+		case *UnaryOperatorChr:
+			return 2
+		case *BinaryOperatorMult:
+			return 3
+		case *BinaryOperatorDiv:
+			return 3
+		case *BinaryOperatorMod:
+			return 3
+		case *BinaryOperatorAdd:
+			return 4
+		case *BinaryOperatorSub:
+			return 4
+		case *BinaryOperatorGreaterThan:
+			return 6
+		case *BinaryOperatorGreaterEqual:
+			return 6
+		case *BinaryOperatorLessThan:
+			return 6
+		case *BinaryOperatorLessEqual:
+			return 6
+		case *BinaryOperatorEqual:
+			return 7
+		case *BinaryOperatorNotEqual:
+			return 7
+		case *BinaryOperatorAnd:
+			return 11
+		case *BinaryOperatorOr:
+			return 12
+		case *ExprLPar:
+			return 13
+		default:
+			return 42
+		}
+	}
+
+	rightAssoc := func(exp Expression) bool {
+		switch exp.(type) {
+		case *UnaryOperatorNot:
+			return true
+		case *UnaryOperatorNegate:
+			return true
+		case *UnaryOperatorLen:
+			return true
+		case *UnaryOperatorOrd:
+			return true
+		case *UnaryOperatorChr:
+			return true
+		default:
+			return false
+		}
+	}
+
+	ruleToOp := func(outer, inner pegRule) Expression {
+		switch outer {
+		case ruleUNARYOPER:
+			switch inner {
+			case ruleBANG:
+				return &UnaryOperatorNot{}
+			case ruleMINUS:
+				return &UnaryOperatorNegate{}
+			case ruleLEN:
+				return &UnaryOperatorLen{}
+			case ruleORD:
+				return &UnaryOperatorOrd{}
+			case ruleCHR:
+				return &UnaryOperatorChr{}
+			}
+		case ruleBINARYOPER:
+			switch inner {
+			case ruleSTAR:
+				return &BinaryOperatorMult{}
+			case ruleDIV:
+				return &BinaryOperatorDiv{}
+			case ruleMOD:
+				return &BinaryOperatorMod{}
+			case rulePLUS:
+				return &BinaryOperatorAdd{}
+			case ruleMINUS:
+				return &BinaryOperatorSub{}
+			case ruleGT:
+				return &BinaryOperatorGreaterThan{}
+			case ruleGE:
+				return &BinaryOperatorGreaterEqual{}
+			case ruleLT:
+				return &BinaryOperatorLessThan{}
+			case ruleLE:
+				return &BinaryOperatorLessEqual{}
+			case ruleEQUEQU:
+				return &BinaryOperatorEqual{}
+			case ruleBANGEQU:
+				return &BinaryOperatorNotEqual{}
+			case ruleANDAND:
+				return &BinaryOperatorAnd{}
+			case ruleOROR:
+				return &BinaryOperatorOr{}
+			}
+		}
+
+		return nil
+	}
+
+	for enode := range exprStream(node) {
+		switch enode.pegRule {
+		case ruleINTLITER:
+			num, err := strconv.ParseInt(enode.match, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			push(&IntLiteral{int(num)})
+		case ruleFALSE:
+			push(&BoolLiteralFalse{})
+		case ruleTRUE:
+			push(&BoolLiteralTrue{})
+		case ruleCHARLITER:
+			push(&CharLiteral{enode.up.next.match})
+		case ruleSTRLITER:
+			push(&StringLiteral{enode.up.next.match})
+		case rulePAIRLITER:
+			push(&NullPair{})
+		case ruleIDENT:
+			push(&Ident{enode.match})
+		case ruleARRAYELEM:
+			arrElem, err := parseArrayElem(enode.up)
+			if err != nil {
+				return nil, err
+			}
+			push(arrElem)
+		case ruleUNARYOPER, ruleBINARYOPER:
+			op1 := ruleToOp(enode.pegRule, enode.up.pegRule)
+		op2l:
+			for op2 := peekop(); op2 != nil; op2 = peekop() {
+				if op2 == nil {
+					break
+				}
+
+				switch {
+				case !rightAssoc(op1) && prio(op1) >= prio(op2),
+					rightAssoc(op1) && prio(op1) > prio(op2):
+					popop()
+				default:
+					break op2l
+				}
+			}
+			pushop(op1)
+		case ruleLPAR:
+			pushop(&ExprLPar{})
+		case ruleRPAR:
+		parloop:
+			for {
+				switch peekop().(type) {
+				case *ExprLPar:
+					popop()
+					break parloop
+				default:
+					popop()
+				}
+			}
+		}
+	}
+
+	for peekop() != nil {
+		popop()
+	}
+
+	return pop(), nil
 }
 
 func parseLHS(node *node32) (LHS, error) {
@@ -511,7 +918,6 @@ func parseWACC(node *node32) (*AST, error) {
 			if err != nil {
 				return nil, err
 			}
-			return ast, nil
 		default:
 			return nil, fmt.Errorf("Unexpected %s", node.match)
 		}
