@@ -151,10 +151,21 @@ type AST struct {
 	main Statement
 }
 
+func nodeRange(node *node32) <-chan *node32 {
+	out := make(chan *node32)
+	go func() {
+		for ; node != nil; node = node.next {
+			out <- node
+		}
+		close(out)
+	}()
+	return out
+}
+
 func nextNode(node *node32, rule pegRule) *node32 {
-	for ; node != nil; node = node.next {
-		if node.pegRule == rule {
-			return node
+	for cnode := range nodeRange(node) {
+		if cnode.pegRule == rule {
+			return cnode
 		}
 	}
 
@@ -911,7 +922,7 @@ func parseWACC(node *node32) (*AST, error) {
 	var err error
 	ast := &AST{}
 
-	for node != nil {
+	for node := range nodeRange(node) {
 		switch node.pegRule {
 		case ruleBEGIN:
 			ast.main, err = parseStatement(node.next.up)
