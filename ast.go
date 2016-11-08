@@ -147,8 +147,21 @@ type WhileStatement struct {
 	body Statement
 }
 
+type FunctionParam struct {
+	name     string
+	waccType Type
+}
+
+type FunctionDef struct {
+	ident      string
+	returnType Type
+	params     []*FunctionParam
+	body       Statement
+}
+
 type AST struct {
-	main Statement
+	main      Statement
+	functions []*FunctionDef
 }
 
 func nodeRange(node *node32) <-chan *node32 {
@@ -679,7 +692,7 @@ func parseRHS(node *node32) (RHS, error) {
 			return call, nil
 		}
 
-		for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode, ruleEXPR) {
+		for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
 			var err error
 			var expr Expression
 
@@ -918,6 +931,54 @@ func parseStatement(node *node32) (Statement, error) {
 	return stm, nil
 }
 
+func parseParam(node *node32) (*FunctionParam, error) {
+	var err error
+
+	param := &FunctionParam{}
+
+	param.waccType, err = parseType(nextNode(node, ruleTYPE).up)
+	if err != nil {
+		return nil, err
+	}
+
+	param.name = nextNode(node, ruleIDENT).match
+
+	return param, nil
+}
+
+func parseFunction(node *node32) (*FunctionDef, error) {
+	var err error
+	function := &FunctionDef{}
+
+	function.returnType, err = parseType(nextNode(node, ruleTYPE).up)
+	if err != nil {
+		return nil, err
+	}
+
+	function.ident = nextNode(node, ruleIDENT).match
+
+	paramListNode := nextNode(node, rulePARAMLIST)
+	if paramListNode != nil {
+		for pnode := range nodeRange(paramListNode.up) {
+			if pnode.pegRule == rulePARAM {
+				var param *FunctionParam
+				param, err = parseParam(pnode.up)
+				if err != nil {
+					return nil, err
+				}
+				function.params = append(function.params, param)
+			}
+		}
+	}
+
+	function.body, err = parseStatement(nextNode(node, ruleSTAT).up)
+	if err != nil {
+		return nil, err
+	}
+
+	return function, nil
+}
+
 func parseWACC(node *node32) (*AST, error) {
 	var err error
 	ast := &AST{}
@@ -925,7 +986,16 @@ func parseWACC(node *node32) (*AST, error) {
 	for node := range nodeRange(node) {
 		switch node.pegRule {
 		case ruleBEGIN:
-			ast.main, err = parseStatement(node.next.up)
+		case ruleEND:
+		case ruleSPACE:
+		case ruleFUNC:
+			f, err := parseFunction(node.up)
+			ast.functions = append(ast.functions, f)
+			if err != nil {
+				return nil, err
+			}
+		case ruleSTAT:
+			ast.main, err = parseStatement(node.up)
 			if err != nil {
 				return nil, err
 			}
@@ -934,7 +1004,7 @@ func parseWACC(node *node32) (*AST, error) {
 		}
 	}
 
-	return nil, errors.New("expected ruleBEGIN")
+	return ast, nil
 }
 
 func ParseAST(wacc *WACC) (*AST, error) {
