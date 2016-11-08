@@ -536,6 +536,17 @@ func parseExpr(node *node32) (Expression, error) {
 		case ruleINTLITER:
 			num, err := strconv.ParseInt(enode.match, 10, 32)
 			if err != nil {
+				numerr := err.(*strconv.NumError)
+				switch numerr.Err {
+				case strconv.ErrRange:
+					return nil, &SyntaxError{
+						file:   "",
+						line:   0,
+						column: 0,
+						msg:    fmt.Sprintf("Number '%s' cannot be represented on 32 bits", enode.match),
+					}
+
+				}
 				return nil, err
 			}
 			push(&IntLiteral{int(num)})

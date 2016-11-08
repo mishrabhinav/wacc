@@ -37,6 +37,12 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err.Error())
+		switch err.(type) {
+		case *SyntaxError:
+			os.Exit(100)
+		default:
+			os.Exit(1)
+		}
 	} else {
 		fmt.Println(ast.main)
 	}
