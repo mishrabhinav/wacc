@@ -174,6 +174,24 @@ func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
+
+	m.expr.TypeCheck(ts, errch)
+	freeT := m.expr.GetType(ts)
+
+	if !(PairType{}.Match(freeT)) {
+		errch <- &TypeMismatch{
+			expected: PairType{},
+			got:      freeT,
+		}
+	}
+
+	if !(ArrayType{}.Match(freeT)) {
+		errch <- &TypeMismatch{
+			expected: ArrayType{},
+			got:      freeT,
+		}
+	}
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
@@ -182,22 +200,59 @@ func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *ExitStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+	exitT := m.expr.GetType(ts)
+
+	if !(IntType{}.Match(exitT)) {
+		errch <- &TypeMismatch{
+			expected: IntType{},
+			got:      exitT,
+		}
+	}
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *PrintLnStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *PrintStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.cond.TypeCheck(ts, errch)
+	boolT := m.cond.GetType(ts)
+
+	if !(BoolType{}.Match(boolT)) {
+		errch <- &TypeMismatch{
+			expected: BoolType{},
+			got:      boolT,
+		}
+	}
+
+	m.trueStat.TypeCheck(ts, errch)
+	m.falseStat.TypeCheck(ts, errch)
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.cond.TypeCheck(ts, errch)
+	boolT := m.cond.GetType(ts)
+
+	if !(BoolType{}.Match(boolT)) {
+		errch <- &TypeMismatch{
+			expected: BoolType{},
+			got:      boolT,
+		}
+	}
+
+	m.body.TypeCheck(ts, errch)
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
