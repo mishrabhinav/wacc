@@ -146,7 +146,7 @@ func (stmt ExitStatement) ASTString(indent string) string {
 }
 
 func (stmt PrintLnStatement) ASTString(indent string) string {
-	return fmt.Sprintf("%vprintln %v", addMinToIndent(indent), stmt.expr.ASTString(indent))
+	return addIndentForFirst(indent, "PRINTLN", stmt.expr.ASTString(getGreaterIndent(indent)))
 }
 
 func (stmt PrintStatement) ASTString(indent string) string {
@@ -320,27 +320,27 @@ func (op BinaryOperatorSub) ASTString(indent string) string {
 }
 
 func (op BinaryOperatorGreaterThan) ASTString(indent string) string {
-	return fmt.Sprintf("%v > %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, ">", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorGreaterEqual) ASTString(indent string) string {
-	return fmt.Sprintf("%v >= %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, ">=", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorLessThan) ASTString(indent string) string {
-	return fmt.Sprintf("%v < %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, "<", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorLessEqual) ASTString(indent string) string {
-	return fmt.Sprintf("%v <= %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, "<=", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorEqual) ASTString(indent string) string {
-	return fmt.Sprintf("%v == %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, "==", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorNotEqual) ASTString(indent string) string {
-	return fmt.Sprintf("%v != %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndent(indent, "!=", op.GetLHS().ASTString(indent), op.GetRHS().ASTString(indent))
 }
 
 func (op BinaryOperatorAnd) ASTString(indent string) string {
@@ -355,25 +355,43 @@ func addMinToIndent(indent string) string {
 	return (indent + "- ")
 }
 
+func addAtGreaterIndent(indent string, value string) string {
+	return fmt.Sprintf("%v%v\n", addMinToIndent(indent+basicIndent), value)
+}
+
 func addIndAndNewLine(indent string, value string) string {
 	return fmt.Sprintf("%v%v\n", addMinToIndent(indent), value)
 }
 
+func addIndentForFirst(indent string, a1 string, a2 string) string {
+	return fmt.Sprintf("%v%v", addIndAndNewLine(indent, a1), a2)
+}
+
 func addDoubleIndent(indent string, a1 string, a2 string) string {
-	var typeStats string
-	var innerStats string
+	return addTripleIndent(indent, a1, a2, "")
+}
 
-	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
-
-	typeStats = addIndAndNewLine(indent, a1)
-	innerStats = addIndAndNewLine(innerIndent, a2)
-
-	return fmt.Sprintf("%v%v", typeStats, innerStats)
+func getGreaterIndent(indent string) string {
+	return fmt.Sprintf("%v%v", indent, basicIndent)
 }
 
 func addType(indent string, argument string) string {
 
 	return addDoubleIndent(indent, "TYPE", argument)
+}
+
+func addTripleIndent(indent string, a1 string, a2 string, a3 string) string {
+	var innerStats2 string = a3
+
+	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
+
+	var typeStats string = addIndAndNewLine(indent, a1)
+	var innerStats string = addIndAndNewLine(innerIndent, a2)
+	if a3 != "" {
+		innerStats2 = addIndAndNewLine(innerIndent, a3)
+	}
+
+	return fmt.Sprintf("%v%v%v", typeStats, innerStats, innerStats2)
 }
 
 func (ast AST) ASTString() string {
