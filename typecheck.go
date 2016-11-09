@@ -345,98 +345,137 @@ func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *ExpressionRHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return m.expr.GetType(ts)
 }
 
 func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *Ident) GetType(ts *Scope) Type {
-	return InvalidType{}
+	t := ts.Lookup(m.ident)
+	if t == nil {
+		return InvalidType{}
+	} else {
+		return t
+	}
 }
 
 func (m *IntLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *IntLiteral) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return IntType{}
 }
 
 func (m *BoolLiteralFalse) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BoolLiteralFalse) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return BoolType{}
 }
 
 func (m *BoolLiteralTrue) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BoolLiteralTrue) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return BoolType{}
 }
 
 func (m *CharLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *CharLiteral) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return CharType{}
 }
 
 func (m *StringLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *StringLiteral) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return ArrayType{CharType{}}
 }
 
 func (m *NullPair) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *NullPair) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return PairType{}
 }
 
 func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *ArrayElem) GetType(ts *Scope) Type {
-	return InvalidType{}
+	array := ts.Lookup(m.ident)
+	for i := 0; i < len(m.indexes); i++ {
+		switch arrayT := array.(type) {
+		case ArrayType:
+			array = arrayT.base
+		default:
+			return InvalidType{}
+		}
+	}
+	return array
 }
 
 func (m *UnaryOperatorNot) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *UnaryOperatorNot) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch m.GetExpression().GetType(ts).(type) {
+	case BoolType:
+		return BoolType{}
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *UnaryOperatorNegate) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *UnaryOperatorNegate) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch m.GetExpression().GetType(ts).(type) {
+	case IntType:
+		return IntType{}
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *UnaryOperatorLen) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *UnaryOperatorLen) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch m.GetExpression().GetType(ts).(type) {
+	case IntType:
+		return IntType{}
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *UnaryOperatorOrd) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *UnaryOperatorOrd) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch m.GetExpression().GetType(ts).(type) {
+	case CharType:
+		return IntType{}
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *UnaryOperatorChr) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *UnaryOperatorChr) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch m.GetExpression().GetType(ts).(type) {
+	case IntType:
+		return CharType{}
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
