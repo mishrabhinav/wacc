@@ -735,13 +735,13 @@ func parseRHS(node *node32) (RHS, error) {
 func parseBaseType(node *node32) (Type, error) {
 	switch node.pegRule {
 	case ruleINT:
-		return &IntType{}, nil
+		return IntType{}, nil
 	case ruleBOOL:
-		return &BoolType{}, nil
+		return BoolType{}, nil
 	case ruleCHAR:
-		return &CharType{}, nil
+		return CharType{}, nil
 	case ruleSTRING:
-		return &ArrayType{base: &CharType{}}, nil
+		return ArrayType{base: CharType{}}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
@@ -750,7 +750,7 @@ func parseBaseType(node *node32) (Type, error) {
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
-	pairType := &PairType{}
+	pairType := PairType{}
 
 	first := nextNode(node, rulePAIRELEMTYPE)
 
@@ -787,7 +787,7 @@ func parseType(node *node32) (Type, error) {
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {
-		waccType = &ArrayType{base: waccType}
+		waccType = ArrayType{base: waccType}
 	}
 
 	return waccType, nil
