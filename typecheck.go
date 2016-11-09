@@ -282,10 +282,49 @@ func (m *PairElemLHS) GetType(ts *Scope) Type {
 }
 
 func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
+	t := ts.Lookup(m.ident)
+
+	for _, i := range m.index {
+		i.TypeCheck(ts, errch)
+
+		if !(IntType{}).Match(i.GetType(ts)) {
+			errch <- &TypeMismatch{
+				expected: IntType{},
+				got:      t,
+			}
+		}
+
+		switch arr := t.(type) {
+		case ArrayType:
+			t = arr.base
+		default:
+			errch <- &TypeMismatch{
+				expected: ArrayType{},
+				got:      t,
+			}
+		}
+	}
 }
 
 func (m *ArrayLHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	t := ts.Lookup(m.ident)
+
+	for _, i := range m.index {
+		switch i.GetType(ts).(type) {
+		case IntType:
+		default:
+			return InvalidType{}
+		}
+
+		switch arr := t.(type) {
+		case ArrayType:
+			t = arr.base
+		default:
+			return InvalidType{}
+		}
+	}
+
+	return t
 }
 
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
