@@ -68,27 +68,56 @@ func (m InvalidType) Match(t Type) bool {
 }
 
 func (m IntType) Match(t Type) bool {
-	return false
+	switch t.(type) {
+	case IntType:
+		return true
+	default:
+		return false
+	}
 }
 
 func (m BoolType) Match(t Type) bool {
-	return false
+	switch t.(type) {
+	case BoolType:
+		return true
+	default:
+		return false
+	}
 }
 
 func (m CharType) Match(t Type) bool {
-	return false
+	switch t.(type) {
+	case CharType:
+		return true
+	default:
+		return false
+	}
 }
 
 func (m PairType) Match(t Type) bool {
-	return false
+	switch o := t.(type) {
+	case PairType:
+		fst := m.first == nil ||
+			o.first == nil ||
+			m.first.Match(o.first)
+		snd := m.second == nil ||
+			o.second == nil ||
+			m.second.Match(o.second)
+		return fst && snd
+	default:
+		return false
+	}
 }
 
 func (m ArrayType) Match(t Type) bool {
-	return false
-}
-
-func (m InvalidType) String() string {
-	return ""
+	switch o := t.(type) {
+	case ArrayType:
+		return m.base == nil ||
+			o.base == nil ||
+			m.base.Match(o.base)
+	default:
+		return false
+	}
 }
 
 func (m *AST) TypeCheck() []error {
