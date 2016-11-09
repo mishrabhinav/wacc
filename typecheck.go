@@ -296,13 +296,31 @@ func (m *VarLHS) GetType(ts *Scope) Type {
 }
 
 func (m *PairLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	m.fst.TypeCheck(ts, errch)
+	m.snd.TypeCheck(ts, errch)
 }
 
 func (m *PairLiterRHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	fstT := m.fst.GetType(ts)
+	sndT := m.snd.GetType(ts)
+
+	if (InvalidType{}.Match(fstT) || InvalidType{}.Match(sndT)) {
+		return InvalidType{}
+	}
+
+	return PairType{}
 }
 
 func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+	pairT := m.expr.GetType(ts)
+
+	if !(PairType{}.Match(pairT)) {
+		errch <- &TypeMismatch{
+			expected: PairType{},
+			got:      pairT,
+		}
+	}
 }
 
 func (m *PairElemRHS) GetType(ts *Scope) Type {
