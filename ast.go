@@ -423,7 +423,7 @@ func parseExpr(node *node32) (Expression, error) {
 		case BinaryOperator:
 			t.SetRHS(pop())
 			t.SetLHS(pop())
-		case *ExprLPar, ExprRPar:
+		case *ExprLPar:
 			exp = nil
 		}
 
