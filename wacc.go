@@ -44,6 +44,6 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Println(ast.main)
+		fmt.Println(ast)
 	}
 }
