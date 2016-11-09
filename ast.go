@@ -28,6 +28,7 @@ type Expression interface{}
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
+	IString(indent string) string
 }
 
 type BaseStatement struct {
