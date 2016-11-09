@@ -555,91 +555,137 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorMult) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorDiv) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorMod) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorAdd) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorSub) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorGreaterThan) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorGreaterEqual) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorLessThan) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorLessEqual) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorEqual) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorNotEqual) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorAnd) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
 }
 
 func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *BinaryOperatorOr) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return GetTypeBinary(m, ts)
+}
+
+func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	if lhs != rhs {
+		return InvalidType{}
+	} else {
+		switch m.(type) {
+		case *BinaryOperatorMult,
+			   *BinaryOperatorDiv,
+			   *BinaryOperatorMod,
+			   *BinaryOperatorAdd,
+			   *BinaryOperatorSub:
+			switch lhs.GetType(ts).(type) {
+			case IntType:
+				return IntType{}
+			default:
+				return InvalidType{}
+			}
+		case *BinaryOperatorGreaterThan,
+			   *BinaryOperatorGreaterEqual,
+			   *BinaryOperatorLessThan,
+			   *BinaryOperatorLessEqual:
+			switch lhs.GetType(ts).(type) {
+			case IntType,
+		       CharType:
+				return BoolType{}
+			default:
+				return InvalidType{}
+			}
+		case *BinaryOperatorEqual,
+			   *BinaryOperatorNotEqual:
+			return BoolType{}
+		case *BinaryOperatorAnd,
+			   *BinaryOperatorOr:
+			switch lhs.GetType(ts).(type) {
+			case BoolType:
+				return BoolType{}
+			default:
+				return InvalidType{}
+			}
+		default:
+			return InvalidType{}
+		}
+	}
 }
 
 func (m *ExprLPar) TypeCheck(ts *Scope, errch chan<- error) {
