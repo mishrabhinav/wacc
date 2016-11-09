@@ -373,10 +373,38 @@ func (m *PairElemRHS) GetType(ts *Scope) Type {
 }
 
 func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	if len(m.elements) == 0 {
+		return
+	}
+
+	t := m.elements[0].GetType(ts)
+
+	for _, elem := range m.elements {
+		elem.TypeCheck(ts, errch)
+
+		if !t.Match(elem.GetType(ts)) {
+			errch <- &TypeMismatch{
+				expected: t,
+				got:      elem.GetType(ts),
+			}
+		}
+	}
 }
 
 func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	if len(m.elements) == 0 {
+		return ArrayType{}
+	}
+
+	t := m.elements[0].GetType(ts)
+
+	for _, elem := range m.elements {
+		if !t.Match(elem.GetType(ts)) {
+			return InvalidType{}
+		}
+	}
+
+	return t
 }
 
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
