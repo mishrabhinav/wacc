@@ -422,6 +422,13 @@ func (m *ExpressionRHS) GetType(ts *Scope) Type {
 }
 
 func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
+	identT := m.GetType(ts)
+
+	if (InvalidType{}.Match(identT)) {
+		errch <- &UndeclaredVariable{
+			ident: m.ident,
+		}
+	}
 }
 
 func (m *Ident) GetType(ts *Scope) Type {
@@ -650,10 +657,10 @@ func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
 	} else {
 		switch m.(type) {
 		case *BinaryOperatorMult,
-			   *BinaryOperatorDiv,
-			   *BinaryOperatorMod,
-			   *BinaryOperatorAdd,
-			   *BinaryOperatorSub:
+			*BinaryOperatorDiv,
+			*BinaryOperatorMod,
+			*BinaryOperatorAdd,
+			*BinaryOperatorSub:
 			switch lhs.GetType(ts).(type) {
 			case IntType:
 				return IntType{}
@@ -661,21 +668,21 @@ func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
 				return InvalidType{}
 			}
 		case *BinaryOperatorGreaterThan,
-			   *BinaryOperatorGreaterEqual,
-			   *BinaryOperatorLessThan,
-			   *BinaryOperatorLessEqual:
+			*BinaryOperatorGreaterEqual,
+			*BinaryOperatorLessThan,
+			*BinaryOperatorLessEqual:
 			switch lhs.GetType(ts).(type) {
 			case IntType,
-		       CharType:
+				CharType:
 				return BoolType{}
 			default:
 				return InvalidType{}
 			}
 		case *BinaryOperatorEqual,
-			   *BinaryOperatorNotEqual:
+			*BinaryOperatorNotEqual:
 			return BoolType{}
 		case *BinaryOperatorAnd,
-			   *BinaryOperatorOr:
+			*BinaryOperatorOr:
 			switch lhs.GetType(ts).(type) {
 			case BoolType:
 				return BoolType{}
