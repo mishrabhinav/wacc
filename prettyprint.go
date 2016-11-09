@@ -89,9 +89,9 @@ func (rhs ArrayLiterRHS) String() string {
 
 func (rhs PairElemRHS) String() string {
 	if rhs.snd {
-		return fmt.Sprintf("snd %v", rhs.epxr)
+		return fmt.Sprintf("snd %v", rhs.expr)
 	} else {
-		return fmt.Sprintf("fst %v", rhs.epxr)
+		return fmt.Sprintf("fst %v", rhs.expr)
 	}
 }
 
@@ -224,7 +224,7 @@ func (liter BoolLiteralTrue) String() string {
 	return fmt.Sprintf("true")
 }
 
-func (liter BoolLitaralFalse) String() string {
+func (liter BoolLiteralFalse) String() string {
 	return fmt.Sprintf("false")
 }
 
