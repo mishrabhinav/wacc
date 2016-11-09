@@ -257,10 +257,28 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch t := m.expr.GetType(ts).(type) {
+	case PairType:
+	default:
+		errch <- &TypeMismatch{
+			expected: PairType{},
+			got:      t,
+		}
+	}
 }
 
 func (m *PairElemLHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch t := m.expr.GetType(ts).(type) {
+	case PairType:
+		if !m.snd {
+			return t.first
+		}
+		return t.second
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
