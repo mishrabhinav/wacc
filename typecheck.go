@@ -328,10 +328,16 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 }
 
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
+	switch ts.Lookup(m.ident).(type) {
+	case InvalidType:
+		errch <- &UndeclaredVariable{
+			ident: m.ident,
+		}
+	}
 }
 
 func (m *VarLHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	return ts.Lookup(m.ident)
 }
 
 func (m *PairLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
