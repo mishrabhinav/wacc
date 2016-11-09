@@ -8,7 +8,11 @@ import (
 
 type Type interface {
 	ASTString(indent string) string
+	Match(Type) bool
+	String() string
 }
+
+type InvalidType struct{}
 
 type IntType struct{}
 
@@ -27,6 +31,8 @@ type ArrayType struct {
 
 type Expression interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type Statement interface {
@@ -34,6 +40,7 @@ type Statement interface {
 	SetNext(Statement)
 	IString(level int) string
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
 }
 
 type BaseStatement struct {
@@ -66,6 +73,8 @@ type DeclareAssignStatement struct {
 
 type LHS interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type PairElemLHS struct {
@@ -84,6 +93,8 @@ type VarLHS struct {
 
 type RHS interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type PairLiterRHS struct {

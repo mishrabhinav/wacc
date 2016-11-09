@@ -6,6 +6,11 @@ import (
 )
 
 //
+func (i InvalidType) ASTString(indent string) string {
+	return addType(indent, "<invalid>")
+}
+
+//
 func (i IntType) ASTString(indent string) string {
 	return addType(indent, "int")
 }
