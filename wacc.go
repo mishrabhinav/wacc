@@ -26,9 +26,24 @@ func main() {
 	if err := wacc.Parse(); err != nil {
 		log.Print(err)
 		os.Exit(100)
+		os.Exit(100)
 	}
 
 	if len(os.Args) == 3 && os.Args[2] == "-t" {
 		wacc.PrintSyntaxTree()
+	}
+
+	ast, err := ParseAST(wacc)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		switch err.(type) {
+		case *SyntaxError:
+			os.Exit(100)
+		default:
+			os.Exit(1)
+		}
+	} else {
+		fmt.Println(ast.main)
 	}
 }
