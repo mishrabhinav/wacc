@@ -19,9 +19,10 @@ func CreateRootScope(ast *AST) *Scope {
 
 func (m *Scope) Child() *Scope {
 	return &Scope{
-		parent: m,
-		vars:   make(map[string]Type),
-		funcs:  m.funcs,
+		parent:     m,
+		vars:       make(map[string]Type),
+		funcs:      m.funcs,
+		returnType: m.returnType,
 	}
 }
 
@@ -319,8 +320,8 @@ func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		}
 	}
 
-	m.trueStat.TypeCheck(ts, errch)
-	m.falseStat.TypeCheck(ts, errch)
+	m.trueStat.TypeCheck(ts.Child(), errch)
+	m.falseStat.TypeCheck(ts.Child(), errch)
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
@@ -336,7 +337,7 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		}
 	}
 
-	m.body.TypeCheck(ts, errch)
+	m.body.TypeCheck(ts.Child(), errch)
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
