@@ -70,11 +70,56 @@ func checkFunctionReturns(f *FunctionDef) <-chan error {
 	return out
 }
 
+func checkJunkStatement(stm Statement) <-chan error {
+	out := make(chan error)
+
+	go func() {
+		switch t := stm.(type) {
+		case *BlockStatement:
+			for err := range checkJunkStatement(t.body) {
+				out <- err
+			}
+		case *IfStatement:
+			for err := range checkJunkStatement(t.trueStat) {
+				out <- err
+			}
+			for err := range checkJunkStatement(t.falseStat) {
+				out <- err
+			}
+		case *WhileStatement:
+			for err := range checkJunkStatement(t.body) {
+				out <- err
+			}
+		case *ReturnStatement:
+			if n := t.next; n != nil {
+				out <- &UnreachableStatement{}
+			}
+		}
+
+		if n := stm.GetNext(); n != nil {
+			for err := range checkJunkStatement(n) {
+				out <- err
+			}
+		}
+
+		close(out)
+	}()
+
+	return out
+}
+
 func (m *AST) CheckFunctionCodePaths() (errs []error) {
 	var errorChannels []<-chan error
 
 	for _, f := range m.functions {
-		errorChannels = append(errorChannels, checkFunctionReturns(f))
+		errorChannels = append(
+			errorChannels,
+			checkFunctionReturns(f),
+		)
+		errorChannels = append(
+			errorChannels,
+			checkJunkStatement(f.body),
+		)
 	}
 
 	for err := range mergeErrors(errorChannels) {

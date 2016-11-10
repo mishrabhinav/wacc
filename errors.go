@@ -126,3 +126,14 @@ func (e *FunctionRedecleration) Error() string {
 		e.ident,
 	)
 }
+
+type UnreachableStatement struct {
+	SyntaxError
+}
+
+func (e *UnreachableStatement) Error() string {
+	return fmt.Sprintf(
+		"%s: unreachable statement",
+		e.SyntaxError.Error(),
+	)
+}
