@@ -8,7 +8,13 @@ import (
 
 type Type interface {
 	ASTString(indent string) string
+	Match(Type) bool
+	String() string
 }
+
+type InvalidType struct{}
+
+type UnknownType struct{}
 
 type IntType struct{}
 
@@ -27,6 +33,8 @@ type ArrayType struct {
 
 type Expression interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type Statement interface {
@@ -34,6 +42,7 @@ type Statement interface {
 	SetNext(Statement)
 	IString(level int) string
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
 }
 
 type BaseStatement struct {
@@ -66,6 +75,8 @@ type DeclareAssignStatement struct {
 
 type LHS interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type PairElemLHS struct {
@@ -84,6 +95,8 @@ type VarLHS struct {
 
 type RHS interface {
 	ASTString(indent string) string
+	TypeCheck(*Scope, chan<- error)
+	GetType(*Scope) Type
 }
 
 type PairLiterRHS struct {
@@ -762,13 +775,9 @@ func parseBaseType(node *node32) (Type, error) {
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
-	pairType := PairType{}
+	pairType := PairType{first: UnknownType{}, second: UnknownType{}}
 
 	first := nextNode(node, rulePAIRELEMTYPE)
-
-	if first == nil {
-		return pairType, nil
-	}
 
 	second := nextNode(first.next, rulePAIRELEMTYPE)
 
@@ -796,6 +805,8 @@ func parseType(node *node32) (Type, error) {
 		if waccType, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
+	case rulePAIR:
+		return PairType{UnknownType{}, UnknownType{}}, nil
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {

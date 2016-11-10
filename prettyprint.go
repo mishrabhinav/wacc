@@ -12,6 +12,14 @@ func getIndentation(level int) string {
 	return fmt.Sprintf(strings.Repeat(basicIndent, level))
 }
 
+func (m InvalidType) String() string {
+	return "<invalid>"
+}
+
+func (m UnknownType) String() string {
+	return "<unkown>"
+}
+
 func (i IntType) String() string {
 	return fmt.Sprintf("int")
 }
@@ -25,20 +33,17 @@ func (c CharType) String() string {
 }
 
 func (p PairType) String() string {
-	var first string = fmt.Sprintf("%v", p.first)
-	var second string = fmt.Sprintf("%v", p.second)
-
-	if p.first == nil {
-		first = "pair"
+	if p.first == nil || p.second == nil {
+		return "pair"
 	}
-	if p.second == nil {
-		second = "pair"
-	}
-	return fmt.Sprintf("pair(%v, %v)", first, second)
+	return fmt.Sprintf("pair(%s, %s)", p.first.String(), p.second.String())
 }
 
 func (a ArrayType) String() string {
-	return fmt.Sprintf("%v[]", a.base)
+	if a.base == nil {
+		return "[]"
+	}
+	return fmt.Sprintf("%s[]", a.base.String())
 }
 
 func (stmt SkipStatement) IString(level int) string {

@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	if len(os.Args) < 2 {
 		fmt.Printf("%v FILE\n", os.Args[0])
 		os.Exit(1)
@@ -49,5 +50,19 @@ func main() {
 		}
 	} else if len(os.Args) == 3 && os.Args[2] == "-s" {
 		fmt.Println(ast)
+	}
+
+	if retErrs := ast.CheckFunctionCodePaths(); len(retErrs) > 0 {
+		for _, err := range retErrs {
+			fmt.Println(err.Error())
+		}
+		os.Exit(100)
+	}
+
+	if typeErrs := ast.TypeCheck(); len(typeErrs) > 0 {
+		for _, err := range typeErrs {
+			fmt.Println(err.Error())
+		}
+		os.Exit(200)
 	}
 }
