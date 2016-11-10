@@ -369,7 +369,15 @@ func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *PairElemRHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	switch t := m.expr.GetType(ts).(type) {
+	case PairType:
+		if !m.snd {
+			return t.first
+		}
+		return t.second
+	default:
+		return InvalidType{}
+	}
 }
 
 func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
