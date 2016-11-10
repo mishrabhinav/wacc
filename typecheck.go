@@ -1138,7 +1138,8 @@ func (m *BinaryOperatorOr) GetType(ts *Scope) Type {
 func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
-	if lhs != rhs {
+
+	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
 		return InvalidType{}
 	} else {
 		switch m.(type) {
