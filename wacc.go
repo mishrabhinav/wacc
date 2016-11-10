@@ -18,7 +18,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("-- Compiling...")
+	if flags.verbose {
+		fmt.Println("-- Compiling...")
+	}
+
 	wacc := &WACC{Buffer: string(buffer)}
 	wacc.Init()
 
@@ -69,5 +72,7 @@ func main() {
 		os.Exit(200)
 	}
 
-	fmt.Println("-- Finished")
+	if flags.verbose {
+		fmt.Println("-- Finished")
+	}
 }
