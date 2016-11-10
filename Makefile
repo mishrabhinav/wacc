@@ -25,6 +25,9 @@ lint: $(GOLINTER)
 install: $(BINARY)
 	go install
 
+test: $(BINARY)
+	tests/frontend
+
 clean:
 	go clean
 
@@ -41,4 +44,4 @@ $(GOLINTER):
 $(GOPEG):
 	go get -u gitlab.doc.ic.ac.uk/ss14615/peg
 
-.PHONY: all clean lint format
+.PHONY: all clean lint format test
