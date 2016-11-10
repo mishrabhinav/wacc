@@ -20,6 +20,7 @@ func (c CharType) ASTString(indent string) string {
 	return addType(indent, "char")
 }
 
+//
 func (p PairType) ASTString(indent string) string {
 	var first string = ""
 	var second string = ""
@@ -107,6 +108,7 @@ func (rhs ArrayLiterRHS) ASTString(indent string) string {
 	return addArrayIndent(indent, "ARRAY LITERAL", elemArr)
 }
 
+//
 func (rhs PairElemRHS) ASTString(indent string) string {
 	if rhs.snd {
 		return addIndentForFirst(indent, "SND", rhs.expr.ASTString(getGreaterIndent(indent)))
@@ -324,6 +326,7 @@ func (liter NullPair) ASTString(indent string) string {
 	return addIndAndNewLine(indent, "null")
 }
 
+//
 func (elem ArrayElem) ASTString(indent string) string {
 	var indexes string
 	var tmpIndex string
