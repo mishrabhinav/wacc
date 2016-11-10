@@ -6,7 +6,9 @@ import (
 	"strconv"
 )
 
-type Type interface{}
+type Type interface {
+	ASTString(indent string) string
+}
 
 type IntType struct{}
 
@@ -23,11 +25,15 @@ type ArrayType struct {
 	base Type
 }
 
-type Expression interface{}
+type Expression interface {
+	ASTString(indent string) string
+}
 
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
+	IString(indent string) string
+	ASTString(indent string) string
 }
 
 type BaseStatement struct {
@@ -58,7 +64,9 @@ type DeclareAssignStatement struct {
 	rhs      RHS
 }
 
-type LHS interface{}
+type LHS interface {
+	ASTString(indent string) string
+}
 
 type PairElemLHS struct {
 	snd  bool
@@ -74,7 +82,9 @@ type VarLHS struct {
 	ident string
 }
 
-type RHS interface{}
+type RHS interface {
+	ASTString(indent string) string
+}
 
 type PairLiterRHS struct {
 	PairLiteral
@@ -237,6 +247,7 @@ type ArrayElem struct {
 type UnaryOperator interface {
 	GetExpression() Expression
 	SetExpression(Expression)
+	ASTString(indent string) string
 }
 
 type UnaryOperatorBase struct {
@@ -276,6 +287,7 @@ type BinaryOperator interface {
 	SetRHS(Expression)
 	GetLHS() Expression
 	SetLHS(Expression)
+	ASTString(indent string) string
 }
 
 type BinaryOperatorBase struct {
