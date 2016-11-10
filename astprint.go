@@ -338,16 +338,16 @@ func (ast AST) ASTString() string {
 	tree = fmt.Sprintf("begin")
 
 	for _, function := range ast.functions {
-		tree = fmt.Sprintf("%v\n%v", tree, function.ASTString(basicIdent))
+		tree = fmt.Sprintf("%v\n%v", tree, function.ASTString(basicIndent))
 	}
 
 	stmt := ast.main
 	for stmt.GetNext() != nil {
-		tree = fmt.Sprintf("%v\n%v ;", tree, stmt.ASTString(basicIdent))
+		tree = fmt.Sprintf("%v\n%v ;", tree, stmt.ASTString(basicIndent))
 		stmt = stmt.GetNext()
 	}
 
-	tree = fmt.Sprintf("%v\n%v", tree, stmt.ASTString(basicIdent))
+	tree = fmt.Sprintf("%v\n%v", tree, stmt.ASTString(basicIndent))
 
 	return fmt.Sprintf("%v\nend", tree)
 }
