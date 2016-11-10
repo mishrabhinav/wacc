@@ -1,9 +1,10 @@
 package main
 
 type Scope struct {
-	parent *Scope
-	vars   map[string]Type
-	funcs  map[string]*FunctionDef
+	parent     *Scope
+	vars       map[string]Type
+	funcs      map[string]*FunctionDef
+	returnType Type
 }
 
 func CreateRootScope(ast *AST) *Scope {
@@ -126,7 +127,15 @@ func (m *AST) TypeCheck() []error {
 	errch := make(chan error)
 
 	go func() {
-		m.main.TypeCheck(CreateRootScope(m), errch)
+		scope := CreateRootScope(m)
+		main := scope.Child()
+		main.returnType = InvalidType{}
+		m.main.TypeCheck(main, errch)
+		for _, f := range m.functions {
+			fscope := scope.Child()
+			fscope.returnType = f.returnType
+			f.body.TypeCheck(fscope, errch)
+		}
 		close(errch)
 	}()
 
@@ -227,6 +236,18 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	returnT := ts.returnType
+	exprT := m.expr.GetType(ts)
+
+	if !returnT.Match(exprT) {
+		errch <- &TypeMismatch{
+			expected: returnT,
+			got:      exprT,
+		}
+	}
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
