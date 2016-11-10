@@ -36,7 +36,7 @@ func (m *Scope) Lookup(ident string) Type {
 		if m.parent != nil {
 			t = m.parent.Lookup(ident)
 		} else {
-			t = nil
+			t = InvalidType{}
 		}
 	}
 
