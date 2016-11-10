@@ -408,10 +408,58 @@ func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
 }
 
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	fun := ts.LookupFunction(m.ident)
+
+	if fun == nil {
+		errch <- &CallingNonFunction{
+			ident: m.ident,
+		}
+	}
+
+	if len(fun.params) != len(m.args) {
+		errch <- &FunctionCallWrongArity{
+			ident:    fun.ident,
+			expected: len(fun.params),
+			got:      len(m.args),
+		}
+	}
+
+	for _, arg := range m.args {
+		arg.TypeCheck(ts, errch)
+	}
+
+	for i := 0; i < len(fun.params) && i < len(m.args); i++ {
+		paramT := fun.params[i].waccType
+		argT := m.args[i].GetType(ts)
+		if !paramT.Match(argT) {
+			errch <- &TypeMismatch{
+				expected: paramT,
+				got:      argT,
+			}
+		}
+	}
 }
 
 func (m *FunctionCallRHS) GetType(ts *Scope) Type {
-	return InvalidType{}
+	fun := ts.LookupFunction(m.ident)
+
+	if fun == nil {
+		return InvalidType{}
+	}
+
+	if len(fun.params) != len(m.args) {
+		return InvalidType{}
+	}
+
+	for i := 0; i < len(fun.params) && i < len(m.args); i++ {
+		paramT := fun.params[i].waccType
+		argT := m.args[i].GetType(ts)
+		if !paramT.Match(argT) {
+			return InvalidType{}
+		}
+	}
+
+	return fun.returnType
 }
 
 func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {

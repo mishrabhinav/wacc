@@ -84,6 +84,19 @@ func (e *TypeMismatch) Error() string {
 	)
 }
 
+type CallingNonFunction struct {
+	SemanticError
+	ident string
+}
+
+func (e *CallingNonFunction) Error() string {
+	return fmt.Sprintf(
+		"%s: calling non function '%s'",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
 type FunctionCallWrongArity struct {
 	SemanticError
 	ident    string
