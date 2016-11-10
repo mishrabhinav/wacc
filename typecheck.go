@@ -160,17 +160,48 @@ func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 
 	m.rhs.TypeCheck(ts, errch)
 	if rhsT := m.rhs.GetType(ts); !m.waccType.Match(rhsT) {
+		errch <- &TypeMismatch{
+			expected: m.waccType,
+			got:      rhsT,
+		}
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.target.TypeCheck(ts, errch)
+	m.rhs.TypeCheck(ts, errch)
+
+	lhsT := m.target.GetType(ts)
+	rhsT := m.rhs.GetType(ts)
+
+	if !lhsT.Match(rhsT) {
+		errch <- &TypeMismatch{
+			expected: lhsT,
+			got:      rhsT,
+		}
+	}
+
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
-	m.BaseStatement.TypeCheck(ts, errch)
+	m.target.TypeCheck(ts, errch)
+
+	switch t := m.target.GetType(ts).(type) {
+	case IntType:
+	case CharType:
+	default:
+		errch <- &TypeMismatch{
+			expected: IntType{},
+			got:      t,
+		}
+		errch <- &TypeMismatch{
+			expected: CharType{},
+			got:      t,
+		}
+	}
 }
 
 func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
@@ -178,17 +209,17 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	freeT := m.expr.GetType(ts)
 
-	if !(PairType{}.Match(freeT)) {
+	switch t := freeT.(type) {
+	case PairType:
+	case ArrayType:
+	default:
 		errch <- &TypeMismatch{
 			expected: PairType{},
-			got:      freeT,
+			got:      t,
 		}
-	}
-
-	if !(ArrayType{}.Match(freeT)) {
 		errch <- &TypeMismatch{
 			expected: ArrayType{},
-			got:      freeT,
+			got:      t,
 		}
 	}
 
