@@ -1,10 +1,8 @@
 #!/bin/bash
 
-echo -e "---------- WACC Compiler Testing ----------"
-
 RED='\033[0;31m'
 LRED='\033[1;31m'
-GREEN='\033[0;32m'
+GREEN='\033[1;32m'
 BROWN='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
@@ -31,18 +29,12 @@ testFiles() {
     echo -e "File: $f " >> log.txt 2>&1
     ./compile $f >> log.txt 2>&1
 
-    if [ $? == $2 ]; then
-      RESULT="${GREEN}Pass${NC}"
-      PASSED=1
-    else
+    if [ $? != $2 ]; then
       RESULT="${RED}Fail${NC}"
-    fi
+      PASSED=1
+      OUT=$OUT" $RESULT"
 
-    OUT=$OUT" $RESULT"
-
-    echo -e"Result: $RESULT " >> log.txt 2>&1
-
-    if [ $PASSED == 0 ]; then
+      echo -e"Result: $RESULT " >> log.txt 2>&1
       echo -e $OUT
     fi
 
@@ -52,13 +44,15 @@ testFiles() {
   rm log.txt
 }
 
-echo -e "\n${LRED}===== Valid Testcases =====${NC}"
+echo -e "${GREEN}===== WACC Compiler Testing${NC}"
+
+echo -e "${LRED}----- Valid Testcases${NC}"
 testFiles $VALID 0
 
-echo -e "\n${LRED}===== Invalid Tescases - Syntax Error =====${NC}"
+echo -e "${LRED}----- Invalid Tescases - Syntax Error${NC}"
 testFiles $INVALID_SYNTAX 100
 
-echo -e "\n${LRED}===== Invalid Tescases - Semantic Error =====${NC}"
+echo -e "${LRED}----- Invalid Tescases - Semantic Error${NC}"
 testFiles $INVALID_SEMANTIC 200
 
-echo -e "---------- Testing Complete ----------"
+echo -e "${GREEN}===== Testing Complete${NC}"
