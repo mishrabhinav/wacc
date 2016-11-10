@@ -8,19 +8,17 @@ import (
 )
 
 func main() {
+	var flags Flags
+	flags.Parse()
 
-	if len(os.Args) < 2 {
-		fmt.Printf("%v FILE\n", os.Args[0])
-		os.Exit(1)
-	}
-
-	file, err := os.Open(os.Args[1])
+	file, err := os.Open(flags.filename)
 
 	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	fmt.Println("-- Compiling...")
 	wacc := &WACC{Buffer: string(buffer)}
 	wacc.Init()
 
@@ -30,15 +28,12 @@ func main() {
 		os.Exit(100)
 	}
 
-	if len(os.Args) == 3 && os.Args[2] == "-t" {
+	if flags.printPEGTree {
+		fmt.Println("-- Printing PEG Tree")
 		wacc.PrintSyntaxTree()
 	}
 
 	ast, err := ParseAST(wacc)
-
-	if len(os.Args) == 3 && os.Args[2] == "-a" {
-		fmt.Println(ast.ASTString())
-	}
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -48,8 +43,16 @@ func main() {
 		default:
 			os.Exit(1)
 		}
-	} else if len(os.Args) == 3 && os.Args[2] == "-s" {
+	}
+
+	if flags.printPretty {
+		fmt.Println("-- Printing Pretty Code")
 		fmt.Println(ast)
+	}
+
+	if flags.printAST {
+		fmt.Println("-- Printing AST")
+		fmt.Println(ast.ASTString())
 	}
 
 	if retErrs := ast.CheckFunctionCodePaths(); len(retErrs) > 0 {
@@ -65,4 +68,6 @@ func main() {
 		}
 		os.Exit(200)
 	}
+
+	fmt.Println("-- Finished")
 }
