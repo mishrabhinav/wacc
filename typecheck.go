@@ -556,6 +556,16 @@ func (m *ArrayElem) GetType(ts *Scope) Type {
 }
 
 func (m *UnaryOperatorNot) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch unopT := m.expr.GetType(ts).(type) {
+	case BoolType:
+	default:
+		errch <- &TypeMismatch{
+			expected: BoolType{},
+			got:      unopT,
+		}
+	}
 }
 
 func (m *UnaryOperatorNot) GetType(ts *Scope) Type {
@@ -568,6 +578,16 @@ func (m *UnaryOperatorNot) GetType(ts *Scope) Type {
 }
 
 func (m *UnaryOperatorNegate) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch unopT := m.expr.GetType(ts).(type) {
+	case IntType:
+	default:
+		errch <- &TypeMismatch{
+			expected: IntType{},
+			got:      unopT,
+		}
+	}
 }
 
 func (m *UnaryOperatorNegate) GetType(ts *Scope) Type {
@@ -580,11 +600,21 @@ func (m *UnaryOperatorNegate) GetType(ts *Scope) Type {
 }
 
 func (m *UnaryOperatorLen) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch unopT := m.expr.GetType(ts).(type) {
+	case ArrayType:
+	default:
+		errch <- &TypeMismatch{
+			expected: ArrayType{},
+			got:      unopT,
+		}
+	}
 }
 
 func (m *UnaryOperatorLen) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
-	case IntType:
+	case ArrayType:
 		return IntType{}
 	default:
 		return InvalidType{}
@@ -592,6 +622,16 @@ func (m *UnaryOperatorLen) GetType(ts *Scope) Type {
 }
 
 func (m *UnaryOperatorOrd) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch unopT := m.expr.GetType(ts).(type) {
+	case CharType:
+	default:
+		errch <- &TypeMismatch{
+			expected: CharType{},
+			got:      unopT,
+		}
+	}
 }
 
 func (m *UnaryOperatorOrd) GetType(ts *Scope) Type {
@@ -604,6 +644,16 @@ func (m *UnaryOperatorOrd) GetType(ts *Scope) Type {
 }
 
 func (m *UnaryOperatorChr) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
+
+	switch unopT := m.expr.GetType(ts).(type) {
+	case IntType:
+	default:
+		errch <- &TypeMismatch{
+			expected: IntType{},
+			got:      unopT,
+		}
+	}
 }
 
 func (m *UnaryOperatorChr) GetType(ts *Scope) Type {
