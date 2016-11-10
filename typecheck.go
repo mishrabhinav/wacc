@@ -772,8 +772,8 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -800,8 +800,8 @@ func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -828,8 +828,8 @@ func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -856,8 +856,8 @@ func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -884,8 +884,8 @@ func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -912,8 +912,8 @@ func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -941,8 +941,8 @@ func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -970,8 +970,8 @@ func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -999,8 +999,8 @@ func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
@@ -1028,18 +1028,8 @@ func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
-		}
-	}
-
-	switch lhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 }
@@ -1057,18 +1047,8 @@ func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
-		}
-	}
-
-	switch lhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 }
@@ -1086,17 +1066,16 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
 	switch lhsT.(type) {
-	case IntType:
-	case CharType:
+	case BoolType:
 	default:
 		errch <- &TypeMismatch{
-			expected: IntType{},
+			expected: BoolType{},
 			got:      lhsT,
 		}
 	}
@@ -1115,17 +1094,16 @@ func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !(lhsT.Match(rhsT)) {
 		errch <- &TypeMismatch{
-			expected: rhsT,
-			got:      lhsT,
+			expected: lhsT,
+			got:      rhsT,
 		}
 	}
 
 	switch lhsT.(type) {
-	case IntType:
-	case CharType:
+	case BoolType:
 	default:
 		errch <- &TypeMismatch{
-			expected: IntType{},
+			expected: BoolType{},
 			got:      lhsT,
 		}
 	}
