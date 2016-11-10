@@ -22,7 +22,7 @@ func main() {
 		fmt.Println("-- Compiling...")
 	}
 
-	wacc := &WACC{Buffer: string(buffer)}
+	wacc := &WACC{Buffer: string(buffer), File: flags.filename}
 	wacc.Init()
 
 	if err := wacc.Parse(); err != nil {
