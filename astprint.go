@@ -21,8 +21,8 @@ func (c CharType) ASTString(indent string) string {
 }
 
 func (p PairType) ASTString(indent string) string {
-	var first string = "pair"
-	var second string = "pair"
+	var first string = ""
+	var second string = ""
 
 	if p.first != nil {
 		first = fmt.Sprintf("%v", p.first.ASTString(indent))
@@ -30,7 +30,7 @@ func (p PairType) ASTString(indent string) string {
 	if p.second != nil {
 		second = fmt.Sprintf("%v", p.second.ASTString(indent))
 	}
-	return fmt.Sprintf("pair(%v, %v)", first, second)
+	return fmt.Sprintf("%v%v", first, second)
 }
 
 //
@@ -59,11 +59,12 @@ func (stmt DeclareAssignStatement) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v%v%v", declareStats, stmt.waccType.ASTString(innerIndent), lhsIndent, rhsIndent)
 }
 
+//
 func (lhs PairElemLHS) ASTString(indent string) string {
 	if lhs.snd {
-		return fmt.Sprintf("snd %v", lhs.expr.ASTString(indent))
+		return addIndentForFirst(indent, "SND", lhs.expr.ASTString(getGreaterIndent(indent)))
 	} else {
-		return fmt.Sprintf("fst %v", lhs.expr.ASTString(indent))
+		return addIndentForFirst(indent, "FST", lhs.expr.ASTString(getGreaterIndent(indent)))
 	}
 }
 
@@ -87,8 +88,12 @@ func (lhs VarLHS) ASTString(indent string) string {
 	return addIndAndNewLine(indent, lhs.ident)
 }
 
+//
 func (rhs PairLiterRHS) ASTString(indent string) string {
-	return fmt.Sprintf("newpair(%v, %v)", rhs.fst.ASTString(indent), rhs.snd.ASTString(indent))
+	var nextIndent string = getGreaterIndent(indent)
+	var fstStats string = addIndentForFirst(nextIndent, "FST", rhs.fst.ASTString(getGreaterIndent(nextIndent)))
+	var sndStats string = addIndentForFirst(nextIndent, "SND", rhs.snd.ASTString(getGreaterIndent(nextIndent)))
+	return addTripleIndentOnlyFst(indent, "NEWPAIR", fstStats, sndStats)
 }
 
 //
@@ -104,9 +109,9 @@ func (rhs ArrayLiterRHS) ASTString(indent string) string {
 
 func (rhs PairElemRHS) ASTString(indent string) string {
 	if rhs.snd {
-		return fmt.Sprintf("snd %v", rhs.expr.ASTString(indent))
+		return addIndentForFirst(indent, "SND", rhs.expr.ASTString(getGreaterIndent(indent)))
 	} else {
-		return fmt.Sprintf("fst %v", rhs.expr.ASTString(indent))
+		return addIndentForFirst(indent, "FST", rhs.expr.ASTString(getGreaterIndent(indent)))
 	}
 }
 
@@ -146,12 +151,14 @@ func (stmt AssignStatement) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v%v", declareStats, lhsIndent, rhsIndent)
 }
 
+//
 func (stmt ReadStatement) ASTString(indent string) string {
-	return fmt.Sprintf("%vread %v", addMinToIndent(indent), stmt.target.ASTString(indent))
+	return addIndentForFirst(indent, "READ", stmt.target.ASTString(getGreaterIndent(indent)))
 }
 
+//
 func (stmt FreeStatement) ASTString(indent string) string {
-	return fmt.Sprintf("%vfree %v", addMinToIndent(indent), stmt.expr.ASTString(indent))
+	return addIndentForFirst(indent, "FREE", stmt.expr.ASTString(getGreaterIndent(indent)))
 }
 
 //
@@ -159,8 +166,9 @@ func (ret ReturnStatement) ASTString(indent string) string {
 	return addIndentForFirst(indent, "RETURN", ret.expr.ASTString(getGreaterIndent(indent)))
 }
 
+//
 func (stmt ExitStatement) ASTString(indent string) string {
-	return fmt.Sprintf("%vexit %v", addMinToIndent(indent), stmt.expr.ASTString(indent))
+	return addIndentForFirst(indent, "EXIT", stmt.expr.ASTString(getGreaterIndent(indent)))
 }
 
 //
@@ -182,8 +190,10 @@ func (stmt IfStatement) ASTString(indent string) string {
 	var condStats string
 	var thenStats string
 	var elseStats string
-	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
-	var doubleInnerIndent string = fmt.Sprintf("%v%v", innerIndent, basicIndent)
+	var trueTmp string
+	var falseTmp string
+	var innerIndent string = getGreaterIndent(indent)
+	var doubleInnerIndent string = getGreaterIndent(innerIndent)
 
 	ifStats = fmt.Sprintf("%vIF\n", addMinToIndent(indent))
 	condStats = fmt.Sprintf("%vCONDITION\n", addMinToIndent(innerIndent))
@@ -194,19 +204,23 @@ func (stmt IfStatement) ASTString(indent string) string {
 
 	st := stmt.trueStat
 	for st.GetNext() != nil {
-		trueStats = st.ASTString(doubleInnerIndent)
+		trueTmp = st.ASTString(doubleInnerIndent)
+		trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 		st = st.GetNext()
 	}
 
-	trueStats = st.ASTString(doubleInnerIndent)
+	trueTmp = st.ASTString(doubleInnerIndent)
+	trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 
 	st = stmt.falseStat
 	for st.GetNext() != nil {
-		falseStats = st.ASTString(doubleInnerIndent)
+		falseTmp = st.ASTString(doubleInnerIndent)
+		falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 		st = st.GetNext()
 	}
 
-	falseStats = st.ASTString(doubleInnerIndent)
+	falseTmp = st.ASTString(doubleInnerIndent)
+	falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 
 	return fmt.Sprintf("%v%v%v%v%v%v%v", ifStats, condStats, stmtStats, thenStats, trueStats, elseStats, falseStats)
 }
@@ -215,7 +229,7 @@ func (stmt IfStatement) ASTString(indent string) string {
 func (stmt WhileStatement) ASTString(indent string) string {
 	var body string
 	var doStats string
-	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
+	var innerIndent string = getGreaterIndent(indent)
 
 	doStats = addIndAndNewLine(innerIndent, "DO")
 
@@ -244,7 +258,7 @@ func (fd FunctionDef) ASTString(indent string) string {
 	var params string
 	var body string
 
-	innerIndent := fmt.Sprintf("%v%v", indent, basicIndent)
+	innerIndent := getGreaterIndent(indent)
 
 	if len(fd.params) > 0 {
 		params = fmt.Sprintf("%v", fd.params[0])
@@ -299,7 +313,9 @@ func (liter StringLiteral) ASTString(indent string) string {
 	return addIndAndNewLine(indent, tmp)
 }
 
+//
 func (liter PairLiteral) ASTString(indent string) string {
+	//return fmt.Sprintf("%v", liter.fst)
 	return fmt.Sprintf("pair(%v, %v)", liter.fst, liter.snd)
 }
 
@@ -310,12 +326,16 @@ func (liter NullPair) ASTString(indent string) string {
 
 func (elem ArrayElem) ASTString(indent string) string {
 	var indexes string
+	var tmpIndex string
+
+	var nextIndent string = getGreaterIndent(indent)
 
 	for _, index := range elem.indexes {
-		indexes = fmt.Sprintf("%v[%v]", indexes, index)
+		tmpIndex = addIndentForFirst(nextIndent, "[]", index.ASTString(getGreaterIndent(nextIndent)))
+		indexes = fmt.Sprintf("%v%v", indexes, tmpIndex)
 	}
 
-	return fmt.Sprintf("%v%v", elem.ident, indexes)
+	return addIndentForFirst(indent, elem.ident, indexes)
 }
 
 //
@@ -355,7 +375,7 @@ func (op BinaryOperatorDiv) ASTString(indent string) string {
 
 //
 func (op BinaryOperatorMod) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "%%", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+	return addTripleIndentOnlyFst(indent, "%", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
 }
 
 //
@@ -398,12 +418,14 @@ func (op BinaryOperatorNotEqual) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(indent, "!=", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
 }
 
+//
 func (op BinaryOperatorAnd) ASTString(indent string) string {
-	return fmt.Sprintf("%v && %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndentOnlyFst(indent, "&&", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
 }
 
+//
 func (op BinaryOperatorOr) ASTString(indent string) string {
-	return fmt.Sprintf("%v || %v", op.GetLHS(), op.GetRHS())
+	return addTripleIndentOnlyFst(indent, "||", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
 }
 
 //-----------------------------------------------------
@@ -412,7 +434,7 @@ func addMinToIndent(indent string) string {
 }
 
 func addAtGreaterIndent(indent string, value string) string {
-	return fmt.Sprintf("%v%v\n", addMinToIndent(indent+basicIndent), value)
+	return fmt.Sprintf("%v%v\n", getGreaterIndent(indent), value)
 }
 
 func addIndAndNewLine(indent string, value string) string {
@@ -428,7 +450,7 @@ func addDoubleIndent(indent string, a1 string, a2 string) string {
 }
 
 func addArrayIndent(indent string, a1 string, arr []string) string {
-	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
+	var innerIndent string = getGreaterIndent(indent)
 	var innerStats string = ""
 
 	var typeStats string = addIndAndNewLine(indent, a1)
@@ -451,8 +473,6 @@ func addType(indent string, argument string) string {
 func addTripleIndentOnlyFst(indent string, a1 string, a2 string, a3 string) string {
 	var innerStats2 string = a3
 
-	//var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
-
 	var typeStats string = addIndAndNewLine(indent, a1)
 	var innerStats string = a2
 	if a3 != "" {
@@ -465,7 +485,7 @@ func addTripleIndentOnlyFst(indent string, a1 string, a2 string, a3 string) stri
 func addTripleIndent(indent string, a1 string, a2 string, a3 string) string {
 	var innerStats2 string = a3
 
-	var innerIndent string = fmt.Sprintf("%v%v", indent, basicIndent)
+	var innerIndent string = getGreaterIndent(indent)
 
 	var typeStats string = addIndAndNewLine(indent, a1)
 	var innerStats string = addIndAndNewLine(innerIndent, a2)
@@ -486,13 +506,13 @@ func (ast AST) ASTString() string {
 		tree = fmt.Sprintf("%v%v", tree, function.ASTString(basicIndent))
 	}
 
-	tmpIndent = fmt.Sprintf("%v%v", basicIndent, basicIndent)
+	tmpIndent = getGreaterIndent(basicIndent)
 
 	tree = fmt.Sprintf("%v%v", tree, addIndAndNewLine(basicIndent, "int main()"))
 
 	stmt := ast.main
 	for stmt.GetNext() != nil {
-		tree = fmt.Sprintf("%v\n%v ;", tree, stmt.ASTString(basicIndent))
+		tree = fmt.Sprintf("%v%v", tree, stmt.ASTString(tmpIndent))
 		stmt = stmt.GetNext()
 	}
 	tree = fmt.Sprintf("%v%v", tree, stmt.ASTString(tmpIndent))
