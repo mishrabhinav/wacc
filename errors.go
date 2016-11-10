@@ -113,3 +113,16 @@ func (e *FunctionCallWrongArity) Error() string {
 		e.expected,
 	)
 }
+
+type FunctionRedecleration struct {
+	SemanticError
+	ident string
+}
+
+func (e *FunctionRedecleration) Error() string {
+	return fmt.Sprintf(
+		"%s: function '%s' already declared",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}

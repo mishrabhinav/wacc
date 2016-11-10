@@ -14,10 +14,6 @@ func CreateRootScope(ast *AST) *Scope {
 		funcs:  make(map[string]*FunctionDef),
 	}
 
-	for _, f := range ast.functions {
-		scope.funcs[f.ident] = f
-	}
-
 	return scope
 }
 
@@ -60,6 +56,17 @@ func (m *Scope) Declare(ident string, t Type) Type {
 
 	if ok {
 		return pt
+	}
+	return nil
+}
+
+func (m *Scope) DeclareFunction(ident string, f *FunctionDef) *FunctionDef {
+	pf, ok := m.funcs[ident]
+
+	m.funcs[ident] = f
+
+	if ok {
+		return pf
 	}
 	return nil
 }
@@ -127,12 +134,21 @@ func (m *AST) TypeCheck() []error {
 	errch := make(chan error)
 
 	go func() {
-		scope := CreateRootScope(m)
-		main := scope.Child()
+		global := CreateRootScope(m)
+
+		for _, f := range m.functions {
+			if pf := global.DeclareFunction(f.ident, f); pf != nil {
+				errch <- &FunctionRedecleration{
+					ident: pf.ident,
+				}
+			}
+		}
+
+		main := global.Child()
 		main.returnType = InvalidType{}
 		m.main.TypeCheck(main, errch)
 		for _, f := range m.functions {
-			fscope := scope.Child()
+			fscope := global.Child()
 			fscope.returnType = f.returnType
 			f.body.TypeCheck(fscope, errch)
 		}
