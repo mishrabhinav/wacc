@@ -16,6 +16,10 @@ func (m InvalidType) String() string {
 	return "<invalid>"
 }
 
+func (m UnknownType) String() string {
+	return "<unkown>"
+}
+
 func (i IntType) String() string {
 	return fmt.Sprintf("int")
 }

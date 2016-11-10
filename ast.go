@@ -14,6 +14,8 @@ type Type interface {
 
 type InvalidType struct{}
 
+type UnknownType struct{}
+
 type IntType struct{}
 
 type BoolType struct{}
@@ -773,13 +775,9 @@ func parseBaseType(node *node32) (Type, error) {
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
-	pairType := PairType{}
+	pairType := PairType{first: UnknownType{}, second: UnknownType{}}
 
 	first := nextNode(node, rulePAIRELEMTYPE)
-
-	if first == nil {
-		return pairType, nil
-	}
 
 	second := nextNode(first.next, rulePAIRELEMTYPE)
 
@@ -807,6 +805,8 @@ func parseType(node *node32) (Type, error) {
 		if waccType, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
+	case rulePAIR:
+		return PairType{UnknownType{}, UnknownType{}}, nil
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {

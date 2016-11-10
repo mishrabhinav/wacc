@@ -75,9 +75,15 @@ func (m InvalidType) Match(t Type) bool {
 	return false
 }
 
+func (m UnknownType) Match(t Type) bool {
+	return true
+}
+
 func (m IntType) Match(t Type) bool {
 	switch t.(type) {
 	case IntType:
+		return true
+	case UnknownType:
 		return true
 	default:
 		return false
@@ -88,6 +94,8 @@ func (m BoolType) Match(t Type) bool {
 	switch t.(type) {
 	case BoolType:
 		return true
+	case UnknownType:
+		return true
 	default:
 		return false
 	}
@@ -97,6 +105,8 @@ func (m CharType) Match(t Type) bool {
 	switch t.(type) {
 	case CharType:
 		return true
+	case UnknownType:
+		return true
 	default:
 		return false
 	}
@@ -105,13 +115,11 @@ func (m CharType) Match(t Type) bool {
 func (m PairType) Match(t Type) bool {
 	switch o := t.(type) {
 	case PairType:
-		fst := m.first == nil ||
-			o.first == nil ||
-			m.first.Match(o.first)
-		snd := m.second == nil ||
-			o.second == nil ||
-			m.second.Match(o.second)
+		fst := m.first.Match(o.first)
+		snd := m.second.Match(o.second)
 		return fst && snd
+	case UnknownType:
+		return true
 	default:
 		return false
 	}
@@ -120,9 +128,9 @@ func (m PairType) Match(t Type) bool {
 func (m ArrayType) Match(t Type) bool {
 	switch o := t.(type) {
 	case ArrayType:
-		return m.base == nil ||
-			o.base == nil ||
-			m.base.Match(o.base)
+		return m.base.Match(o.base)
+	case UnknownType:
+		return true
 	default:
 		return false
 	}
@@ -434,7 +442,9 @@ func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	pairT := m.expr.GetType(ts)
 
-	if !(PairType{}.Match(pairT)) {
+	switch pairT.(type) {
+	case PairType:
+	default:
 		errch <- &TypeMismatch{
 			expected: PairType{},
 			got:      pairT,
@@ -475,7 +485,7 @@ func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 
 func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
 	if len(m.elements) == 0 {
-		return ArrayType{}
+		return ArrayType{base: UnknownType{}}
 	}
 
 	t := m.elements[0].GetType(ts)
@@ -611,7 +621,7 @@ func (m *NullPair) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 func (m *NullPair) GetType(ts *Scope) Type {
-	return PairType{}
+	return PairType{first: UnknownType{}, second: UnknownType{}}
 }
 
 func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {

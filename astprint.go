@@ -11,6 +11,11 @@ func (i InvalidType) ASTString(indent string) string {
 }
 
 //
+func (i UnknownType) ASTString(indent string) string {
+	return addType(indent, "<unknown>")
+}
+
+//
 func (i IntType) ASTString(indent string) string {
 	return addType(indent, "int")
 }
