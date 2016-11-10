@@ -401,11 +401,17 @@ func (m *PairLiterRHS) GetType(ts *Scope) Type {
 	fstT := m.fst.GetType(ts)
 	sndT := m.snd.GetType(ts)
 
-	if (InvalidType{}.Match(fstT) || InvalidType{}.Match(sndT)) {
+	switch fstT.(type) {
+	case InvalidType:
 		return InvalidType{}
 	}
 
-	return PairType{}
+	switch sndT.(type) {
+	case InvalidType:
+		return InvalidType{}
+	}
+
+	return PairType{first: fstT, second: sndT}
 }
 
 func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
@@ -533,7 +539,8 @@ func (m *ExpressionRHS) GetType(ts *Scope) Type {
 func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 	identT := m.GetType(ts)
 
-	if (InvalidType{}.Match(identT)) {
+	switch identT.(type) {
+	case InvalidType:
 		errch <- &UndeclaredVariable{
 			ident: m.ident,
 		}
