@@ -28,7 +28,6 @@ func main() {
 	if err := wacc.Parse(); err != nil {
 		log.Print(err)
 		os.Exit(100)
-		os.Exit(100)
 	}
 
 	if flags.printPEGTree {
@@ -40,12 +39,7 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err.Error())
-		switch err.(type) {
-		case *SyntaxError:
-			os.Exit(100)
-		default:
-			os.Exit(1)
-		}
+		os.Exit(100)
 	}
 
 	if flags.printPretty {
