@@ -35,6 +35,10 @@ func main() {
 
 	ast, err := ParseAST(wacc)
 
+	if len(os.Args) == 3 && os.Args[2] == "-a" {
+		fmt.Println(ast.ASTString())
+	}
+
 	if err != nil {
 		fmt.Println(err.Error())
 		switch err.(type) {
@@ -43,7 +47,7 @@ func main() {
 		default:
 			os.Exit(1)
 		}
-	} else {
+	} else if len(os.Args) == 3 && os.Args[2] == "-s" {
 		fmt.Println(ast)
 	}
 }
