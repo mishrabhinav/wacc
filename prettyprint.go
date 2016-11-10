@@ -2,9 +2,15 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
-const basicIdent string = "  "
+const startingIndent int = 1
+const basicIndent string = "  "
+
+func getIndentation(level int) string {
+	return fmt.Sprintf(strings.Repeat(basicIndent, level))
+}
 
 func (i IntType) String() string {
 	return fmt.Sprintf("int")
@@ -35,16 +41,16 @@ func (a ArrayType) String() string {
 	return fmt.Sprintf("%v[]", a.base)
 }
 
-func (stmt SkipStatement) IString(indent string) string {
-	return fmt.Sprintf("%vskip", indent)
+func (stmt SkipStatement) IString(level int) string {
+	return fmt.Sprintf("%vskip", getIndentation(level))
 }
 
-func (stmt BlockStatement) IString(indent string) string {
-	return fmt.Sprintf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx")
+func (stmt BlockStatement) IString(level int) string {
+	return ""
 }
 
-func (stmt DeclareAssignStatement) IString(indent string) string {
-	return fmt.Sprintf("%v%v %v = %v", indent, stmt.waccType, stmt.ident, stmt.rhs)
+func (stmt DeclareAssignStatement) IString(level int) string {
+	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.waccType, stmt.ident, stmt.rhs)
 }
 
 func (lhs PairElemLHS) String() string {
@@ -113,83 +119,83 @@ func (rhs ExpressionRHS) String() string {
 	return fmt.Sprintf("%v", rhs.expr)
 }
 
-func (stmt AssignStatement) IString(indent string) string {
-	return fmt.Sprintf("%v%v = %v", indent, stmt.target, stmt.rhs)
+func (stmt AssignStatement) IString(level int) string {
+	return fmt.Sprintf("%v%v = %v", getIndentation(level), stmt.target, stmt.rhs)
 }
 
-func (stmt ReadStatement) IString(indent string) string {
-	return fmt.Sprintf("%vread %v", indent, stmt.target)
+func (stmt ReadStatement) IString(level int) string {
+	return fmt.Sprintf("%vread %v", getIndentation(level), stmt.target)
 }
 
-func (stmt FreeStatement) IString(indent string) string {
-	return fmt.Sprintf("%vfree %v", indent, stmt.expr)
+func (stmt FreeStatement) IString(level int) string {
+	return fmt.Sprintf("%vfree %v", getIndentation(level), stmt.expr)
 }
 
-func (ret ReturnStatement) IString(indent string) string {
-	return fmt.Sprintf("%vreturn %v", indent, ret.expr)
+func (ret ReturnStatement) IString(level int) string {
+	return fmt.Sprintf("%vreturn %v", getIndentation(level), ret.expr)
 }
 
-func (stmt ExitStatement) IString(indent string) string {
-	return fmt.Sprintf("%vexit %v", indent, stmt.expr)
+func (stmt ExitStatement) IString(level int) string {
+	return fmt.Sprintf("%vexit %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt PrintLnStatement) IString(indent string) string {
-	return fmt.Sprintf("%vprintln %v", indent, stmt.expr)
+func (stmt PrintLnStatement) IString(level int) string {
+	return fmt.Sprintf("%vprintln %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt PrintStatement) IString(indent string) string {
-	return fmt.Sprintf("%vprint %v", indent, stmt.expr)
+func (stmt PrintStatement) IString(level int) string {
+	return fmt.Sprintf("%vprint %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt IfStatement) IString(indent string) string {
+func (stmt IfStatement) IString(level int) string {
 	var trueStats string
 	var falseStats string
-	var innerIndent string = fmt.Sprintf("%v  ", indent)
+
+	var indent string = getIndentation(level)
 
 	st := stmt.trueStat
 	for st.GetNext() != nil {
-		trueStats = fmt.Sprintf("%v\n%v ;", trueStats, st.IString(innerIndent))
+		trueStats = fmt.Sprintf("%v\n%v ;", trueStats, st.IString(level+1))
 		st = st.GetNext()
 	}
 
-	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.IString(innerIndent))
+	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.IString(level+1))
 
 	st = stmt.falseStat
 	for st.GetNext() != nil {
-		falseStats = fmt.Sprintf("%v\n%v ;", falseStats, st.IString(innerIndent))
+		falseStats = fmt.Sprintf("%v\n%v ;", falseStats, st.IString(level+1))
 		st = st.GetNext()
 	}
 
-	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.IString(innerIndent))
+	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.IString(level+1))
 
-	return fmt.Sprintf("%vif %v then %v\n%velse %v\n%vfi", indent, stmt.cond, trueStats, indent, falseStats, indent)
+	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent, stmt.cond, indent, trueStats, indent, falseStats, indent)
 }
 
-func (stmt WhileStatement) IString(indent string) string {
+func (stmt WhileStatement) IString(level int) string {
 	var body string
-	var innerIndent string = fmt.Sprintf("%v  ", indent)
+	var indent string = getIndentation(level)
 
 	st := stmt.body
 	for st.GetNext() != nil {
-		body = fmt.Sprintf("%v\n%v ;", body, st.IString(innerIndent))
+		body = fmt.Sprintf("%v\n%v ;", body, st.IString(level+1))
 		st = st.GetNext()
 	}
 
-	body = fmt.Sprintf("%v\n%v", body, st.IString(innerIndent))
+	body = fmt.Sprintf("%v\n%v", body, st.IString(level+1))
 
-	return fmt.Sprintf("%vwhile %v do%v\n%vdone", indent, stmt.cond, body, indent)
+	return fmt.Sprintf("%vwhile (%v) do%v\n%vdone", indent, stmt.cond, body, indent)
 }
 
 func (fp FunctionParam) String() string {
 	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
 }
 
-func (fd FunctionDef) String(indent string) string {
-
+func (fd FunctionDef) String(level int) string {
 	var params string
 	var body string
 
-	innerIndent := fmt.Sprintf("%v  ", indent)
+	indent := getIndentation(level)
 
 	if len(fd.params) > 0 {
 		params = fmt.Sprintf("%v", fd.params[0])
@@ -203,11 +209,11 @@ func (fd FunctionDef) String(indent string) string {
 
 	st := fd.body
 	for st.GetNext() != nil {
-		body = fmt.Sprintf("%v\n%v ;", body, st.IString(innerIndent))
+		body = fmt.Sprintf("%v\n%v ;", body, st.IString(level+1))
 		st = st.GetNext()
 	}
 
-	body = fmt.Sprintf("%v\n%v", body, st.IString(innerIndent))
+	body = fmt.Sprintf("%v\n%v", body, st.IString(level+1))
 
 	return fmt.Sprintf("%v %v\n%vend", declaration, body, indent)
 }
@@ -332,16 +338,16 @@ func (ast AST) String() string {
 	tree = fmt.Sprintf("begin")
 
 	for _, function := range ast.functions {
-		tree = fmt.Sprintf("%v\n%v", tree, function.String(basicIdent))
+		tree = fmt.Sprintf("%v\n%v", tree, function.String(startingIndent))
 	}
 
 	stmt := ast.main
 	for stmt.GetNext() != nil {
-		tree = fmt.Sprintf("%v\n%v ;", tree, stmt.IString(basicIdent))
+		tree = fmt.Sprintf("%v\n%v ;", tree, stmt.IString(startingIndent))
 		stmt = stmt.GetNext()
 	}
 
-	tree = fmt.Sprintf("%v\n%v", tree, stmt.IString(basicIdent))
+	tree = fmt.Sprintf("%v\n%v", tree, stmt.IString(startingIndent))
 
 	return fmt.Sprintf("%v\nend", tree)
 }

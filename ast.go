@@ -32,7 +32,7 @@ type Expression interface {
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
-	IString(indent string) string
+	IString(level int) string
 	ASTString(indent string) string
 }
 
