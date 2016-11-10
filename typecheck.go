@@ -592,11 +592,34 @@ func (m *NullPair) GetType(ts *Scope) Type {
 }
 
 func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
+	array := ts.Lookup(m.ident)
+
+	for _, index := range m.indexes {
+		index.TypeCheck(ts, errch)
+
+		switch indexT := index.GetType(ts).(type) {
+		case IntType:
+		default:
+			errch <- &TypeMismatch{
+				expected: IntType{},
+				got:      indexT,
+			}
+		}
+
+		switch arrayT := array.(type) {
+		case ArrayType:
+		default:
+			errch <- &TypeMismatch{
+				expected: ArrayType{},
+				got:      arrayT,
+			}
+		}
+	}
 }
 
 func (m *ArrayElem) GetType(ts *Scope) Type {
 	array := ts.Lookup(m.ident)
-	for i := 0; i < len(m.indexes); i++ {
+	for _, _ = range m.indexes {
 		switch arrayT := array.(type) {
 		case ArrayType:
 			array = arrayT.base
