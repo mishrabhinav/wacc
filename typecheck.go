@@ -486,7 +486,7 @@ func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
 		}
 	}
 
-	return t
+	return ArrayType{t}
 }
 
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
