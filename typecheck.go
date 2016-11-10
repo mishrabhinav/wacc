@@ -155,8 +155,17 @@ func (m *AST) TypeCheck() []error {
 		main := global.Child()
 		main.returnType = InvalidType{}
 		m.main.TypeCheck(main, errch)
+
 		for _, f := range m.functions {
 			fscope := global.Child()
+			for _, arg := range f.params {
+				pt := fscope.Declare(arg.name, arg.waccType)
+				if pt != nil {
+					errch <- &VariableRedeclaration{
+						ident: arg.name,
+					}
+				}
+			}
 			fscope.returnType = f.returnType
 			f.body.TypeCheck(fscope, errch)
 		}
