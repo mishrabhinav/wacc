@@ -471,6 +471,7 @@ func (m *FunctionCallRHS) GetType(ts *Scope) Type {
 }
 
 func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	m.expr.TypeCheck(ts, errch)
 }
 
 func (m *ExpressionRHS) GetType(ts *Scope) Type {
