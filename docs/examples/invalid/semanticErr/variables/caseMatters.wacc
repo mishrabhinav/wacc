@@ -11,6 +11,6 @@
 begin
 
   int number = 42 ;
-  println NUMBER ;
+  println NUMBER
   
 end
