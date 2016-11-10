@@ -739,15 +739,6 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorMult) GetType(ts *Scope) Type {
@@ -774,15 +765,6 @@ func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
@@ -813,15 +795,6 @@ func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorMod) GetType(ts *Scope) Type {
@@ -850,15 +823,6 @@ func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorAdd) GetType(ts *Scope) Type {
@@ -885,15 +849,6 @@ func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
@@ -925,16 +880,6 @@ func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorGreaterThan) GetType(ts *Scope) Type {
@@ -962,16 +907,6 @@ func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
@@ -1003,16 +938,6 @@ func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorLessThan) GetType(ts *Scope) Type {
@@ -1040,16 +965,6 @@ func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
@@ -1081,16 +996,6 @@ func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorEqual) GetType(ts *Scope) Type {
@@ -1118,16 +1023,6 @@ func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
@@ -1159,16 +1054,6 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 			got:      lhsT,
 		}
 	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
-		}
-	}
 }
 
 func (m *BinaryOperatorAnd) GetType(ts *Scope) Type {
@@ -1196,16 +1081,6 @@ func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- &TypeMismatch{
 			expected: IntType{},
 			got:      lhsT,
-		}
-	}
-
-	switch rhsT.(type) {
-	case IntType:
-	case CharType:
-	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      rhsT,
 		}
 	}
 }
