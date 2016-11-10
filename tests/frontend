@@ -58,11 +58,11 @@ echo -e "${LRED}----- Valid Testcases${NC}"
 testFiles $VALID 0
 
 # Test Syntactically Invalid Cases
-echo -e "${LRED}----- Invalid Tescases - Syntax Error${NC}"
+echo -e "${LRED}----- Invalid Testcases - Syntax Error${NC}"
 testFiles $INVALID_SYNTAX 100
 
 # Test Semantically Invalid Cases
-echo -e "${LRED}----- Invalid Tescases - Semantic Error${NC}"
+echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
 testFiles $INVALID_SEMANTIC 200
 
 # Testing Complete
