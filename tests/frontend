@@ -1,37 +1,43 @@
 #!/bin/bash
 
-RED='\033[0;31m'
-LRED='\033[1;31m'
-GREEN='\033[1;32m'
-BROWN='\033[0;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Colour Codes
+RED='\033[0;31m'   # Red
+LRED='\033[1;31m'  # Light Red
+GREEN='\033[1;32m' # Green
+BROWN='\033[0;33m' # Brown
+CYAN='\033[0;36m'  # Cyan
+NC='\033[0m'       # White
 
+# Default path to example files
 DEFAULT_PATH="docs/examples"
 
+# Check if a specific path provided, if not use default
 if [ $# -eq 0 ]; then
   EXAMPLES_PATH=$DEFAULT_PATH
 else
   EXAMPLES_PATH=$1
 fi
 
+# Subdirectories for Valid and Invalid cases
 INVALID_SYNTAX="$EXAMPLES_PATH/invalid/syntaxErr"
 INVALID_SEMANTIC="$EXAMPLES_PATH/invalid/semanticErr"
 VALID="$EXAMPLES_PATH/valid"
 
 
+# Function to test the input file
 testFiles() {
   find $1 -name '*.wacc' | while read f;
   do
-    PASSED=0
     OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
 
     echo -e "File: $f " >> log.txt 2>&1
+
+    # Run compile script for the input file
     ./compile $f >> log.txt 2>&1
 
+    # Print the result on test failure
     if [ $? != $2 ]; then
       RESULT="${RED}Fail${NC}"
-      PASSED=1
       OUT=$OUT" $RESULT"
 
       echo -e"Result: $RESULT " >> log.txt 2>&1
@@ -44,15 +50,20 @@ testFiles() {
   rm log.txt
 }
 
+# Start Testing
 echo -e "${GREEN}===== WACC Compiler Testing${NC}"
 
+# Test Valid Cases
 echo -e "${LRED}----- Valid Testcases${NC}"
 testFiles $VALID 0
 
+# Test Syntactically Invalid Cases
 echo -e "${LRED}----- Invalid Tescases - Syntax Error${NC}"
 testFiles $INVALID_SYNTAX 100
 
+# Test Semantically Invalid Cases
 echo -e "${LRED}----- Invalid Tescases - Semantic Error${NC}"
 testFiles $INVALID_SEMANTIC 200
 
+# Testing Complete
 echo -e "${GREEN}===== Testing Complete${NC}"
