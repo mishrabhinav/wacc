@@ -13,7 +13,7 @@ import (
 )
 
 type Type interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	Match(Type) bool
 	String() string
 }
@@ -38,7 +38,7 @@ type ArrayType struct {
 }
 
 type Expression interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
@@ -49,7 +49,7 @@ type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
 	istring(level int) string
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
 	SetToken(*token32)
@@ -97,7 +97,7 @@ type DeclareAssignStatement struct {
 }
 
 type LHS interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
@@ -122,7 +122,7 @@ type VarLHS struct {
 }
 
 type RHS interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
