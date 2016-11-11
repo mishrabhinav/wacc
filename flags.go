@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 type Flags struct {
@@ -25,4 +26,29 @@ func (f *Flags) Parse() {
 		"Print different stages during compilation")
 
 	flag.Parse()
+}
+
+func (f *Flags) Start() {
+	if f.verbose {
+		fmt.Println("-- Compiling...")
+	}
+
+}
+
+func (f *Flags) Finish() {
+	if f.verbose {
+		fmt.Println("-- Finished")
+	}
+}
+
+func (f *Flags) PrintPrettyAST(ast *AST) {
+	if f.printPretty {
+		fmt.Println("-- Printing Pretty Code")
+		fmt.Println(ast)
+	}
+
+	if f.printAST {
+		fmt.Println("-- Printing AST")
+		fmt.Println(ast.ASTString())
+	}
 }
