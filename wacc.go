@@ -18,14 +18,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if flags.verbose {
-		fmt.Println("-- Compiling...")
-	}
+	flags.Start()
 
 	wacc := &WACC{Buffer: string(buffer), File: flags.filename}
 	wacc.Init()
 
-	if err := wacc.Parse(); err != nil {
+	err = wacc.Parse()
+	if err != nil {
 		log.Print(err)
 		os.Exit(100)
 	}
@@ -42,15 +41,7 @@ func main() {
 		os.Exit(100)
 	}
 
-	if flags.printPretty {
-		fmt.Println("-- Printing Pretty Code")
-		fmt.Println(ast)
-	}
-
-	if flags.printAST {
-		fmt.Println("-- Printing AST")
-		fmt.Println(ast.ASTString())
-	}
+	flags.PrintPrettyAST(ast)
 
 	if retErrs := ast.CheckFunctionCodePaths(); len(retErrs) > 0 {
 		for _, err := range retErrs {
@@ -66,7 +57,5 @@ func main() {
 		os.Exit(200)
 	}
 
-	if flags.verbose {
-		fmt.Println("-- Finished")
-	}
+	flags.Finish()
 }
