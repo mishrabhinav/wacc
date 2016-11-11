@@ -635,7 +635,12 @@ func parseExpr(node *node32) (Expression, error) {
 		case ruleCHARLITER:
 			push(&CharLiteral{char: enode.up.next.match})
 		case ruleSTRLITER:
-			push(&StringLiteral{str: enode.up.next.match})
+			strLiter := &StringLiteral{}
+			strNode := nextNode(enode.up, ruleSTR)
+			if strNode != nil {
+				strLiter.str = strNode.match
+			}
+			push(strLiter)
 		case rulePAIRLITER:
 			push(&NullPair{})
 		case ruleIDENT:
