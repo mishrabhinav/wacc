@@ -60,6 +60,6 @@ func (f *Flags) PrintPrettyAST(ast *AST) {
 
 	if f.printAST {
 		fmt.Println("-- Printing AST")
-		fmt.Println(ast.ASTString())
+		fmt.Println(ast.aststring())
 	}
 }
