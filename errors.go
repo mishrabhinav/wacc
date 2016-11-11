@@ -219,7 +219,8 @@ func CreateTypeMismatchError(token *token32, expected, got Type) error {
 	}
 }
 
-// CallingNonFunction is a semantic error trying to call an undeclared function
+// CallingNonFunctionError is a semantic error trying to call an undeclared
+// function
 type CallingNonFunctionError struct {
 	SemanticError
 	ident string
@@ -261,7 +262,7 @@ func (e *FunctionCallWrongArityError) Error() string {
 	)
 }
 
-// CreateFunctionCallWrongArity creates and error from a token, function
+// CreateFunctionCallWrongArityError creates and error from a token, function
 // identifier, expected and received number of parameters
 func CreateFunctionCallWrongArityError(
 	token *token32,
