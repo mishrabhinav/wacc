@@ -29,15 +29,19 @@ type UnknownType struct{}
 // IntType is the WACC type for integers
 type IntType struct{}
 
+// BoolType is the WACC type for booleans
 type BoolType struct{}
 
+// CharType is the WACC type for characters
 type CharType struct{}
 
+// PairType is the WACC type for pairs
 type PairType struct {
 	first  Type
 	second Type
 }
 
+// ArrayType is the WACC type for arrays
 type ArrayType struct {
 	base Type
 }
@@ -67,31 +71,38 @@ type TokenBase struct {
 	token *token32
 }
 
+// Token returns the token in TokenBase
 func (m *TokenBase) Token() *token32 {
 	return m.token
 }
 
+// SetToken sets the current token in TokenBase
 func (m *TokenBase) SetToken(token *token32) {
 	m.token = token
 }
 
+// BaseStatement contains the pointer to the next statement
 type BaseStatement struct {
 	TokenBase
 	next Statement
 }
 
+// GetNext returns the next statment in BaseStatment
 func (m *BaseStatement) GetNext() Statement {
 	return m.next
 }
 
+// SetNext sets the next statment in BaseStatment
 func (m *BaseStatement) SetNext(next Statement) {
 	m.next = next
 }
 
+// SkipStatement is the struct for WACC skip statement
 type SkipStatement struct {
 	BaseStatement
 }
 
+// BlockStatement is the struct for creating new block scope
 type BlockStatement struct {
 	BaseStatement
 	body Statement
@@ -106,6 +117,7 @@ type DeclareAssignStatement struct {
 	rhs      RHS
 }
 
+// LHS is the interface for the left hand side of an assignment
 type LHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
@@ -114,23 +126,27 @@ type LHS interface {
 	SetToken(*token32)
 }
 
+// PairElemLHS is the struct for a pair on the lhs of an assignment
 type PairElemLHS struct {
 	TokenBase
 	snd  bool
 	expr Expression
 }
 
+// ArrayLHS is the struct for an array on the lhs of an assignment
 type ArrayLHS struct {
 	TokenBase
 	ident string
 	index []Expression
 }
 
+// VarLHS is the struct for a variable on the lhs of an assignment
 type VarLHS struct {
 	TokenBase
 	ident string
 }
 
+// RHS is the interface for the right hand side of an assignment
 type RHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
@@ -139,69 +155,82 @@ type RHS interface {
 	SetToken(*token32)
 }
 
+// PairLiterRHS is the struct for pair literals on the rhs of an assignment
 type PairLiterRHS struct {
 	TokenBase
 	PairLiteral
 }
 
+// ArrayLiterRHS is the struct for array literals on the rhs of an assignment
 type ArrayLiterRHS struct {
 	TokenBase
 	elements []Expression
 }
 
+// PairElemRHS is the struct for pair elements on the rhs of an assignment
 type PairElemRHS struct {
 	TokenBase
 	snd  bool
 	expr Expression
 }
 
+// FunctionCallRHS is the struct for function calls on the rhs of an assignment
 type FunctionCallRHS struct {
 	TokenBase
 	ident string
 	args  []Expression
 }
 
+// ExpressionRHS is the struct for expressions on the rhs of an assignment
 type ExpressionRHS struct {
 	TokenBase
 	expr Expression
 }
 
+// AssignStatement is the struct for an assignment statement
 type AssignStatement struct {
 	BaseStatement
 	target LHS
 	rhs    RHS
 }
 
+// ReadStatement is the struct for a read statement
 type ReadStatement struct {
 	BaseStatement
 	target LHS
 }
 
+// FreeStatement is the struct for a free statement
 type FreeStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// ReturnStatement is the struct for a return statement
 type ReturnStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// ExitStatement is the struct for an exit statement
 type ExitStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// PrintLnStatement is the struct for a println statement
 type PrintLnStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// PrintStatement is the struct for a print statement
 type PrintStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// IfStatement is the struct for a if-else statement
 type IfStatement struct {
 	BaseStatement
 	cond      Expression
@@ -209,18 +238,21 @@ type IfStatement struct {
 	falseStat Statement
 }
 
+// WhileStatement is the struct for a while statement
 type WhileStatement struct {
 	BaseStatement
 	cond Expression
 	body Statement
 }
 
+// FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
 	name     string
 	waccType Type
 }
 
+// FunctionDef is the struct for a function definition
 type FunctionDef struct {
 	TokenBase
 	ident      string
