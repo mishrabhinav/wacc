@@ -89,6 +89,7 @@ func addTripleIndent(indent, a1, a2, a3 string) string {
 
 //------------------------------------------------------------------------------
 
+// Print the type of a given Pair(fst T1, snd T2), given that T1/T2 are not null
 func (p PairType) ASTString(indent string) string {
 	var first string
 	var second string
@@ -102,8 +103,14 @@ func (p PairType) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v", first, second)
 }
 
+// Prints a DECLARE statement. Format:
+// - DECLARE
+//   - LHS
+//     - [lhsEXPR]
+//   - RHS
+//     - [rhsEXPR]
+// REcurses on lhsEXPR and rhsEXPR.
 func (stmt DeclareAssignStatement) ASTString(indent string) string {
-
 	declareStats := fmt.Sprintf("%vDECLARE\n", addMinToIndent(indent))
 	innerIndent := getGreaterIndent(indent)
 	lhsIndent := addDoubleIndent(innerIndent, "LHS", stmt.ident)
@@ -122,6 +129,7 @@ func (stmt DeclareAssignStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints the LHS of a PairElem
 func (lhs PairElemLHS) ASTString(indent string) string {
 	if lhs.snd {
 		return addIndentForFirst(
@@ -137,6 +145,7 @@ func (lhs PairElemLHS) ASTString(indent string) string {
 	)
 }
 
+// Prints (listing), the array's identifier (lhs.ident), "[]", and its elems
 func (lhs ArrayLHS) ASTString(indent string) string {
 	var indexes string
 	var tmpIndex string
@@ -155,10 +164,12 @@ func (lhs ArrayLHS) ASTString(indent string) string {
 	return addIndentForFirst(indent, lhs.ident, indexes)
 }
 
+// Prints the LHS of a Variable
 func (lhs VarLHS) ASTString(indent string) string {
 	return addIndAndNewLine(indent, lhs.ident)
 }
 
+// Prints the RHS of a PairLiteral
 func (rhs PairLiterRHS) ASTString(indent string) string {
 	nextIndent := getGreaterIndent(indent)
 	fstStats := addIndentForFirst(
@@ -174,6 +185,7 @@ func (rhs PairLiterRHS) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(indent, "NEWPAIR", fstStats, sndStats)
 }
 
+// Introduces an Array Literal. Recurses on rhs.elements and prints.
 func (rhs ArrayLiterRHS) ASTString(indent string) string {
 	elemArr := []string{}
 
@@ -184,6 +196,7 @@ func (rhs ArrayLiterRHS) ASTString(indent string) string {
 	return addArrayIndent(indent, "ARRAY LITERAL", elemArr)
 }
 
+// Prints the RHS of a PairElem
 func (rhs PairElemRHS) ASTString(indent string) string {
 	if rhs.snd {
 		return addIndentForFirst(
@@ -198,6 +211,8 @@ func (rhs PairElemRHS) ASTString(indent string) string {
 	)
 }
 
+// Prints the RHS of a function call
+// Lists parameters (rhs.args) at a greater indent
 func (rhs FunctionCallRHS) ASTString(indent string) string {
 	var innerStats string
 	nameStats := addIndAndNewLine(indent, rhs.ident)
@@ -213,6 +228,13 @@ func (rhs FunctionCallRHS) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v", nameStats, innerStats)
 }
 
+// Prints the LHS and RHS of an assignment. Format:
+// - ASSIGNMENT
+//   - LHS
+//     - [lhsEXPR]
+//   - RHS
+//     - [rhsEXPR]
+// lhsEXPR and rhsEXPR are recursed upon
 func (stmt AssignStatement) ASTString(indent string) string {
 	declareStats := fmt.Sprintf("%vASSIGNMENT\n", addMinToIndent(indent))
 	innerIndent := getGreaterIndent(indent)
@@ -230,6 +252,15 @@ func (stmt AssignStatement) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v%v", declareStats, lhsIndent, rhsIndent)
 }
 
+// Prints an IfStatement. Format:
+// - IF
+//   - CONDITION
+//     - [bool]
+//   - THEN
+//     - [thenEXPR]
+//   - ELSE
+//     - [elseEXPR]
+// thenEXPR and elseEXPR are recursed upon
 func (stmt IfStatement) ASTString(indent string) string {
 	var stmtStats string
 	var trueStats string
@@ -278,6 +309,13 @@ func (stmt IfStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a WhileLoop. Format:
+// - LOOP
+//   - CONDITION
+//     - [bool]
+//   - DO
+//     - [doEXPR]
+// doEXPR is recursed upon
 func (stmt WhileStatement) ASTString(indent string) string {
 	var body string
 	var doStats string
@@ -305,10 +343,13 @@ func (stmt WhileStatement) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
 }
 
+// Prints FunctionParameters in function declaration.
 func (fp FunctionParam) ASTString(indent string) string {
 	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
 }
 
+// Prints a FunctionDefinition. Format:
+// - [type] [ident]([params])
 func (fd FunctionDef) ASTString(indent string) string {
 
 	var params string
@@ -343,6 +384,10 @@ func (fd FunctionDef) ASTString(indent string) string {
 	return fmt.Sprintf("%v%v", declaration, body)
 }
 
+// Prints all ArrayElements. Format:
+// - []
+//   -[elems]
+// elems is recursed upon.
 func (elem ArrayElem) ASTString(indent string) string {
 	var indexes string
 	var tmpIndex string
@@ -360,47 +405,72 @@ func (elem ArrayElem) ASTString(indent string) string {
 	return addIndentForFirst(indent, elem.ident, indexes)
 }
 
+// Prints "[]" in of ArrayType
 func (a ArrayType) ASTString(indent string) string {
 	typeStats := fmt.Sprintf("%v[]", a.base)
 	return addType(indent, typeStats)
 }
 
+// Prints and invalid Type. Format:
+// - TYPE
+//   - <invalid>
 func (i InvalidType) ASTString(indent string) string {
 	return addType(indent, "<invalid>")
 }
 
+// Prints and unknown Type. Format:
+// - TYPE
+//   - <unknown>
 func (i UnknownType) ASTString(indent string) string {
 	return addType(indent, "<unknown>")
 }
 
+// Prints and int Type. Format:
+// - TYPE
+//   - int
 func (i IntType) ASTString(indent string) string {
 	return addType(indent, "int")
 }
 
+// Prints and bool Type. Format:
+// - TYPE
+//   - bool
 func (b BoolType) ASTString(indent string) string {
 	return addType(indent, "bool")
 }
 
+// Prints and char Type. Format:
+// - TYPE
+//   - char
 func (c CharType) ASTString(indent string) string {
 	return addType(indent, "char")
 }
 
+// Prints a SKIP statement. Format:
+// - SKIP
 func (stmt SkipStatement) ASTString(indent string) string {
 	return addIndAndNewLine(indent, "SKIP")
 }
 
+// Prints a useless BlockStatement.
 func (stmt BlockStatement) ASTString(indent string) string {
 	return fmt.Sprintf("")
 }
 
-func (lpar ExprParen) ASTString(indent string) string {
+// Prints a useless parenthesis.
+func (par ExprParen) ASTString(indent string) string {
 	return ""
 }
 
+// Recurses oh the RHS of an Expression.
 func (rhs ExpressionRHS) ASTString(indent string) string {
 	return rhs.expr.ASTString(indent)
 }
 
+// Prints a READ statement. Format:
+// - READ
+//   - [args]
+// Recurses on args.
 func (stmt ReadStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -409,6 +479,10 @@ func (stmt ReadStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a FREE statement. Format:
+// - FREE
+//   - [args]
+// Recurses on args.
 func (stmt FreeStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -417,6 +491,10 @@ func (stmt FreeStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a RETURN statement. Format:
+// - RETURN
+//   - [args]
+// Recurses on args.
 func (ret ReturnStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -425,6 +503,10 @@ func (ret ReturnStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a EXIT statement. Format:
+// - EXIT
+//   - [args]
+// Recurses on args.
 func (stmt ExitStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -433,6 +515,10 @@ func (stmt ExitStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a PRINTLN statement. Format:
+// - PRINTLN
+//   - [args]
+// Recurses on args.
 func (stmt PrintLnStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -441,6 +527,10 @@ func (stmt PrintLnStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints a PRINT statement. Format:
+// - PRINT
+//   - [args]
+// Recurses on args.
 func (stmt PrintStatement) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -449,40 +539,52 @@ func (stmt PrintStatement) ASTString(indent string) string {
 	)
 }
 
+// Prints an identifier on a new line.
 func (ident Ident) ASTString(indent string) string {
 	return addIndAndNewLine(indent, ident.ident)
 }
 
+// Prints a literal on a new line.
 func (liter IntLiteral) ASTString(indent string) string {
 	return addIndAndNewLine(indent, strconv.Itoa(liter.value))
 }
 
+// Prints bool literal "true" on a new line.
 func (liter BoolLiteralTrue) ASTString(indent string) string {
 	return addIndAndNewLine(indent, "true")
 }
 
+// Prints bool literal "false" on a new line.
 func (liter BoolLiteralFalse) ASTString(indent string) string {
 	return addIndAndNewLine(indent, "false")
 }
 
+// Prints a char literal on a new line.
 func (liter CharLiteral) ASTString(indent string) string {
 	tmpStats := fmt.Sprintf("'%v'", liter.char)
 	return addIndAndNewLine(indent, tmpStats)
 }
 
+// Prints a string literal on a new line.
 func (liter StringLiteral) ASTString(indent string) string {
 	tmp := fmt.Sprintf("\"%v\"", liter.str)
 	return addIndAndNewLine(indent, tmp)
 }
 
+// Prints a pair on a new line.
 func (liter PairLiteral) ASTString(indent string) string {
 	return fmt.Sprintf("pair(%v, %v)", liter.fst, liter.snd)
 }
 
+// Prints a null Pair on a new line.
 func (liter NullPair) ASTString(indent string) string {
 	return addIndAndNewLine(indent, "null")
 }
 
+// Prints a ! unaryOperator. Format:
+// - !
+//   - [args]
+// Recurses on args.
 func (op UnaryOperatorNot) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -491,6 +593,10 @@ func (op UnaryOperatorNot) ASTString(indent string) string {
 	)
 }
 
+// Prints a - unaryOperator. Format:
+// - -
+//   - [args]
+// Recurses on args.
 func (op UnaryOperatorNegate) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -499,6 +605,10 @@ func (op UnaryOperatorNegate) ASTString(indent string) string {
 	)
 }
 
+// Prints a len unaryOperator. Format:
+// - len
+//   - [args]
+// Recurses on args.
 func (op UnaryOperatorLen) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -507,6 +617,10 @@ func (op UnaryOperatorLen) ASTString(indent string) string {
 	)
 }
 
+// Prints a ord unaryOperator. Format:
+// - ord
+//   - [args]
+// Recurses on args.
 func (op UnaryOperatorOrd) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -515,6 +629,10 @@ func (op UnaryOperatorOrd) ASTString(indent string) string {
 	)
 }
 
+// Prints a chr unaryOperator. Format:
+// - chr
+//   - [args]
+// Recurses on args.
 func (op UnaryOperatorChr) ASTString(indent string) string {
 	return addIndentForFirst(
 		indent,
@@ -523,6 +641,11 @@ func (op UnaryOperatorChr) ASTString(indent string) string {
 	)
 }
 
+// Prints a * binaryOperator. Format:
+// - *
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorMult) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -532,6 +655,11 @@ func (op BinaryOperatorMult) ASTString(indent string) string {
 	)
 }
 
+// Prints a / binaryOperator. Format:
+// - /
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorDiv) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -541,6 +669,11 @@ func (op BinaryOperatorDiv) ASTString(indent string) string {
 	)
 }
 
+// Prints a % binaryOperator. Format:
+// - %
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorMod) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -550,6 +683,11 @@ func (op BinaryOperatorMod) ASTString(indent string) string {
 	)
 }
 
+// Prints a + binaryOperator. Format:
+// - +
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorAdd) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -559,6 +697,11 @@ func (op BinaryOperatorAdd) ASTString(indent string) string {
 	)
 }
 
+// Prints a - binaryOperator. Format:
+// - -
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorSub) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -568,6 +711,11 @@ func (op BinaryOperatorSub) ASTString(indent string) string {
 	)
 }
 
+// Prints a > binaryOperator. Format:
+// - >
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorGreaterThan) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -577,6 +725,11 @@ func (op BinaryOperatorGreaterThan) ASTString(indent string) string {
 	)
 }
 
+// Prints a >= binaryOperator. Format:
+// - >=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorGreaterEqual) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -586,6 +739,11 @@ func (op BinaryOperatorGreaterEqual) ASTString(indent string) string {
 	)
 }
 
+// Prints a < binaryOperator. Format:
+// - <
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorLessThan) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -595,6 +753,11 @@ func (op BinaryOperatorLessThan) ASTString(indent string) string {
 	)
 }
 
+// Prints a <= binaryOperator. Format:
+// - <=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorLessEqual) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -604,6 +767,11 @@ func (op BinaryOperatorLessEqual) ASTString(indent string) string {
 	)
 }
 
+// Prints a == binaryOperator. Format:
+// - ==
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorEqual) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -613,6 +781,11 @@ func (op BinaryOperatorEqual) ASTString(indent string) string {
 	)
 }
 
+// Prints a != binaryOperator. Format:
+// - !=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorNotEqual) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -622,6 +795,11 @@ func (op BinaryOperatorNotEqual) ASTString(indent string) string {
 	)
 }
 
+// Prints a && binaryOperator. Format:
+// - &&
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorAnd) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -631,6 +809,11 @@ func (op BinaryOperatorAnd) ASTString(indent string) string {
 	)
 }
 
+// Prints a || binaryOperator. Format:
+// - ||
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
 func (op BinaryOperatorOr) ASTString(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
@@ -642,6 +825,11 @@ func (op BinaryOperatorOr) ASTString(indent string) string {
 
 //------------------------------------------------------------------------------
 
+// Main method. Format:
+// - [functions]
+// - int main()
+//   - [main]
+// Recurses on functions and main
 func (ast AST) ASTString() string {
 	var tree string
 	var tmpIndent string
