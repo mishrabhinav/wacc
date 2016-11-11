@@ -2,9 +2,10 @@ package main
 
 // WACC Group 34
 //
-// ast.go: TODO
+// ast.go: the structures for the AST the functions that parse the syntax tree
 //
-// TODO
+// Types, statements, expressions in the WACC language
+// Functions to parse the WACC syntax tree into the AST
 
 import (
 	"errors"
@@ -12,16 +13,20 @@ import (
 	"strconv"
 )
 
+// Type is an interface for WACC type
 type Type interface {
 	aststring(indent string) string
 	Match(Type) bool
 	String() string
 }
 
+// InvalidType is a WACC type for invalid constructs
 type InvalidType struct{}
 
+// UnknownType is a WACC type for cases where the type is not known
 type UnknownType struct{}
 
+// IntType is the WACC type for integers
 type IntType struct{}
 
 type BoolType struct{}
@@ -37,6 +42,7 @@ type ArrayType struct {
 	base Type
 }
 
+// Expression is the interface for WACC expressions
 type Expression interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
@@ -45,6 +51,7 @@ type Expression interface {
 	SetToken(*token32)
 }
 
+// Statement is the interface for WACC statements
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
@@ -55,6 +62,7 @@ type Statement interface {
 	SetToken(*token32)
 }
 
+// TokenBase is the base structure that contains the token reference
 type TokenBase struct {
 	token *token32
 }
@@ -89,6 +97,8 @@ type BlockStatement struct {
 	body Statement
 }
 
+// DeclareAssignStatement declares a new variable and assigns the right hand
+// side expression to it
 type DeclareAssignStatement struct {
 	BaseStatement
 	waccType Type
