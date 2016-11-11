@@ -814,6 +814,7 @@ func parseExpr(node *node32) (Expression, error) {
 	return pop(), nil
 }
 
+// parseLHS parses all left hand side constructs that can be assigned to
 func parseLHS(node *node32) (LHS, error) {
 	switch node.pegRule {
 	case rulePAIRELEM:
@@ -858,6 +859,7 @@ func parseLHS(node *node32) (LHS, error) {
 	}
 }
 
+// parseRHS parses all right hand side constructs that provide assignable values
 func parseRHS(node *node32) (RHS, error) {
 	switch node.pegRule {
 	case ruleNEWPAIR:
@@ -954,6 +956,7 @@ func parseRHS(node *node32) (RHS, error) {
 	}
 }
 
+// parseBaseType parse basic type definition
 func parseBaseType(node *node32) (Type, error) {
 	switch node.pegRule {
 	case ruleINT:
@@ -969,6 +972,8 @@ func parseBaseType(node *node32) (Type, error) {
 	}
 }
 
+// parsePairType parse a pair type
+// when entering this method the pair always has type specification
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
@@ -989,6 +994,7 @@ func parsePairType(node *node32) (Type, error) {
 
 }
 
+// parseType parse a type definition
 func parseType(node *node32) (Type, error) {
 	var err error
 	var waccType Type
@@ -1002,7 +1008,7 @@ func parseType(node *node32) (Type, error) {
 		if waccType, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
-	case rulePAIR:
+	case rulePAIR: // pair inside a pair, that misses type information
 		return PairType{UnknownType{}, UnknownType{}}, nil
 	}
 
@@ -1013,6 +1019,8 @@ func parseType(node *node32) (Type, error) {
 	return waccType, nil
 }
 
+// parseStatement parses a statement by checking which rule they start with
+// that defines them uniquely
 func parseStatement(node *node32) (Statement, error) {
 	var stm Statement
 	var err error
@@ -1155,6 +1163,7 @@ func parseStatement(node *node32) (Statement, error) {
 		)
 	}
 
+	// check if there is semicolon and parse the next statement
 	if semi := nextNode(node, ruleSEMI); semi != nil {
 		var next Statement
 		if next, err = parseStatement(semi.next.up); err != nil {
@@ -1168,6 +1177,7 @@ func parseStatement(node *node32) (Statement, error) {
 	return stm, nil
 }
 
+// parse the parameters of a function definition
 func parseParam(node *node32) (*FunctionParam, error) {
 	var err error
 
@@ -1185,6 +1195,7 @@ func parseParam(node *node32) (*FunctionParam, error) {
 	return param, nil
 }
 
+// parse a function defintion
 func parseFunction(node *node32) (*FunctionDef, error) {
 	var err error
 	function := &FunctionDef{}
@@ -1199,6 +1210,7 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	function.ident = nextNode(node, ruleIDENT).match
 
 	paramListNode := nextNode(node, rulePARAMLIST)
+	// argument list may be missing with zero arguments
 	if paramListNode != nil {
 		for pnode := range nodeRange(paramListNode.up) {
 			if pnode.pegRule == rulePARAM {
@@ -1220,6 +1232,8 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	return function, nil
 }
 
+// parse the main WACC block that contains all function definitions and the main
+// body
 func parseWACC(node *node32) (*AST, error) {
 	ast := &AST{}
 
