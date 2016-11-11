@@ -147,9 +147,10 @@ func (m *AST) TypeCheck() []error {
 
 		for _, f := range m.functions {
 			if pf := global.DeclareFunction(f.ident, f); pf != nil {
-				errch <- &FunctionRedecleration{
-					ident: pf.ident,
-				}
+				errch <- CreateFunctionRedelarationError(
+					f.Token(),
+					f.ident,
+				)
 			}
 		}
 
@@ -162,9 +163,12 @@ func (m *AST) TypeCheck() []error {
 			for _, arg := range f.params {
 				pt := fscope.Declare(arg.name, arg.waccType)
 				if pt != nil {
-					errch <- &VariableRedeclaration{
-						ident: arg.name,
-					}
+					errch <- CreateVariableRedeclarationError(
+						arg.Token(),
+						arg.name,
+						pt,
+						arg.waccType,
+					)
 				}
 			}
 			fscope.returnType = f.returnType
@@ -194,19 +198,21 @@ func (m *BlockStatement) TypeCheck(ts *Scope, errch chan<- error) {
 
 func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	if pt := ts.Declare(m.ident, m.waccType); pt != nil {
-		errch <- &VariableRedeclaration{
-			ident: m.ident,
-			prev:  pt,
-			new:   m.waccType,
-		}
+		errch <- CreateVariableRedeclarationError(
+			m.Token(),
+			m.ident,
+			pt,
+			m.waccType,
+		)
 	}
 
 	m.rhs.TypeCheck(ts, errch)
 	if rhsT := m.rhs.GetType(ts); !m.waccType.Match(rhsT) {
-		errch <- &TypeMismatch{
-			expected: m.waccType,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			m.waccType,
+			rhsT,
+		)
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
@@ -220,10 +226,11 @@ func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !lhsT.Match(rhsT) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
@@ -236,14 +243,16 @@ func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	case IntType:
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      t,
-		}
-		errch <- &TypeMismatch{
-			expected: CharType{},
-			got:      t,
-		}
+		errch <- CreateTypeMismatchError(
+			m.target.Token(),
+			IntType{},
+			t,
+		)
+		errch <- CreateTypeMismatchError(
+			m.target.Token(),
+			CharType{},
+			t,
+		)
 	}
 }
 
@@ -256,14 +265,16 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	case PairType:
 	case ArrayType:
 	default:
-		errch <- &TypeMismatch{
-			expected: PairType{},
-			got:      t,
-		}
-		errch <- &TypeMismatch{
-			expected: ArrayType{},
-			got:      t,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			PairType{},
+			t,
+		)
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			ArrayType{},
+			t,
+		)
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
@@ -276,10 +287,11 @@ func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	exprT := m.expr.GetType(ts)
 
 	if !returnT.Match(exprT) {
-		errch <- &TypeMismatch{
-			expected: returnT,
-			got:      exprT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			returnT,
+			exprT,
+		)
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
@@ -290,10 +302,11 @@ func (m *ExitStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	exitT := m.expr.GetType(ts)
 
 	if !(IntType{}.Match(exitT)) {
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      exitT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			IntType{},
+			exitT,
+		)
 	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
@@ -314,10 +327,11 @@ func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	boolT := m.cond.GetType(ts)
 
 	if !(BoolType{}.Match(boolT)) {
-		errch <- &TypeMismatch{
-			expected: BoolType{},
-			got:      boolT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.cond.Token(),
+			BoolType{},
+			boolT,
+		)
 	}
 
 	m.trueStat.TypeCheck(ts.Child(), errch)
@@ -331,10 +345,11 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	boolT := m.cond.GetType(ts)
 
 	if !(BoolType{}.Match(boolT)) {
-		errch <- &TypeMismatch{
-			expected: BoolType{},
-			got:      boolT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.cond.Token(),
+			BoolType{},
+			boolT,
+		)
 	}
 
 	m.body.TypeCheck(ts.Child(), errch)
@@ -348,10 +363,11 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
 	default:
-		errch <- &TypeMismatch{
-			expected: PairType{},
-			got:      t,
-		}
+		errch <- CreateTypeMismatchError(
+			m.Token(),
+			PairType{},
+			t,
+		)
 	}
 }
 
@@ -374,20 +390,22 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 		i.TypeCheck(ts, errch)
 
 		if !(IntType{}).Match(i.GetType(ts)) {
-			errch <- &TypeMismatch{
-				expected: IntType{},
-				got:      t,
-			}
+			errch <- CreateTypeMismatchError(
+				i.Token(),
+				IntType{},
+				t,
+			)
 		}
 
 		switch arr := t.(type) {
 		case ArrayType:
 			t = arr.base
 		default:
-			errch <- &TypeMismatch{
-				expected: ArrayType{},
-				got:      t,
-			}
+			errch <- CreateTypeMismatchError(
+				m.Token(),
+				ArrayType{},
+				t,
+			)
 		}
 	}
 }
@@ -416,9 +434,10 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	switch ts.Lookup(m.ident).(type) {
 	case InvalidType:
-		errch <- &UndeclaredVariable{
-			ident: m.ident,
-		}
+		errch <- CreateUndelaredVariableError(
+			m.Token(),
+			m.ident,
+		)
 	}
 }
 
@@ -455,10 +474,11 @@ func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	switch pairT.(type) {
 	case PairType:
 	default:
-		errch <- &TypeMismatch{
-			expected: PairType{},
-			got:      pairT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			PairType{},
+			pairT,
+		)
 	}
 }
 
@@ -485,10 +505,11 @@ func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 		elem.TypeCheck(ts, errch)
 
 		if !t.Match(elem.GetType(ts)) {
-			errch <- &TypeMismatch{
-				expected: t,
-				got:      elem.GetType(ts),
-			}
+			errch <- CreateTypeMismatchError(
+				elem.Token(),
+				t,
+				elem.GetType(ts),
+			)
 		}
 	}
 }
@@ -534,10 +555,11 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 		paramT := fun.params[i].waccType
 		argT := m.args[i].GetType(ts)
 		if !paramT.Match(argT) {
-			errch <- &TypeMismatch{
-				expected: paramT,
-				got:      argT,
-			}
+			errch <- CreateTypeMismatchError(
+				m.args[i].Token(),
+				paramT,
+				argT,
+			)
 		}
 	}
 }
@@ -577,9 +599,10 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 
 	switch identT.(type) {
 	case InvalidType:
-		errch <- &UndeclaredVariable{
-			ident: m.ident,
-		}
+		errch <- CreateUndelaredVariableError(
+			m.Token(),
+			m.ident,
+		)
 	}
 }
 
@@ -643,19 +666,21 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 		switch indexT := index.GetType(ts).(type) {
 		case IntType:
 		default:
-			errch <- &TypeMismatch{
-				expected: IntType{},
-				got:      indexT,
-			}
+			errch <- CreateTypeMismatchError(
+				index.Token(),
+				IntType{},
+				indexT,
+			)
 		}
 
 		switch arrayT := array.(type) {
 		case ArrayType:
 		default:
-			errch <- &TypeMismatch{
-				expected: ArrayType{},
-				got:      arrayT,
-			}
+			errch <- CreateTypeMismatchError(
+				m.Token(),
+				ArrayType{},
+				arrayT,
+			)
 		}
 	}
 }
@@ -679,10 +704,11 @@ func (m *UnaryOperatorNot) TypeCheck(ts *Scope, errch chan<- error) {
 	switch unopT := m.expr.GetType(ts).(type) {
 	case BoolType:
 	default:
-		errch <- &TypeMismatch{
-			expected: BoolType{},
-			got:      unopT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			BoolType{},
+			unopT,
+		)
 	}
 }
 
@@ -701,10 +727,11 @@ func (m *UnaryOperatorNegate) TypeCheck(ts *Scope, errch chan<- error) {
 	switch unopT := m.expr.GetType(ts).(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      unopT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			IntType{},
+			unopT,
+		)
 	}
 }
 
@@ -723,10 +750,11 @@ func (m *UnaryOperatorLen) TypeCheck(ts *Scope, errch chan<- error) {
 	switch unopT := m.expr.GetType(ts).(type) {
 	case ArrayType:
 	default:
-		errch <- &TypeMismatch{
-			expected: ArrayType{},
-			got:      unopT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			ArrayType{},
+			unopT,
+		)
 	}
 }
 
@@ -745,10 +773,11 @@ func (m *UnaryOperatorOrd) TypeCheck(ts *Scope, errch chan<- error) {
 	switch unopT := m.expr.GetType(ts).(type) {
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: CharType{},
-			got:      unopT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			CharType{},
+			unopT,
+		)
 	}
 }
 
@@ -767,10 +796,11 @@ func (m *UnaryOperatorChr) TypeCheck(ts *Scope, errch chan<- error) {
 	switch unopT := m.expr.GetType(ts).(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      unopT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			IntType{},
+			unopT,
+		)
 	}
 }
 
@@ -791,19 +821,21 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -819,19 +851,21 @@ func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -847,19 +881,21 @@ func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -875,19 +911,21 @@ func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -903,19 +941,21 @@ func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -931,20 +971,22 @@ func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
 	}
 }
 
@@ -960,20 +1002,27 @@ func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			CharType{},
+			lhsT,
+		)
 	}
 }
 
@@ -989,20 +1038,27 @@ func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			CharType{},
+			lhsT,
+		)
 	}
 }
 
@@ -1018,20 +1074,27 @@ func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case IntType:
 	case CharType:
 	default:
-		errch <- &TypeMismatch{
-			expected: IntType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			IntType{},
+			lhsT,
+		)
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			CharType{},
+			lhsT,
+		)
 	}
 }
 
@@ -1047,10 +1110,11 @@ func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 }
 
@@ -1066,10 +1130,11 @@ func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 }
 
@@ -1085,19 +1150,21 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case BoolType:
 	default:
-		errch <- &TypeMismatch{
-			expected: BoolType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			BoolType{},
+			lhsT,
+		)
 	}
 }
 
@@ -1113,19 +1180,21 @@ func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 	rhsT := m.rhs.GetType(ts)
 
 	if !(lhsT.Match(rhsT)) {
-		errch <- &TypeMismatch{
-			expected: lhsT,
-			got:      rhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.rhs.Token(),
+			lhsT,
+			rhsT,
+		)
 	}
 
 	switch lhsT.(type) {
 	case BoolType:
 	default:
-		errch <- &TypeMismatch{
-			expected: BoolType{},
-			got:      lhsT,
-		}
+		errch <- CreateTypeMismatchError(
+			m.lhs.Token(),
+			BoolType{},
+			lhsT,
+		)
 	}
 }
 

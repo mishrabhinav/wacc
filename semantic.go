@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -57,12 +56,7 @@ func checkFunctionReturns(f *FunctionDef) <-chan error {
 	go func() {
 		returns := hasReturn(f.body)
 		if !returns {
-			out <- &SyntaxError{
-				file:   "",
-				line:   0,
-				column: 0,
-				msg:    fmt.Sprintf("Expection function '%s' to return", f.ident),
-			}
+			out <- CreateMissingReturnError(f.token, f.ident)
 		}
 		close(out)
 	}()
@@ -92,7 +86,9 @@ func checkJunkStatement(stm Statement) <-chan error {
 			}
 		case *ReturnStatement:
 			if n := t.next; n != nil {
-				out <- &UnreachableStatement{}
+				out <- CreateUnreachableStatementError(
+					stm.Token(),
+				)
 			}
 		}
 

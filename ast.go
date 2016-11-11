@@ -35,6 +35,8 @@ type Expression interface {
 	ASTString(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
+	Token() *token32
+	SetToken(*token32)
 }
 
 type Statement interface {
@@ -43,9 +45,24 @@ type Statement interface {
 	IString(level int) string
 	ASTString(indent string) string
 	TypeCheck(*Scope, chan<- error)
+	Token() *token32
+	SetToken(*token32)
+}
+
+type TokenBase struct {
+	token *token32
+}
+
+func (m *TokenBase) Token() *token32 {
+	return m.token
+}
+
+func (m *TokenBase) SetToken(token *token32) {
+	m.token = token
 }
 
 type BaseStatement struct {
+	TokenBase
 	next Statement
 }
 
@@ -77,19 +94,24 @@ type LHS interface {
 	ASTString(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
+	Token() *token32
+	SetToken(*token32)
 }
 
 type PairElemLHS struct {
+	TokenBase
 	snd  bool
 	expr Expression
 }
 
 type ArrayLHS struct {
+	TokenBase
 	ident string
 	index []Expression
 }
 
 type VarLHS struct {
+	TokenBase
 	ident string
 }
 
@@ -97,27 +119,34 @@ type RHS interface {
 	ASTString(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
+	Token() *token32
+	SetToken(*token32)
 }
 
 type PairLiterRHS struct {
+	TokenBase
 	PairLiteral
 }
 
 type ArrayLiterRHS struct {
+	TokenBase
 	elements []Expression
 }
 
 type PairElemRHS struct {
+	TokenBase
 	snd  bool
 	expr Expression
 }
 
 type FunctionCallRHS struct {
+	TokenBase
 	ident string
 	args  []Expression
 }
 
 type ExpressionRHS struct {
+	TokenBase
 	expr Expression
 }
 
@@ -171,11 +200,13 @@ type WhileStatement struct {
 }
 
 type FunctionParam struct {
+	TokenBase
 	name     string
 	waccType Type
 }
 
 type FunctionDef struct {
+	TokenBase
 	ident      string
 	returnType Type
 	params     []*FunctionParam
@@ -226,44 +257,57 @@ func parseArrayElem(node *node32) (Expression, error) {
 }
 
 type Ident struct {
+	TokenBase
 	ident string
 }
 
 type IntLiteral struct {
+	TokenBase
 	value int
 }
 
-type BoolLiteralTrue struct{}
+type BoolLiteralTrue struct {
+	TokenBase
+}
 
-type BoolLiteralFalse struct{}
+type BoolLiteralFalse struct {
+	TokenBase
+}
 
 type CharLiteral struct {
+	TokenBase
 	char string
 }
 
 type StringLiteral struct {
+	TokenBase
 	str string
 }
 
 type PairLiteral struct {
+	TokenBase
 	fst Expression
 	snd Expression
 }
 
-type NullPair struct{}
+type NullPair struct {
+	TokenBase
+}
 
 type ArrayElem struct {
+	TokenBase
 	ident   string
 	indexes []Expression
 }
 
 type UnaryOperator interface {
+	Expression
 	GetExpression() Expression
 	SetExpression(Expression)
-	ASTString(indent string) string
 }
 
 type UnaryOperatorBase struct {
+	TokenBase
 	expr Expression
 }
 
@@ -296,14 +340,15 @@ type UnaryOperatorChr struct {
 }
 
 type BinaryOperator interface {
+	Expression
 	GetRHS() Expression
 	SetRHS(Expression)
 	GetLHS() Expression
 	SetLHS(Expression)
-	ASTString(indent string) string
 }
 
 type BinaryOperatorBase struct {
+	TokenBase
 	lhs Expression
 	rhs Expression
 }
@@ -376,9 +421,13 @@ type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
-type ExprLPar struct{}
+type ExprLPar struct {
+	TokenBase
+}
 
-type ExprRPar struct{}
+type ExprRPar struct {
+	TokenBase
+}
 
 func exprStream(node *node32) <-chan *node32 {
 	out := make(chan *node32)
@@ -407,6 +456,13 @@ func parseExpr(node *node32) (Expression, error) {
 
 	push := func(e Expression) {
 		stack = append(stack, e)
+	}
+
+	peek := func() Expression {
+		if len(stack) == 0 {
+			return nil
+		}
+		return stack[len(stack)-1]
 	}
 
 	pop := func() (ret Expression) {
@@ -564,29 +620,26 @@ func parseExpr(node *node32) (Expression, error) {
 				numerr := err.(*strconv.NumError)
 				switch numerr.Err {
 				case strconv.ErrRange:
-					return nil, &SyntaxError{
-						file:   "",
-						line:   0,
-						column: 0,
-						msg:    fmt.Sprintf("Number '%s' cannot be represented on 32 bits", enode.match),
-					}
-
+					return nil, CreateBigIntError(
+						&enode.token32,
+						enode.match,
+					)
 				}
 				return nil, err
 			}
-			push(&IntLiteral{int(num)})
+			push(&IntLiteral{value: int(num)})
 		case ruleFALSE:
 			push(&BoolLiteralFalse{})
 		case ruleTRUE:
 			push(&BoolLiteralTrue{})
 		case ruleCHARLITER:
-			push(&CharLiteral{enode.up.next.match})
+			push(&CharLiteral{char: enode.up.next.match})
 		case ruleSTRLITER:
-			push(&StringLiteral{enode.up.next.match})
+			push(&StringLiteral{str: enode.up.next.match})
 		case rulePAIRLITER:
 			push(&NullPair{})
 		case ruleIDENT:
-			push(&Ident{enode.match})
+			push(&Ident{ident: enode.match})
 		case ruleARRAYELEM:
 			arrElem, err := parseArrayElem(enode.up)
 			if err != nil {
@@ -624,6 +677,14 @@ func parseExpr(node *node32) (Expression, error) {
 				}
 			}
 		}
+
+		if val := peek(); val != nil && val.Token() == nil {
+			peek().SetToken(&node.token32)
+		}
+
+		if op := peekop(); op != nil && op.Token() == nil {
+			peekop().SetToken(&node.token32)
+		}
 	}
 
 	for peekop() != nil {
@@ -638,6 +699,8 @@ func parseLHS(node *node32) (LHS, error) {
 	case rulePAIRELEM:
 		target := new(PairElemLHS)
 
+		target.SetToken(&node.token32)
+
 		fstNode := nextNode(node.up, ruleFST)
 		target.snd = fstNode == nil
 
@@ -650,6 +713,8 @@ func parseLHS(node *node32) (LHS, error) {
 		return target, nil
 	case ruleARRAYELEM:
 		target := new(ArrayLHS)
+
+		target.SetToken(&node.token32)
 
 		identNode := nextNode(node.up, ruleIDENT)
 		target.ident = identNode.match
@@ -665,7 +730,9 @@ func parseLHS(node *node32) (LHS, error) {
 
 		return target, nil
 	case ruleIDENT:
-		return &VarLHS{ident: node.match}, nil
+		target := &VarLHS{ident: node.match}
+		target.SetToken(&node.token32)
+		return target, nil
 	default:
 		return nil, fmt.Errorf("Unexpected %s %s", node.String(), node.match)
 	}
@@ -676,6 +743,8 @@ func parseRHS(node *node32) (RHS, error) {
 	case ruleNEWPAIR:
 		var err error
 		pair := new(PairLiterRHS)
+
+		pair.SetToken(&node.token32)
 
 		fstNode := nextNode(node, ruleEXPR)
 		if pair.fst, err = parseExpr(fstNode.up); err != nil {
@@ -693,6 +762,8 @@ func parseRHS(node *node32) (RHS, error) {
 
 		arr := new(ArrayLiterRHS)
 
+		arr.SetToken(&node.token32)
+
 		for node = nextNode(node, ruleEXPR); node != nil; node = nextNode(node.next, ruleEXPR) {
 			var err error
 			var expr Expression
@@ -707,6 +778,8 @@ func parseRHS(node *node32) (RHS, error) {
 	case rulePAIRELEM:
 		target := new(PairElemRHS)
 
+		target.SetToken(&node.token32)
+
 		fstNode := nextNode(node.up, ruleFST)
 		target.snd = fstNode == nil
 
@@ -719,6 +792,8 @@ func parseRHS(node *node32) (RHS, error) {
 		return target, nil
 	case ruleCALL:
 		call := new(FunctionCallRHS)
+
+		call.SetToken(&node.token32)
 
 		identNode := nextNode(node, ruleIDENT)
 		call.ident = identNode.match
@@ -742,6 +817,8 @@ func parseRHS(node *node32) (RHS, error) {
 		return call, nil
 	case ruleEXPR:
 		exprRHS := new(ExpressionRHS)
+
+		exprRHS.SetToken(&node.token32)
 
 		var err error
 		var expr Expression
@@ -962,6 +1039,8 @@ func parseStatement(node *node32) (Statement, error) {
 		stm.SetNext(next)
 	}
 
+	stm.SetToken(&node.token32)
+
 	return stm, nil
 }
 
@@ -969,6 +1048,8 @@ func parseParam(node *node32) (*FunctionParam, error) {
 	var err error
 
 	param := &FunctionParam{}
+
+	param.SetToken(&node.token32)
 
 	param.waccType, err = parseType(nextNode(node, ruleTYPE).up)
 	if err != nil {
@@ -983,6 +1064,8 @@ func parseParam(node *node32) (*FunctionParam, error) {
 func parseFunction(node *node32) (*FunctionDef, error) {
 	var err error
 	function := &FunctionDef{}
+
+	function.SetToken(&node.token32)
 
 	function.returnType, err = parseType(nextNode(node, ruleTYPE).up)
 	if err != nil {
