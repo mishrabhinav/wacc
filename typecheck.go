@@ -1007,7 +1007,7 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorMult) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryArithmetic(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1042,7 +1042,7 @@ func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorDiv) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryArithmetic(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1077,7 +1077,7 @@ func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorMod) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryArithmetic(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1112,7 +1112,7 @@ func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorAdd) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryArithmetic(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1147,7 +1147,7 @@ func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorSub) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryArithmetic(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1183,7 +1183,7 @@ func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorGreaterThan) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryComparator(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1224,7 +1224,7 @@ func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorGreaterEqual) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryComparator(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1265,7 +1265,7 @@ func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorLessThan) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryComparator(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1306,7 +1306,7 @@ func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorLessEqual) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryComparator(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1331,7 +1331,7 @@ func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorEqual) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryEquality(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1356,7 +1356,7 @@ func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorNotEqual) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryEquality(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1391,7 +1391,7 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorAnd) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryBoolean(m, ts)
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1426,53 +1426,64 @@ func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the expression.
 // InvalidType is returned in case of error.
 func (m *BinaryOperatorOr) GetType(ts *Scope) Type {
-	return GetTypeBinary(m, ts)
+	return GetTypeBinaryBoolean(m, ts)
 }
 
-func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
+func GetTypeBinaryArithmetic(m BinaryOperator, ts *Scope) Type {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 
 	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
 		return InvalidType{}
 	}
-	switch m.(type) {
-	case *BinaryOperatorMult,
-		*BinaryOperatorDiv,
-		*BinaryOperatorMod,
-		*BinaryOperatorAdd,
-		*BinaryOperatorSub:
-		switch lhs.GetType(ts).(type) {
-		case IntType:
-			return IntType{}
-		default:
-			return InvalidType{}
-		}
-	case *BinaryOperatorGreaterThan,
-		*BinaryOperatorGreaterEqual,
-		*BinaryOperatorLessThan,
-		*BinaryOperatorLessEqual:
-		switch lhs.GetType(ts).(type) {
-		case IntType,
-			CharType:
-			return BoolType{}
-		default:
-			return InvalidType{}
-		}
-	case *BinaryOperatorEqual,
-		*BinaryOperatorNotEqual:
+
+	if (IntType{}.Match(lhs.GetType(ts))) {
+		return IntType{}
+	}
+
+	return InvalidType{}
+}
+
+func GetTypeBinaryComparator(m BinaryOperator, ts *Scope) Type {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+
+	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
+		return InvalidType{}
+	}
+
+	switch lhs.GetType(ts).(type) {
+	case IntType, CharType:
 		return BoolType{}
-	case *BinaryOperatorAnd,
-		*BinaryOperatorOr:
-		switch lhs.GetType(ts).(type) {
-		case BoolType:
-			return BoolType{}
-		default:
-			return InvalidType{}
-		}
 	default:
 		return InvalidType{}
 	}
+}
+
+func GetTypeBinaryEquality(m BinaryOperator, ts *Scope) Type {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+
+	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
+		return InvalidType{}
+	}
+
+	return BoolType{}
+}
+
+func GetTypeBinaryBoolean(m BinaryOperator, ts *Scope) Type {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+
+	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
+		return InvalidType{}
+	}
+
+	if (BoolType{}.Match(lhs.GetType(ts))) {
+		return BoolType{}
+	}
+
+	return InvalidType{}
 }
 
 // TypeCheck on ExpLPar to satisfy interface. Never called.
