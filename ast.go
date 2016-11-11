@@ -411,6 +411,7 @@ type UnaryOperatorChr struct {
 	UnaryOperatorBase
 }
 
+// BinaryOperator represents a generic binaryOperator which might be an expr.
 type BinaryOperator interface {
 	Expression
 	GetRHS() Expression
@@ -419,80 +420,99 @@ type BinaryOperator interface {
 	SetLHS(Expression)
 }
 
+// BinaryOperator represents the base of a binary operator.
 type BinaryOperatorBase struct {
 	TokenBase
 	lhs Expression
 	rhs Expression
 }
 
+// GetLHS returns the left-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) GetLHS() Expression {
 	return m.lhs
 }
 
+// SetLHS sets the left-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) SetLHS(exp Expression) {
 	m.lhs = exp
 }
 
+// GetRHS returns the right-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) GetRHS() Expression {
 	return m.rhs
 }
 
+// SetRHS sets the right-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) SetRHS(exp Expression) {
 	m.rhs = exp
 }
 
+// BinaryOperatorMult represents '*'
 type BinaryOperatorMult struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '/'
 type BinaryOperatorDiv struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '%'
 type BinaryOperatorMod struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '+'
 type BinaryOperatorAdd struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '-'
 type BinaryOperatorSub struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '>'
 type BinaryOperatorGreaterThan struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '>='
 type BinaryOperatorGreaterEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '<'
 type BinaryOperatorLessThan struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '<='
 type BinaryOperatorLessEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '=='
 type BinaryOperatorEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '!='
 type BinaryOperatorNotEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '&&'
 type BinaryOperatorAnd struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '||'
 type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMult represents '()'
 type ExprParen struct {
 	TokenBase
 }
