@@ -422,7 +422,7 @@ type BinaryOperator interface {
 	SetLHS(Expression)
 }
 
-// BinaryOperator represents the base of a binary operator.
+// BinaryOperatorBase represents the base of a binary operator.
 type BinaryOperatorBase struct {
 	TokenBase
 	lhs Expression
@@ -454,67 +454,67 @@ type BinaryOperatorMult struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '/'
+// BinaryOperatorDiv represents '/'
 type BinaryOperatorDiv struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '%'
+// BinaryOperatorMod represents '%'
 type BinaryOperatorMod struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '+'
+// BinaryOperatorAdd represents '+'
 type BinaryOperatorAdd struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '-'
+// BinaryOperatorSub represents '-'
 type BinaryOperatorSub struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '>'
+// BinaryOperatorGreaterThan represents '>'
 type BinaryOperatorGreaterThan struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '>='
+// BinaryOperatorGreaterEqual represents '>='
 type BinaryOperatorGreaterEqual struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '<'
+// BinaryOperatorLessThan represents '<'
 type BinaryOperatorLessThan struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '<='
+// BinaryOperatorLessEqual represents '<='
 type BinaryOperatorLessEqual struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '=='
+// BinaryOperatorEqual represents '=='
 type BinaryOperatorEqual struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '!='
+// BinaryOperatorNotEqual represents '!='
 type BinaryOperatorNotEqual struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '&&'
+// BinaryOperatorAnd represents '&&'
 type BinaryOperatorAnd struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '||'
+// BinaryOperatorOr represents '||'
 type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
-// BinaryOperatorMult represents '()'
+// ExprParen represents '()'
 type ExprParen struct {
 	TokenBase
 }
