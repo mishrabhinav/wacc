@@ -398,11 +398,7 @@ func (stmt BlockStatement) ASTString(indent string) string {
 	return fmt.Sprintf("")
 }
 
-func (lpar ExprLPar) ASTString(indent string) string {
-	return ""
-}
-
-func (rpar ExprRPar) ASTString(indent string) string {
+func (lpar ExprParen) ASTString(indent string) string {
 	return ""
 }
 

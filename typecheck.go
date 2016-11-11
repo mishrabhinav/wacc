@@ -1297,19 +1297,10 @@ func getTypeBinaryBoolean(m BinaryOperator, ts *Scope) Type {
 }
 
 // TypeCheck on ExpLPar to satisfy interface. Never called.
-func (m *ExprLPar) TypeCheck(ts *Scope, errch chan<- error) {
+func (m *ExprParen) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 // GetType on ExpLPar to satisfy interface. Never called.
-func (m *ExprLPar) GetType(ts *Scope) Type {
-	return InvalidType{}
-}
-
-// TypeCheck on ExpRPar to satisfy interface. Never called.
-func (m *ExprRPar) TypeCheck(ts *Scope, errch chan<- error) {
-}
-
-// GetType on ExpRPar to satisfy interface. Never called.
-func (m *ExprRPar) GetType(ts *Scope) Type {
+func (m *ExprParen) GetType(ts *Scope) Type {
 	return InvalidType{}
 }

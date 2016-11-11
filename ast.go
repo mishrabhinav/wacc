@@ -427,11 +427,7 @@ type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
-type ExprLPar struct {
-	TokenBase
-}
-
-type ExprRPar struct {
+type ExprParen struct {
 	TokenBase
 }
 
@@ -498,7 +494,7 @@ func parseExpr(node *node32) (Expression, error) {
 		case BinaryOperator:
 			t.SetRHS(pop())
 			t.SetLHS(pop())
-		case *ExprLPar:
+		case *ExprParen:
 			exp = nil
 		}
 
@@ -545,7 +541,7 @@ func parseExpr(node *node32) (Expression, error) {
 			return 11
 		case *BinaryOperatorOr:
 			return 12
-		case *ExprLPar:
+		case *ExprParen:
 			return 13
 		default:
 			return 42
@@ -675,12 +671,12 @@ func parseExpr(node *node32) (Expression, error) {
 			}
 			pushop(op1)
 		case ruleLPAR:
-			pushop(&ExprLPar{})
+			pushop(&ExprParen{})
 		case ruleRPAR:
 		parloop:
 			for {
 				switch peekop().(type) {
-				case *ExprLPar:
+				case *ExprParen:
 					popop()
 					break parloop
 				default:
