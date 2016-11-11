@@ -2,9 +2,11 @@ package main
 
 // WACC Group 34
 //
-// wacc.go: TODO
+// wacc.go: Main program
 //
-// TODO
+// Handles the input file(s)
+// Handles flag(s) parsing
+// Handles exit codes in case Syntax/Semantic errors are encountered
 
 import (
 	"fmt"
