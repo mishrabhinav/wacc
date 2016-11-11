@@ -20,6 +20,7 @@ type Flags struct {
 	verbose      bool
 }
 
+// Parse defines all the flags and then parses the command line args
 func (f *Flags) Parse() {
 	flag.StringVar(&f.filename, "file", "", "Input File")
 
@@ -35,19 +36,22 @@ func (f *Flags) Parse() {
 	flag.Parse()
 }
 
+// Start prints compiling message when verbose flag is set
 func (f *Flags) Start() {
 	if f.verbose {
 		fmt.Println("-- Compiling...")
 	}
-
 }
 
+// Finish prints finished message when verbose flag is set
 func (f *Flags) Finish() {
 	if f.verbose {
 		fmt.Println("-- Finished")
 	}
 }
 
+// PrintPrettyAST will pretty print the code or print the AST when appropriate
+// flags are supplied
 func (f *Flags) PrintPrettyAST(ast *AST) {
 	if f.printPretty {
 		fmt.Println("-- Printing Pretty Code")
