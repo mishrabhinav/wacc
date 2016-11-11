@@ -1,7 +1,7 @@
 BINARY := wacc_34
 
 GOGLIDE := $(GOPATH)/bin/glide
-GOLINTER := $(GOPATH)/bin/gometalinter.v1
+GOLINTER := $(GOPATH)/bin/gometalinter
 GOPEG := $(GOPATH)/bin/peg
 
 SRC := $(shell find . -name '*.go' -not -path '*/vendor/*')
@@ -20,7 +20,7 @@ format:
 	go fmt
 
 lint: $(GOLINTER)
-	$(GOLINTER) --exclude=vendor
+	$(GOLINTER) --exclude=vendor --exclude '.peg.go'
 
 install: $(BINARY)
 	go install
@@ -38,7 +38,7 @@ $(GOGLIDE):
 	go get -u github.com/Masterminds/glide
 
 $(GOLINTER):
-	go get -u gopkg.in/alecthomas/gometalinter.v1
+	go get -u github.com/alecthomas/gometalinter
 	$(GOLINTER) --install
 
 $(GOPEG):
