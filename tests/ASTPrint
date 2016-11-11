@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Colour Codes
+RED='\033[0;31m'   # Red
+LRED='\033[1;31m'  # Light Red
+GREEN='\033[1;32m' # Green
+BROWN='\033[0;33m' # Brown
+CYAN='\033[0;36m'  # Cyan
+NC='\033[0m'       # White
+
+# Default path to example files
+DEFAULT_PATH="docs/examples"
+
+# Check if a specific path provided, if not use default
+if [ $# -eq 0 ]; then
+  EXAMPLES_PATH=$DEFAULT_PATH
+else
+  EXAMPLES_PATH=$1
+fi
+
+# Subdirectories for Valid and Invalid cases
+VALID="$EXAMPLES_PATH/valid"
+
+# Function to test the input file
+testASTPrint() {
+  find $1 -name '*.wacc' | while read f;
+  do
+    OUT="${BROWN}File: ${CYAN}${f#*$1}${NC} : "
+
+    # Modify input to make it match
+    ./wacc_34 -file $f -ast > result.txt
+    sed -i '1d' result.txt
+    sed -i '1d' result.txt
+    docs/refCompile $f -t > refResult.txt
+    sed -i 's/^[^-]* - //' result.txt
+    sed -i '$d' refResult.txt
+    sed -i '$d' refResult.txt
+    sed -i '$d' refResult.txt
+    sed -i '$d' result.txt
+    sed -i '0,/^0\tProgram$/d' refResult.txt
+    sed -i 's/^[^-]* - //' refResult.txt
+    DIFF="$(diff result.txt refResult.txt)"
+    # Print the result on test failure
+    if [ -z "$DIFF" ]; then
+      RESULT="${GREEN}Pass${NC}"
+    else
+      RESULT="${RED}Fail${NC}"
+      #echo "EXPECTED"
+      #cat refResult.txt
+      #echo "DIFFERENCE"
+      #diff result.txt refResult.txt
+    fi
+    echo -e "$OUT $RESULT"
+  done
+  rm refResult.txt
+  rm result.txt
+}
+
+# Start Testing
+echo -e "${GREEN}===== WACC Compiler AST Print Testing${NC}"
+
+# Test Valid Cases
+echo -e "${LRED}----- Valid Testcases${NC}"
+testASTPrint $VALID
+
+# Testing Complete
+echo -e "${GREEN}===== Testing Complete${NC}"
+
