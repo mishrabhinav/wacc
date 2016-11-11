@@ -220,12 +220,12 @@ func CreateTypeMismatchError(token *token32, expected, got Type) error {
 }
 
 // CallingNonFunction is a semantic error trying to call an undeclared function
-type CallingNonFunction struct {
+type CallingNonFunctionError struct {
 	SemanticError
 	ident string
 }
 
-func (e *CallingNonFunction) Error() string {
+func (e *CallingNonFunctionError) Error() string {
 	return fmt.Sprintf(
 		"%s: calling non function '%s'",
 		e.SemanticError.Error(),
@@ -233,16 +233,25 @@ func (e *CallingNonFunction) Error() string {
 	)
 }
 
-// FunctionCallWrongArity is a semantic error trying to call a function with
-// the wrong number of arguments
-type FunctionCallWrongArity struct {
+// CreateCallingNonFunctionError creates an error from a token and a function
+// identifier
+func CreateCallingNonFunctionError(token *token32, ident string) error {
+	return &CallingNonFunctionError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// FunctionCallWrongArityError is a semantic error trying to call a function
+// with the wrong number of arguments
+type FunctionCallWrongArityError struct {
 	SemanticError
 	ident    string
 	expected int
 	got      int
 }
 
-func (e *FunctionCallWrongArity) Error() string {
+func (e *FunctionCallWrongArityError) Error() string {
 	return fmt.Sprintf(
 		"%s: '%s' called with '%d' arguments expected '%d'",
 		e.SemanticError.Error(),
@@ -250,6 +259,20 @@ func (e *FunctionCallWrongArity) Error() string {
 		e.got,
 		e.expected,
 	)
+}
+
+// CreateFunctionCallWrongArity creates and error from a token, function
+// identifier, expected and received number of parameters
+func CreateFunctionCallWrongArityError(
+	token *token32,
+	ident string,
+	expected, got int) error {
+	return &FunctionCallWrongArityError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+		expected:      expected,
+		got:           got,
+	}
 }
 
 // FunctionRedeclarationError is a semantic error when trying to declare a

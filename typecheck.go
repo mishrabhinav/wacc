@@ -620,17 +620,19 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	fun := ts.LookupFunction(m.ident)
 
 	if fun == nil {
-		errch <- &CallingNonFunction{
-			ident: m.ident,
-		}
+		errch <- CreateCallingNonFunctionError(
+			m.Token(),
+			m.ident,
+		)
 	}
 
 	if len(fun.params) != len(m.args) {
-		errch <- &FunctionCallWrongArity{
-			ident:    fun.ident,
-			expected: len(fun.params),
-			got:      len(m.args),
-		}
+		errch <- CreateFunctionCallWrongArityError(
+			m.Token(),
+			fun.ident,
+			len(fun.params),
+			len(m.args),
+		)
 	}
 
 	for _, arg := range m.args {
