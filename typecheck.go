@@ -707,9 +707,8 @@ func (m *Ident) GetType(ts *Scope) Type {
 	t := ts.Lookup(m.ident)
 	if t == nil {
 		return InvalidType{}
-	} else {
-		return t
 	}
+	return t
 }
 
 // TypeCheck checks expression whether all operators get the type they can
@@ -1436,44 +1435,43 @@ func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
 
 	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
 		return InvalidType{}
-	} else {
-		switch m.(type) {
-		case *BinaryOperatorMult,
-			*BinaryOperatorDiv,
-			*BinaryOperatorMod,
-			*BinaryOperatorAdd,
-			*BinaryOperatorSub:
-			switch lhs.GetType(ts).(type) {
-			case IntType:
-				return IntType{}
-			default:
-				return InvalidType{}
-			}
-		case *BinaryOperatorGreaterThan,
-			*BinaryOperatorGreaterEqual,
-			*BinaryOperatorLessThan,
-			*BinaryOperatorLessEqual:
-			switch lhs.GetType(ts).(type) {
-			case IntType,
-				CharType:
-				return BoolType{}
-			default:
-				return InvalidType{}
-			}
-		case *BinaryOperatorEqual,
-			*BinaryOperatorNotEqual:
-			return BoolType{}
-		case *BinaryOperatorAnd,
-			*BinaryOperatorOr:
-			switch lhs.GetType(ts).(type) {
-			case BoolType:
-				return BoolType{}
-			default:
-				return InvalidType{}
-			}
+	}
+	switch m.(type) {
+	case *BinaryOperatorMult,
+		*BinaryOperatorDiv,
+		*BinaryOperatorMod,
+		*BinaryOperatorAdd,
+		*BinaryOperatorSub:
+		switch lhs.GetType(ts).(type) {
+		case IntType:
+			return IntType{}
 		default:
 			return InvalidType{}
 		}
+	case *BinaryOperatorGreaterThan,
+		*BinaryOperatorGreaterEqual,
+		*BinaryOperatorLessThan,
+		*BinaryOperatorLessEqual:
+		switch lhs.GetType(ts).(type) {
+		case IntType,
+			CharType:
+			return BoolType{}
+		default:
+			return InvalidType{}
+		}
+	case *BinaryOperatorEqual,
+		*BinaryOperatorNotEqual:
+		return BoolType{}
+	case *BinaryOperatorAnd,
+		*BinaryOperatorOr:
+		switch lhs.GetType(ts).(type) {
+		case BoolType:
+			return BoolType{}
+		default:
+			return InvalidType{}
+		}
+	default:
+		return InvalidType{}
 	}
 }
 
