@@ -1,5 +1,12 @@
 package main
 
+// WACC Group 34
+//
+// prettyprint.go: Pretty print the AST.
+//
+// File contains functions that return indented strings and produces a pretty
+// string for the abstract syntax tree.
+
 import (
 	"fmt"
 	"strings"
@@ -9,7 +16,15 @@ const startingIndent int = 1
 const basicIndent string = "  "
 
 func getIndentation(level int) string {
-	return fmt.Sprintf(strings.Repeat(basicIndent, level))
+	return fmt.Sprint(strings.Repeat(basicIndent, level))
+}
+
+func generateUnaryOperator(expr Expression, op string) string {
+	return fmt.Sprintf("%v%v", op, expr)
+}
+
+func generateBinaryOperator(lhs Expression, rhs Expression, op string) string {
+	return fmt.Sprintf("%v %v %v", lhs, op, rhs)
 }
 
 func (m InvalidType) String() string {
@@ -21,20 +36,20 @@ func (m UnknownType) String() string {
 }
 
 func (i IntType) String() string {
-	return fmt.Sprintf("int")
+	return "int"
 }
 
 func (b BoolType) String() string {
-	return fmt.Sprintf("bool")
+	return "bool"
 }
 
 func (c CharType) String() string {
-	return fmt.Sprintf("char")
+	return "char"
 }
 
 func (p PairType) String() string {
-	var first string = fmt.Sprintf("%v", p.first)
-	var second string = fmt.Sprintf("%v", p.second)
+	var first = fmt.Sprintf("%v", p.first)
+	var second = fmt.Sprintf("%v", p.second)
 
 	if p.first == nil {
 		first = "pair"
@@ -50,19 +65,19 @@ func (a ArrayType) String() string {
 }
 
 func (ident *Ident) String() string {
-	return fmt.Sprintf(ident.ident)
+	return ident.ident
 }
 
 func (liter *IntLiteral) String() string {
-	return fmt.Sprintf("%v", liter.value)
+	return fmt.Sprint(liter.value)
 }
 
 func (liter *BoolLiteralTrue) String() string {
-	return fmt.Sprintf("true")
+	return "true"
 }
 
 func (liter *BoolLiteralFalse) String() string {
-	return fmt.Sprintf("false")
+	return "false"
 }
 
 func (liter *CharLiteral) String() string {
@@ -78,7 +93,7 @@ func (liter *PairLiteral) String() string {
 }
 
 func (liter *NullPair) String() string {
-	return fmt.Sprintf("null")
+	return "null"
 }
 
 func (elem *ArrayElem) String() string {
@@ -92,83 +107,83 @@ func (elem *ArrayElem) String() string {
 }
 
 func (op *UnaryOperatorNot) String() string {
-	return fmt.Sprintf("!%v", op.GetExpression())
+	return generateUnaryOperator(op.GetExpression(), "!")
 }
 
 func (op *UnaryOperatorNegate) String() string {
-	return fmt.Sprintf("-%v", op.GetExpression())
+	return generateUnaryOperator(op.GetExpression(), "-")
 }
 
 func (op *UnaryOperatorLen) String() string {
-	return fmt.Sprintf("len %v", op.GetExpression())
+	return generateUnaryOperator(op.GetExpression(), "len ")
 }
 
 func (op *UnaryOperatorOrd) String() string {
-	return fmt.Sprintf("ord %v", op.GetExpression())
+	return generateUnaryOperator(op.GetExpression(), "ord ")
 }
 
 func (op *UnaryOperatorChr) String() string {
-	return fmt.Sprintf("chr %v", op.GetExpression())
+	return generateUnaryOperator(op.GetExpression(), "chr ")
 }
 
 func (op *BinaryOperatorMult) String() string {
-	return fmt.Sprintf("%v * %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "*")
 }
 
 func (op *BinaryOperatorDiv) String() string {
-	return fmt.Sprintf("%v / %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "/")
 }
 
 func (op *BinaryOperatorMod) String() string {
-	return fmt.Sprintf("%v % %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "%")
 }
 
 func (op *BinaryOperatorAdd) String() string {
-	return fmt.Sprintf("%v + %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "+")
 }
 
 func (op *BinaryOperatorSub) String() string {
-	return fmt.Sprintf("%v - %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "-")
 }
 
 func (op *BinaryOperatorGreaterThan) String() string {
-	return fmt.Sprintf("%v > %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), ">")
 }
 
 func (op *BinaryOperatorGreaterEqual) String() string {
-	return fmt.Sprintf("%v >= %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), ">=")
 }
 
 func (op *BinaryOperatorLessThan) String() string {
-	return fmt.Sprintf("%v < %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "<")
 }
 
 func (op *BinaryOperatorLessEqual) String() string {
-	return fmt.Sprintf("%v <= %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "<=")
 }
 
 func (op *BinaryOperatorEqual) String() string {
-	return fmt.Sprintf("%v == %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "==")
 }
 
 func (op *BinaryOperatorNotEqual) String() string {
-	return fmt.Sprintf("%v != %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "!=")
 }
 
 func (op *BinaryOperatorAnd) String() string {
-	return fmt.Sprintf("%v && %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "&&")
 }
 
 func (op *BinaryOperatorOr) String() string {
-	return fmt.Sprintf("%v || %v", op.GetLHS(), op.GetRHS())
+	return generateBinaryOperator(op.GetLHS(), op.GetRHS(), "||")
 }
 
 func (lhs *PairElemLHS) String() string {
 	if lhs.snd {
 		return fmt.Sprintf("snd %v", lhs.expr)
-	} else {
-		return fmt.Sprintf("fst %v", lhs.expr)
 	}
+
+	return fmt.Sprintf("fst %v", lhs.expr)
 }
 
 func (lhs *ArrayLHS) String() string {
@@ -206,9 +221,9 @@ func (rhs *ArrayLiterRHS) String() string {
 func (rhs *PairElemRHS) String() string {
 	if rhs.snd {
 		return fmt.Sprintf("snd %v", rhs.expr)
-	} else {
-		return fmt.Sprintf("fst %v", rhs.expr)
 	}
+
+	return fmt.Sprintf("fst %v", rhs.expr)
 }
 
 func (rhs *FunctionCallRHS) String() string {
@@ -229,86 +244,86 @@ func (rhs *ExpressionRHS) String() string {
 	return fmt.Sprintf("%v", rhs.expr)
 }
 
-func (stmt *SkipStatement) IString(level int) string {
+func (stmt *SkipStatement) istring(level int) string {
 	return fmt.Sprintf("%vskip", getIndentation(level))
 }
 
-func (stmt *BlockStatement) IString(level int) string {
+func (stmt *BlockStatement) istring(level int) string {
 	return ""
 }
 
-func (stmt *DeclareAssignStatement) IString(level int) string {
+func (stmt *DeclareAssignStatement) istring(level int) string {
 	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.waccType,
 		stmt.ident, stmt.rhs)
 }
-func (stmt *AssignStatement) IString(level int) string {
+func (stmt *AssignStatement) istring(level int) string {
 	return fmt.Sprintf("%v%v = %v", getIndentation(level), stmt.target,
 		stmt.rhs)
 }
 
-func (stmt *ReadStatement) IString(level int) string {
+func (stmt *ReadStatement) istring(level int) string {
 	return fmt.Sprintf("%vread %v", getIndentation(level), stmt.target)
 }
 
-func (stmt *FreeStatement) IString(level int) string {
+func (stmt *FreeStatement) istring(level int) string {
 	return fmt.Sprintf("%vfree %v", getIndentation(level), stmt.expr)
 }
 
-func (ret *ReturnStatement) IString(level int) string {
+func (ret *ReturnStatement) istring(level int) string {
 	return fmt.Sprintf("%vreturn %v", getIndentation(level), ret.expr)
 }
 
-func (stmt *ExitStatement) IString(level int) string {
+func (stmt *ExitStatement) istring(level int) string {
 	return fmt.Sprintf("%vexit %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt *PrintLnStatement) IString(level int) string {
+func (stmt *PrintLnStatement) istring(level int) string {
 	return fmt.Sprintf("%vprintln %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt *PrintStatement) IString(level int) string {
+func (stmt *PrintStatement) istring(level int) string {
 	return fmt.Sprintf("%vprint %v", getIndentation(level), stmt.expr)
 }
 
-func (stmt *IfStatement) IString(level int) string {
+func (stmt *IfStatement) istring(level int) string {
 	var trueStats string
 	var falseStats string
 
-	var indent string = getIndentation(level)
+	var indent = getIndentation(level)
 
 	st := stmt.trueStat
 	for st.GetNext() != nil {
 		trueStats = fmt.Sprintf("%v\n%v ;", trueStats,
-			st.IString(level+1))
+			st.istring(level+1))
 		st = st.GetNext()
 	}
 
-	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.IString(level+1))
+	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.istring(level+1))
 
 	st = stmt.falseStat
 	for st.GetNext() != nil {
 		falseStats = fmt.Sprintf("%v\n%v ;", falseStats,
-			st.IString(level+1))
+			st.istring(level+1))
 		st = st.GetNext()
 	}
 
-	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.IString(level+1))
+	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.istring(level+1))
 
 	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent,
 		stmt.cond, indent, trueStats, indent, falseStats, indent)
 }
 
-func (stmt *WhileStatement) IString(level int) string {
+func (stmt *WhileStatement) istring(level int) string {
 	var body string
-	var indent string = getIndentation(level)
+	var indent = getIndentation(level)
 
 	st := stmt.body
 	for st.GetNext() != nil {
-		body = fmt.Sprintf("%v\n%v ;", body, st.IString(level+1))
+		body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+1))
 		st = st.GetNext()
 	}
 
-	body = fmt.Sprintf("%v\n%v", body, st.IString(level+1))
+	body = fmt.Sprintf("%v\n%v", body, st.istring(level+1))
 
 	return fmt.Sprintf("%vwhile (%v) do%v\n%vdone", indent, stmt.cond, body,
 		indent)
@@ -318,7 +333,7 @@ func (fp *FunctionParam) String() string {
 	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
 }
 
-func (fd *FunctionDef) IString(level int) string {
+func (fd *FunctionDef) istring(level int) string {
 	var params string
 	var body string
 
@@ -337,11 +352,11 @@ func (fd *FunctionDef) IString(level int) string {
 
 	st := fd.body
 	for st.GetNext() != nil {
-		body = fmt.Sprintf("%v\n%v ;", body, st.IString(level+1))
+		body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+1))
 		st = st.GetNext()
 	}
 
-	body = fmt.Sprintf("%v\n%v", body, st.IString(level+1))
+	body = fmt.Sprintf("%v\n%v", body, st.istring(level+1))
 
 	return fmt.Sprintf("%v %v\n%vend", declaration, body, indent)
 }
@@ -353,17 +368,17 @@ func (ast *AST) String() string {
 
 	for _, function := range ast.functions {
 		tree = fmt.Sprintf("%v\n%v\n", tree,
-			function.IString(startingIndent))
+			function.istring(startingIndent))
 	}
 
 	stmt := ast.main
 	for stmt.GetNext() != nil {
 		tree = fmt.Sprintf("%v\n%v ;", tree,
-			stmt.IString(startingIndent))
+			stmt.istring(startingIndent))
 		stmt = stmt.GetNext()
 	}
 
-	tree = fmt.Sprintf("%v\n%v", tree, stmt.IString(startingIndent))
+	tree = fmt.Sprintf("%v\n%v", tree, stmt.istring(startingIndent))
 
 	return fmt.Sprintf("%v\nend", tree)
 }
