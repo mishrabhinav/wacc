@@ -1,5 +1,12 @@
 package main
 
+// WACC Group 34
+//
+// flags.go: Parses the different flags added when running ./wacc_34
+//
+// File contains functions that parse the flags, and if detected, handle their
+// expected behaviour
+
 import (
 	"flag"
 	"fmt"

@@ -1,5 +1,11 @@
 package main
 
+// WACC Group 34
+//
+// errors.go: Handles the different types of errors.
+//
+// File contains functions that return errors given a *token32
+
 import (
 	"fmt"
 )

@@ -1,5 +1,12 @@
 package main
 
+// WACC Group 34
+//
+// astprint.go: Print the AST in the reference compiler's format.
+//
+// File contains functions that return indented strings and produces an AST
+// indented with the same format as the reference compiler
+
 import (
 	"fmt"
 	"strconv"
