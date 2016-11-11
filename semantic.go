@@ -10,12 +10,13 @@ import (
 	"sync"
 )
 
+// mergeErrors merges all the errors in the channel
 func mergeErrors(cs []<-chan error) <-chan error {
 	var wg sync.WaitGroup
 	out := make(chan error)
 
 	// Start an output goroutine for each input channel in cs.  output
-	// copies values from c to out until c is closed, then calls wg.Done.
+	// copies values from c to out until c is closed, then calls wg.Done
 	output := func(c <-chan error) {
 		for n := range c {
 			out <- n
@@ -28,7 +29,7 @@ func mergeErrors(cs []<-chan error) <-chan error {
 	}
 
 	// Start a goroutine to close out once all the output goroutines are
-	// done.  This must start after the wg.Add call.
+	// done.  This must start after the wg.Add call
 	go func() {
 		wg.Wait()
 		close(out)
@@ -36,6 +37,7 @@ func mergeErrors(cs []<-chan error) <-chan error {
 	return out
 }
 
+// hasReturn returns true if the statement is/has a return value
 func hasReturn(stm Statement) bool {
 	if stm == nil {
 		return false
@@ -56,6 +58,8 @@ func hasReturn(stm Statement) bool {
 	}
 }
 
+// checkFunctionReturns checks if the function has a return type. If it is
+//  missing it creates an error
 func checkFunctionReturns(f *FunctionDef) <-chan error {
 	out := make(chan error)
 
@@ -70,6 +74,8 @@ func checkFunctionReturns(f *FunctionDef) <-chan error {
 	return out
 }
 
+// checkJunkStatement checks if there are statments after the function returns
+// or exits and produces an error accordingly
 func checkJunkStatement(stm Statement) <-chan error {
 	out := make(chan error)
 
@@ -110,6 +116,8 @@ func checkJunkStatement(stm Statement) <-chan error {
 	return out
 }
 
+// CheckFunctionCodePaths checks for a return or exit statment in the function
+// It also removes the deadcode from the function
 func (m *AST) CheckFunctionCodePaths() (errs []error) {
 	var errorChannels []<-chan error
 
