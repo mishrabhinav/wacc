@@ -267,6 +267,8 @@ type AST struct {
 	functions []*FunctionDef
 }
 
+// nodeRange given a node returns a channel from which all nodes at the same
+// level can be read
 func nodeRange(node *node32) <-chan *node32 {
 	out := make(chan *node32)
 	go func() {
@@ -278,6 +280,8 @@ func nodeRange(node *node32) <-chan *node32 {
 	return out
 }
 
+// nextNode given a node and a peg rule returns the first node in the chain
+// that was created from that peg rule
 func nextNode(node *node32, rule pegRule) *node32 {
 	for cnode := range nodeRange(node) {
 		if cnode.pegRule == rule {
@@ -1122,7 +1126,11 @@ func parseStatement(node *node32) (Statement, error) {
 
 		stm = whiles
 	default:
-		return nil, fmt.Errorf("unexpected %s %s", node.String(), node.match)
+		return nil, fmt.Errorf(
+			"unexpected %s %s",
+			node.String(),
+			node.match,
+		)
 	}
 
 	if semi := nextNode(node, ruleSEMI); semi != nil {
@@ -1211,7 +1219,11 @@ func parseWACC(node *node32) (*AST, error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("Unexpected %s %s", node.String(), node.match)
+			return nil, fmt.Errorf(
+				"Unexpected %s %s",
+				node.String(),
+				node.match,
+			)
 		}
 	}
 
