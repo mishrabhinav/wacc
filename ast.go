@@ -292,11 +292,13 @@ func nextNode(node *node32, rule pegRule) *node32 {
 	return nil
 }
 
+// parse array element access inside an expression
 func parseArrayElem(node *node32) (Expression, error) {
 	arrElem := &ArrayElem{}
 
 	arrElem.ident = node.match
 
+	// read and add all the indexer expressions
 	for enode := nextNode(node, ruleEXPR); enode != nil; enode = nextNode(enode.next, ruleEXPR) {
 		var exp Expression
 		var err error
