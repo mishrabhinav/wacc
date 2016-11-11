@@ -1,9 +1,17 @@
 package main
 
+// WACC Group 34
+//
+// errors.go: Handles the different types of errors.
+//
+// File contains functions that return errors given a *token32 and supporting
+// information
+
 import (
 	"fmt"
 )
 
+// WACCError is the base error type with filename, line and column number
 type WACCError struct {
 	filename     string
 	line, column int
@@ -18,7 +26,8 @@ func (e *WACCError) Error() string {
 	)
 }
 
-func CreateWaccError(token *token32) WACCError {
+// CreateWACCError pulls the position information from a *token32
+func CreateWACCError(token *token32) WACCError {
 	return WACCError{
 		filename: token.filename,
 		line:     token.line,
@@ -26,13 +35,15 @@ func CreateWaccError(token *token32) WACCError {
 	}
 }
 
+// SyntaxError is the base type for syntax errors
 type SyntaxError struct {
 	WACCError
 }
 
+// CreateSyntaxError initializes the WACCError position information
 func CreateSyntaxError(token *token32) SyntaxError {
 	return SyntaxError{
-		WACCError: CreateWaccError(token),
+		WACCError: CreateWACCError(token),
 	}
 }
 
@@ -43,11 +54,13 @@ func (e *SyntaxError) Error() string {
 	)
 }
 
+// BigIntError is a syntax error when a number cannot fit the integer size
 type BigIntError struct {
 	SyntaxError
 	number string
 }
 
+// CreateBigIntError creates an error from the token and number as a string
 func CreateBigIntError(token *token32, number string) error {
 	return &BigIntError{
 		SyntaxError: CreateSyntaxError(token),
@@ -63,11 +76,14 @@ func (m *BigIntError) Error() string {
 	)
 }
 
+// MissingReturnError is a syntax error when a function does not return
 type MissingReturnError struct {
 	SyntaxError
 	ident string
 }
 
+// CreateMissingReturnError creates an error from the token and the function
+// identifier
 func CreateMissingReturnError(token *token32, ident string) error {
 	return &MissingReturnError{
 		SyntaxError: CreateSyntaxError(token),
@@ -83,6 +99,8 @@ func (e *MissingReturnError) Error() string {
 	)
 }
 
+// UnreachableStatementError is a syntax error when a statement is present after
+// return
 type UnreachableStatementError struct {
 	SyntaxError
 }
@@ -94,19 +112,22 @@ func (e *UnreachableStatementError) Error() string {
 	)
 }
 
+// CreateUnreachableStatementError creates an error from the token
 func CreateUnreachableStatementError(token *token32) error {
 	return &UnreachableStatementError{
 		SyntaxError: CreateSyntaxError(token),
 	}
 }
 
+// SemanticError is the base type for semantic errors
 type SemanticError struct {
 	WACCError
 }
 
+// CreateSemanticError initializes the WACCError position information
 func CreateSemanticError(token *token32) SemanticError {
 	return SemanticError{
-		WACCError: CreateWaccError(token),
+		WACCError: CreateWACCError(token),
 	}
 }
 
@@ -117,6 +138,8 @@ func (e *SemanticError) Error() string {
 	)
 }
 
+// VariableRedeclarationError is a semantic error when a variable is declared
+// again within the same scope
 type VariableRedeclarationError struct {
 	SemanticError
 	ident string
@@ -134,6 +157,8 @@ func (e *VariableRedeclarationError) Error() string {
 	)
 }
 
+// CreateVariableRedeclarationError creates an error from the token, variable
+// identifier, previous and new type
 func CreateVariableRedeclarationError(token *token32, ident string, oldt, newt Type) error {
 	return &VariableRedeclarationError{
 		SemanticError: CreateSemanticError(token),
@@ -143,6 +168,8 @@ func CreateVariableRedeclarationError(token *token32, ident string, oldt, newt T
 	}
 }
 
+// UndeclaredVariableError is a semantic error when trying to access an
+// undeclared variable
 type UndeclaredVariableError struct {
 	SemanticError
 	ident string
@@ -156,13 +183,17 @@ func (e *UndeclaredVariableError) Error() string {
 	)
 }
 
-func CreateUndelaredVariableError(token *token32, ident string) error {
+// CreateUndeclaredVariableError creates an error from the token and variable
+// identifier
+func CreateUndeclaredVariableError(token *token32, ident string) error {
 	return &UndeclaredVariableError{
 		SemanticError: CreateSemanticError(token),
 		ident:         ident,
 	}
 }
 
+// TypeMismatchError is a semantic error when trying to operate on incompatible
+// types
 type TypeMismatchError struct {
 	SemanticError
 	expected Type
@@ -178,6 +209,8 @@ func (e *TypeMismatchError) Error() string {
 	)
 }
 
+// CreateTypeMismatchError creates an error from the token, the expected and the
+// received type
 func CreateTypeMismatchError(token *token32, expected, got Type) error {
 	return &TypeMismatchError{
 		SemanticError: CreateSemanticError(token),
@@ -186,12 +219,14 @@ func CreateTypeMismatchError(token *token32, expected, got Type) error {
 	}
 }
 
-type CallingNonFunction struct {
+// CallingNonFunctionError is a semantic error trying to call an undeclared
+// function
+type CallingNonFunctionError struct {
 	SemanticError
 	ident string
 }
 
-func (e *CallingNonFunction) Error() string {
+func (e *CallingNonFunctionError) Error() string {
 	return fmt.Sprintf(
 		"%s: calling non function '%s'",
 		e.SemanticError.Error(),
@@ -199,14 +234,25 @@ func (e *CallingNonFunction) Error() string {
 	)
 }
 
-type FunctionCallWrongArity struct {
+// CreateCallingNonFunctionError creates an error from a token and a function
+// identifier
+func CreateCallingNonFunctionError(token *token32, ident string) error {
+	return &CallingNonFunctionError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// FunctionCallWrongArityError is a semantic error trying to call a function
+// with the wrong number of arguments
+type FunctionCallWrongArityError struct {
 	SemanticError
 	ident    string
 	expected int
 	got      int
 }
 
-func (e *FunctionCallWrongArity) Error() string {
+func (e *FunctionCallWrongArityError) Error() string {
 	return fmt.Sprintf(
 		"%s: '%s' called with '%d' arguments expected '%d'",
 		e.SemanticError.Error(),
@@ -216,6 +262,22 @@ func (e *FunctionCallWrongArity) Error() string {
 	)
 }
 
+// CreateFunctionCallWrongArityError creates and error from a token, function
+// identifier, expected and received number of parameters
+func CreateFunctionCallWrongArityError(
+	token *token32,
+	ident string,
+	expected, got int) error {
+	return &FunctionCallWrongArityError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+		expected:      expected,
+		got:           got,
+	}
+}
+
+// FunctionRedeclarationError is a semantic error when trying to declare a
+// function again after it has been declared
 type FunctionRedeclarationError struct {
 	SemanticError
 	ident string
@@ -229,6 +291,8 @@ func (e *FunctionRedeclarationError) Error() string {
 	)
 }
 
+// CreateFunctionRedelarationError creates an error from a token and a function
+// identifier
 func CreateFunctionRedelarationError(token *token32, ident string) error {
 	return &FunctionRedeclarationError{
 		SemanticError: CreateSemanticError(token),

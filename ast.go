@@ -1,88 +1,115 @@
 package main
 
+// WACC Group 34
+//
+// ast.go: the structures for the AST the functions that parse the syntax tree
+//
+// Types, statements, expressions in the WACC language
+// Functions to parse the WACC syntax tree into the AST
+
 import (
 	"errors"
 	"fmt"
 	"strconv"
 )
 
+// Type is an interface for WACC type
 type Type interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	Match(Type) bool
 	String() string
 }
 
+// InvalidType is a WACC type for invalid constructs
 type InvalidType struct{}
 
+// UnknownType is a WACC type for cases where the type is not known
 type UnknownType struct{}
 
+// IntType is the WACC type for integers
 type IntType struct{}
 
+// BoolType is the WACC type for booleans
 type BoolType struct{}
 
+// CharType is the WACC type for characters
 type CharType struct{}
 
+// PairType is the WACC type for pairs
 type PairType struct {
 	first  Type
 	second Type
 }
 
+// ArrayType is the WACC type for arrays
 type ArrayType struct {
 	base Type
 }
 
+// Expression is the interface for WACC expressions
 type Expression interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 }
 
+// Statement is the interface for WACC statements
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
-	IString(level int) string
-	ASTString(indent string) string
+	istring(level int) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
 	SetToken(*token32)
 }
 
+// TokenBase is the base structure that contains the token reference
 type TokenBase struct {
 	token *token32
 }
 
+// Token returns the token in TokenBase
 func (m *TokenBase) Token() *token32 {
 	return m.token
 }
 
+// SetToken sets the current token in TokenBase
 func (m *TokenBase) SetToken(token *token32) {
 	m.token = token
 }
 
+// BaseStatement contains the pointer to the next statement
 type BaseStatement struct {
 	TokenBase
 	next Statement
 }
 
+// GetNext returns the next statment in BaseStatment
 func (m *BaseStatement) GetNext() Statement {
 	return m.next
 }
 
+// SetNext sets the next statment in BaseStatment
 func (m *BaseStatement) SetNext(next Statement) {
 	m.next = next
 }
 
+// SkipStatement is the struct for WACC skip statement
 type SkipStatement struct {
 	BaseStatement
 }
 
+// BlockStatement is the struct for creating new block scope
 type BlockStatement struct {
 	BaseStatement
 	body Statement
 }
 
+// DeclareAssignStatement declares a new variable and assigns the right hand
+// side expression to it
 type DeclareAssignStatement struct {
 	BaseStatement
 	waccType Type
@@ -90,102 +117,120 @@ type DeclareAssignStatement struct {
 	rhs      RHS
 }
 
+// LHS is the interface for the left hand side of an assignment
 type LHS interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 }
 
+// PairElemLHS is the struct for a pair on the lhs of an assignment
 type PairElemLHS struct {
 	TokenBase
 	snd  bool
 	expr Expression
 }
 
+// ArrayLHS is the struct for an array on the lhs of an assignment
 type ArrayLHS struct {
 	TokenBase
 	ident string
 	index []Expression
 }
 
+// VarLHS is the struct for a variable on the lhs of an assignment
 type VarLHS struct {
 	TokenBase
 	ident string
 }
 
+// RHS is the interface for the right hand side of an assignment
 type RHS interface {
-	ASTString(indent string) string
+	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 }
 
+// PairLiterRHS is the struct for pair literals on the rhs of an assignment
 type PairLiterRHS struct {
 	TokenBase
 	PairLiteral
 }
 
+// ArrayLiterRHS is the struct for array literals on the rhs of an assignment
 type ArrayLiterRHS struct {
 	TokenBase
 	elements []Expression
 }
 
+// PairElemRHS is the struct for pair elements on the rhs of an assignment
 type PairElemRHS struct {
 	TokenBase
 	snd  bool
 	expr Expression
 }
 
+// FunctionCallRHS is the struct for function calls on the rhs of an assignment
 type FunctionCallRHS struct {
 	TokenBase
 	ident string
 	args  []Expression
 }
 
+// ExpressionRHS is the struct for expressions on the rhs of an assignment
 type ExpressionRHS struct {
 	TokenBase
 	expr Expression
 }
 
+// AssignStatement is the struct for an assignment statement
 type AssignStatement struct {
 	BaseStatement
 	target LHS
 	rhs    RHS
 }
 
+// ReadStatement is the struct for a read statement
 type ReadStatement struct {
 	BaseStatement
 	target LHS
 }
 
+// FreeStatement is the struct for a free statement
 type FreeStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// ReturnStatement is the struct for a return statement
 type ReturnStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// ExitStatement is the struct for an exit statement
 type ExitStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// PrintLnStatement is the struct for a println statement
 type PrintLnStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// PrintStatement is the struct for a print statement
 type PrintStatement struct {
 	BaseStatement
 	expr Expression
 }
 
+// IfStatement is the struct for a if-else statement
 type IfStatement struct {
 	BaseStatement
 	cond      Expression
@@ -193,18 +238,21 @@ type IfStatement struct {
 	falseStat Statement
 }
 
+// WhileStatement is the struct for a while statement
 type WhileStatement struct {
 	BaseStatement
 	cond Expression
 	body Statement
 }
 
+// FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
 	name     string
 	waccType Type
 }
 
+// FunctionDef is the struct for a function definition
 type FunctionDef struct {
 	TokenBase
 	ident      string
@@ -213,11 +261,14 @@ type FunctionDef struct {
 	body       Statement
 }
 
+// AST is the main struct that represents the abstract syntax tree
 type AST struct {
 	main      Statement
 	functions []*FunctionDef
 }
 
+// nodeRange given a node returns a channel from which all nodes at the same
+// level can be read
 func nodeRange(node *node32) <-chan *node32 {
 	out := make(chan *node32)
 	go func() {
@@ -229,6 +280,8 @@ func nodeRange(node *node32) <-chan *node32 {
 	return out
 }
 
+// nextNode given a node and a peg rule returns the first node in the chain
+// that was created from that peg rule
 func nextNode(node *node32, rule pegRule) *node32 {
 	for cnode := range nodeRange(node) {
 		if cnode.pegRule == rule {
@@ -239,11 +292,13 @@ func nextNode(node *node32, rule pegRule) *node32 {
 	return nil
 }
 
+// parse array element access inside an expression
 func parseArrayElem(node *node32) (Expression, error) {
 	arrElem := &ArrayElem{}
 
 	arrElem.ident = node.match
 
+	// read and add all the indexer expressions
 	for enode := nextNode(node, ruleEXPR); enode != nil; enode = nextNode(enode.next, ruleEXPR) {
 		var exp Expression
 		var err error
@@ -256,89 +311,109 @@ func parseArrayElem(node *node32) (Expression, error) {
 	return arrElem, nil
 }
 
+// Ident is the struct to represent an identifier
 type Ident struct {
 	TokenBase
 	ident string
 }
 
+// IntLiteral is the struct to represent an integer literal
 type IntLiteral struct {
 	TokenBase
 	value int
 }
 
+// BoolLiteralTrue is the struct to represent a true boolean literal
 type BoolLiteralTrue struct {
 	TokenBase
 }
 
+// BoolLiteralFalse is the struct to represent a false boolean literal
 type BoolLiteralFalse struct {
 	TokenBase
 }
 
+// CharLiteral is the struct to represent a character literal
 type CharLiteral struct {
 	TokenBase
 	char string
 }
 
+// StringLiteral is the struct to represent a string literal
 type StringLiteral struct {
 	TokenBase
 	str string
 }
 
+// PairLiteral is the struct to represent a pair literal
 type PairLiteral struct {
 	TokenBase
 	fst Expression
 	snd Expression
 }
 
+// NullPair is the struct to represent a null pair
 type NullPair struct {
 	TokenBase
 }
 
+// ArrayElem is the struct to represent an array element
 type ArrayElem struct {
 	TokenBase
 	ident   string
 	indexes []Expression
 }
 
+// UnaryOperator is the struct to represent the unary operators
 type UnaryOperator interface {
 	Expression
 	GetExpression() Expression
 	SetExpression(Expression)
 }
 
+// UnaryOperatorBase is the struct to represent the expression having the unary
+// operator
 type UnaryOperatorBase struct {
 	TokenBase
 	expr Expression
 }
 
+// GetExpression returns the expression associated with UnaryOperator
 func (m *UnaryOperatorBase) GetExpression() Expression {
 	return m.expr
 }
 
+// SetExpression sets the expression associated with UnaryOperator
 func (m *UnaryOperatorBase) SetExpression(exp Expression) {
 	m.expr = exp
 }
 
+// UnaryOperatorNot represents '!'
 type UnaryOperatorNot struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorNegate represents '-'
 type UnaryOperatorNegate struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorLen represents 'len'
 type UnaryOperatorLen struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorOrd represents 'ord'
 type UnaryOperatorOrd struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorChr represents 'chr'
 type UnaryOperatorChr struct {
 	UnaryOperatorBase
 }
 
+// BinaryOperator represents a generic binaryOperator which might be an expr.
 type BinaryOperator interface {
 	Expression
 	GetRHS() Expression
@@ -347,88 +422,105 @@ type BinaryOperator interface {
 	SetLHS(Expression)
 }
 
+// BinaryOperatorBase represents the base of a binary operator.
 type BinaryOperatorBase struct {
 	TokenBase
 	lhs Expression
 	rhs Expression
 }
 
+// GetLHS returns the left-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) GetLHS() Expression {
 	return m.lhs
 }
 
+// SetLHS sets the left-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) SetLHS(exp Expression) {
 	m.lhs = exp
 }
 
+// GetRHS returns the right-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) GetRHS() Expression {
 	return m.rhs
 }
 
+// SetRHS sets the right-hand-side associated with a BinaryOperatorBase.
 func (m *BinaryOperatorBase) SetRHS(exp Expression) {
 	m.rhs = exp
 }
 
+// BinaryOperatorMult represents '*'
 type BinaryOperatorMult struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorDiv represents '/'
 type BinaryOperatorDiv struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorMod represents '%'
 type BinaryOperatorMod struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorAdd represents '+'
 type BinaryOperatorAdd struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorSub represents '-'
 type BinaryOperatorSub struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorGreaterThan represents '>'
 type BinaryOperatorGreaterThan struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorGreaterEqual represents '>='
 type BinaryOperatorGreaterEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorLessThan represents '<'
 type BinaryOperatorLessThan struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorLessEqual represents '<='
 type BinaryOperatorLessEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorEqual represents '=='
 type BinaryOperatorEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorNotEqual represents '!='
 type BinaryOperatorNotEqual struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorAnd represents '&&'
 type BinaryOperatorAnd struct {
 	BinaryOperatorBase
 }
 
+// BinaryOperatorOr represents '||'
 type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
-type ExprLPar struct {
+// ExprParen represents '()'
+type ExprParen struct {
 	TokenBase
 }
 
-type ExprRPar struct {
-	TokenBase
-}
-
+// exprStream given an expression node sends the all the nodes after it to
+// channel skipping over spaces and flattening out the structure
 func exprStream(node *node32) <-chan *node32 {
 	out := make(chan *node32)
 	go func() {
@@ -450,14 +542,19 @@ func exprStream(node *node32) <-chan *node32 {
 	return out
 }
 
+// parseExpr parses an expression and builds an expression tree that respects
+// the operator precedence
+// the function uses the shunting yard algorithm to achieve this
 func parseExpr(node *node32) (Expression, error) {
 	var stack []Expression
 	var opstack []Expression
 
+	// push an expression to the stack
 	push := func(e Expression) {
 		stack = append(stack, e)
 	}
 
+	// peek at the top of the expression stack
 	peek := func() Expression {
 		if len(stack) == 0 {
 			return nil
@@ -465,15 +562,18 @@ func parseExpr(node *node32) (Expression, error) {
 		return stack[len(stack)-1]
 	}
 
+	// pop and return the expression at the top the expression stack
 	pop := func() (ret Expression) {
 		ret, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		return
 	}
 
+	// push an operator to the operator stack
 	pushop := func(e Expression) {
 		opstack = append(opstack, e)
 	}
 
+	// peek at the top the operator stack
 	peekop := func() Expression {
 		if len(opstack) == 0 {
 			return nil
@@ -481,6 +581,7 @@ func parseExpr(node *node32) (Expression, error) {
 		return opstack[len(opstack)-1]
 	}
 
+	// pop and return the operator at the top of the operator stack
 	popop := func() {
 		var exp Expression
 
@@ -492,7 +593,7 @@ func parseExpr(node *node32) (Expression, error) {
 		case BinaryOperator:
 			t.SetRHS(pop())
 			t.SetLHS(pop())
-		case *ExprLPar:
+		case *ExprParen:
 			exp = nil
 		}
 
@@ -501,6 +602,10 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// prio returns the priority of a given operator
+	// the lesser the value the more tightly the operator binds
+	// values taken from the operator precedence of C
+	// special case parenthesis,  otherwise a high value
 	prio := func(exp Expression) int {
 		switch exp.(type) {
 		case *UnaryOperatorNot:
@@ -539,13 +644,14 @@ func parseExpr(node *node32) (Expression, error) {
 			return 11
 		case *BinaryOperatorOr:
 			return 12
-		case *ExprLPar:
+		case *ExprParen:
 			return 13
 		default:
 			return 42
 		}
 	}
 
+	// returns whether the operator is right associative
 	rightAssoc := func(exp Expression) bool {
 		switch exp.(type) {
 		case *UnaryOperatorNot:
@@ -563,6 +669,7 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// given a peg rule return the operator with the expressions set
 	ruleToOp := func(outer, inner pegRule) Expression {
 		switch outer {
 		case ruleUNARYOPER:
@@ -612,11 +719,13 @@ func parseExpr(node *node32) (Expression, error) {
 		return nil
 	}
 
+	// process the nodes in order
 	for enode := range exprStream(node) {
 		switch enode.pegRule {
 		case ruleINTLITER:
 			num, err := strconv.ParseInt(enode.match, 10, 32)
 			if err != nil {
+				// number does not fit into WACC integer size
 				numerr := err.(*strconv.NumError)
 				switch numerr.Err {
 				case strconv.ErrRange:
@@ -635,7 +744,13 @@ func parseExpr(node *node32) (Expression, error) {
 		case ruleCHARLITER:
 			push(&CharLiteral{char: enode.up.next.match})
 		case ruleSTRLITER:
-			push(&StringLiteral{str: enode.up.next.match})
+			strLiter := &StringLiteral{}
+			strNode := nextNode(enode.up, ruleSTR)
+			if strNode != nil {
+				// string may be empty, only set contents if not
+				strLiter.str = strNode.match
+			}
+			push(strLiter)
 		case rulePAIRLITER:
 			push(&NullPair{})
 		case ruleIDENT:
@@ -654,6 +769,7 @@ func parseExpr(node *node32) (Expression, error) {
 					break
 				}
 
+				// pop all operators with more tight binding
 				switch {
 				case !rightAssoc(op1) && prio(op1) >= prio(op2),
 					rightAssoc(op1) && prio(op1) > prio(op2):
@@ -664,12 +780,14 @@ func parseExpr(node *node32) (Expression, error) {
 			}
 			pushop(op1)
 		case ruleLPAR:
-			pushop(&ExprLPar{})
+			pushop(&ExprParen{})
 		case ruleRPAR:
+			// when a parenthesis is closed pop all the operators
+			// the were inside
 		parloop:
 			for {
 				switch peekop().(type) {
-				case *ExprLPar:
+				case *ExprParen:
 					popop()
 					break parloop
 				default:
@@ -678,6 +796,7 @@ func parseExpr(node *node32) (Expression, error) {
 			}
 		}
 
+		// set tokens on newly pushed expressions
 		if val := peek(); val != nil && val.Token() == nil {
 			peek().SetToken(&node.token32)
 		}
@@ -687,6 +806,7 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// if operators are still left pop them
 	for peekop() != nil {
 		popop()
 	}
@@ -694,6 +814,7 @@ func parseExpr(node *node32) (Expression, error) {
 	return pop(), nil
 }
 
+// parseLHS parses all left hand side constructs that can be assigned to
 func parseLHS(node *node32) (LHS, error) {
 	switch node.pegRule {
 	case rulePAIRELEM:
@@ -738,6 +859,7 @@ func parseLHS(node *node32) (LHS, error) {
 	}
 }
 
+// parseRHS parses all right hand side constructs that provide assignable values
 func parseRHS(node *node32) (RHS, error) {
 	switch node.pegRule {
 	case ruleNEWPAIR:
@@ -834,6 +956,7 @@ func parseRHS(node *node32) (RHS, error) {
 	}
 }
 
+// parseBaseType parse basic type definition
 func parseBaseType(node *node32) (Type, error) {
 	switch node.pegRule {
 	case ruleINT:
@@ -849,6 +972,8 @@ func parseBaseType(node *node32) (Type, error) {
 	}
 }
 
+// parsePairType parse a pair type
+// when entering this method the pair always has type specification
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
@@ -869,6 +994,7 @@ func parsePairType(node *node32) (Type, error) {
 
 }
 
+// parseType parse a type definition
 func parseType(node *node32) (Type, error) {
 	var err error
 	var waccType Type
@@ -882,7 +1008,7 @@ func parseType(node *node32) (Type, error) {
 		if waccType, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
-	case rulePAIR:
+	case rulePAIR: // pair inside a pair, that misses type information
 		return PairType{UnknownType{}, UnknownType{}}, nil
 	}
 
@@ -893,6 +1019,8 @@ func parseType(node *node32) (Type, error) {
 	return waccType, nil
 }
 
+// parseStatement parses a statement by checking which rule they start with
+// that defines them uniquely
 func parseStatement(node *node32) (Statement, error) {
 	var stm Statement
 	var err error
@@ -1028,9 +1156,14 @@ func parseStatement(node *node32) (Statement, error) {
 
 		stm = whiles
 	default:
-		return nil, fmt.Errorf("unexpected %s %s", node.String(), node.match)
+		return nil, fmt.Errorf(
+			"unexpected %s %s",
+			node.String(),
+			node.match,
+		)
 	}
 
+	// check if there is semicolon and parse the next statement
 	if semi := nextNode(node, ruleSEMI); semi != nil {
 		var next Statement
 		if next, err = parseStatement(semi.next.up); err != nil {
@@ -1044,6 +1177,7 @@ func parseStatement(node *node32) (Statement, error) {
 	return stm, nil
 }
 
+// parse the parameters of a function definition
 func parseParam(node *node32) (*FunctionParam, error) {
 	var err error
 
@@ -1061,6 +1195,7 @@ func parseParam(node *node32) (*FunctionParam, error) {
 	return param, nil
 }
 
+// parse a function defintion
 func parseFunction(node *node32) (*FunctionDef, error) {
 	var err error
 	function := &FunctionDef{}
@@ -1075,6 +1210,7 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	function.ident = nextNode(node, ruleIDENT).match
 
 	paramListNode := nextNode(node, rulePARAMLIST)
+	// argument list may be missing with zero arguments
 	if paramListNode != nil {
 		for pnode := range nodeRange(paramListNode.up) {
 			if pnode.pegRule == rulePARAM {
@@ -1096,8 +1232,9 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	return function, nil
 }
 
+// parse the main WACC block that contains all function definitions and the main
+// body
 func parseWACC(node *node32) (*AST, error) {
-	var err error
 	ast := &AST{}
 
 	for node := range nodeRange(node) {
@@ -1112,18 +1249,26 @@ func parseWACC(node *node32) (*AST, error) {
 				return nil, err
 			}
 		case ruleSTAT:
+			var err error
 			ast.main, err = parseStatement(node.up)
 			if err != nil {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("Unexpected %s %s", node.String(), node.match)
+			return nil, fmt.Errorf(
+				"Unexpected %s %s",
+				node.String(),
+				node.match,
+			)
 		}
 	}
 
 	return ast, nil
 }
 
+// ParseAST given a syntax tree generated by the Peg library returns the
+// internal representation of the WACC AST. On this AST further syntax and
+// semantic analysis can be performed.
 func ParseAST(wacc *WACC) (*AST, error) {
 	node := wacc.AST()
 	switch node.pegRule {

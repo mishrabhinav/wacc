@@ -1,271 +1,356 @@
 package main
 
+// WACC Group 34
+//
+// astprint.go: Print the AST in the reference compiler's format.
+//
+// File contains functions that return indented strings and produces an AST
+// indented with the same format as the reference compiler
+
 import (
 	"fmt"
 	"strconv"
 )
 
-//
-func (i InvalidType) ASTString(indent string) string {
-	return addType(indent, "<invalid>")
+//Util Functions:
+//------------------------------------------------------------------------------
+
+// Adds a dash + space at the end of the current indent
+// Is invoked every time before printing
+func addMinToIndent(indent string) string {
+	return (indent + "- ")
 }
 
-//
-func (i UnknownType) ASTString(indent string) string {
-	return addType(indent, "<unknown>")
+// Adds the current string at the given indent value
+func addIndAndNewLine(indent, value string) string {
+	return fmt.Sprintf("%v%v\n", addMinToIndent(indent), value)
 }
 
-//
-func (i IntType) ASTString(indent string) string {
-	return addType(indent, "int")
+// Adds two strings s1 and s2, indenting s1 only
+func addIndentForFirst(indent, a1, a2 string) string {
+	return fmt.Sprintf("%v%v", addIndAndNewLine(indent, a1), a2)
 }
 
-//
-func (b BoolType) ASTString(indent string) string {
-	return addType(indent, "bool")
+// Adds two strings s1 and s2 indenting both s1 and s2
+func addDoubleIndent(indent, a1, a2 string) string {
+	return addTripleIndent(indent, a1, a2, "")
 }
 
-//
-func (c CharType) ASTString(indent string) string {
-	return addType(indent, "char")
+// Adds a string s1 and a []string t.
+// Only s1 is indented
+func addArrayIndent(indent, a1 string, arr []string) string {
+	var innerStats string
+
+	typeStats := addIndAndNewLine(indent, a1)
+	for _, element := range arr {
+		innerStats = fmt.Sprintf("%v%v", innerStats, element)
+	}
+
+	return fmt.Sprintf("%v%v", typeStats, innerStats)
 }
 
-//
-func (p PairType) ASTString(indent string) string {
-	var first string = ""
-	var second string = ""
+// Returns the next indenting level given by basicIndent
+func getGreaterIndent(indent string) string {
+	return fmt.Sprintf("%v%v", indent, basicIndent)
+}
+
+// Adds soubleIndent with caption "TYPE"
+func addType(indent, argument string) string {
+	return addDoubleIndent(indent, "TYPE", argument)
+}
+
+// Adds three strings s1, s2 and s3, indenting s1 only
+func addTripleIndentOnlyFst(indent, a1, a2, a3 string) string {
+	innerStats2 := a3
+
+	typeStats := addIndAndNewLine(indent, a1)
+	innerStats := a2
+	if a3 != "" {
+		innerStats2 = a3
+	}
+
+	return fmt.Sprintf("%v%v%v", typeStats, innerStats, innerStats2)
+}
+
+// Adds three strings s1, s2 and s3, indenting all strings
+func addTripleIndent(indent, a1, a2, a3 string) string {
+	innerStats2 := a3
+
+	innerIndent := getGreaterIndent(indent)
+
+	typeStats := addIndAndNewLine(indent, a1)
+	innerStats := addIndAndNewLine(innerIndent, a2)
+	if a3 != "" {
+		innerStats2 = addIndAndNewLine(innerIndent, a3)
+	}
+
+	return fmt.Sprintf("%v%v%v", typeStats, innerStats, innerStats2)
+}
+
+//------------------------------------------------------------------------------
+
+// Print the type of a given Pair(fst T1, snd T2), given that T1/T2 are not null
+func (p PairType) aststring(indent string) string {
+	var first string
+	var second string
 
 	if p.first != nil {
-		first = fmt.Sprintf("%v", p.first.ASTString(indent))
+		first = fmt.Sprintf("%v", p.first.aststring(indent))
 	}
 	if p.second != nil {
-		second = fmt.Sprintf("%v", p.second.ASTString(indent))
+		second = fmt.Sprintf("%v", p.second.aststring(indent))
 	}
 	return fmt.Sprintf("%v%v", first, second)
 }
 
-//
-func (a ArrayType) ASTString(indent string) string {
-	var typeStats string = fmt.Sprintf("%v[]", a.base)
-	return addType(indent, typeStats)
+// Prints a DECLARE statement. Format:
+// - DECLARE
+//   - LHS
+//     - [lhsEXPR]
+//   - RHS
+//     - [rhsEXPR]
+// REcurses on lhsEXPR and rhsEXPR.
+func (stmt DeclareAssignStatement) aststring(indent string) string {
+	declareStats := fmt.Sprintf("%vDECLARE\n", addMinToIndent(indent))
+	innerIndent := getGreaterIndent(indent)
+	lhsIndent := addDoubleIndent(innerIndent, "LHS", stmt.ident)
+	rhsIndent := addIndentForFirst(
+		innerIndent,
+		"RHS",
+		stmt.rhs.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	return fmt.Sprintf(
+		"%v%v%v%v",
+		declareStats,
+		stmt.waccType.aststring(innerIndent),
+		lhsIndent,
+		rhsIndent,
+	)
 }
 
-//
-func (stmt SkipStatement) ASTString(indent string) string {
-	return addIndAndNewLine(indent, "SKIP")
-}
-
-func (stmt BlockStatement) ASTString(indent string) string {
-	return fmt.Sprintf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx")
-}
-
-//
-func (stmt DeclareAssignStatement) ASTString(indent string) string {
-
-	var declareStats string = fmt.Sprintf("%vDECLARE\n", addMinToIndent(indent))
-	var innerIndent string = getGreaterIndent(indent)
-	var lhsIndent string = addDoubleIndent(innerIndent, "LHS", stmt.ident)
-	var rhsIndent string = addIndentForFirst(innerIndent, "RHS", stmt.rhs.ASTString(getGreaterIndent(innerIndent)))
-
-	return fmt.Sprintf("%v%v%v%v", declareStats, stmt.waccType.ASTString(innerIndent), lhsIndent, rhsIndent)
-}
-
-//
-func (lhs PairElemLHS) ASTString(indent string) string {
+// Prints the LHS of a PairElem
+func (lhs PairElemLHS) aststring(indent string) string {
 	if lhs.snd {
-		return addIndentForFirst(indent, "SND", lhs.expr.ASTString(getGreaterIndent(indent)))
-	} else {
-		return addIndentForFirst(indent, "FST", lhs.expr.ASTString(getGreaterIndent(indent)))
+		return addIndentForFirst(
+			indent,
+			"SND",
+			lhs.expr.aststring(getGreaterIndent(indent)),
+		)
 	}
+	return addIndentForFirst(
+		indent,
+		"FST",
+		lhs.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (lhs ArrayLHS) ASTString(indent string) string {
+// Prints (listing), the array's identifier (lhs.ident), "[]", and its elems
+func (lhs ArrayLHS) aststring(indent string) string {
 	var indexes string
 	var tmpIndex string
 
-	var nextIndent string = getGreaterIndent(indent)
+	nextIndent := getGreaterIndent(indent)
 
 	for _, index := range lhs.index {
-		tmpIndex = addIndentForFirst(nextIndent, "[]", index.ASTString(getGreaterIndent(nextIndent)))
+		tmpIndex = addIndentForFirst(
+			nextIndent,
+			"[]",
+			index.aststring(getGreaterIndent(nextIndent)),
+		)
 		indexes = fmt.Sprintf("%v%v", indexes, tmpIndex)
 	}
 
 	return addIndentForFirst(indent, lhs.ident, indexes)
 }
 
-//
-func (lhs VarLHS) ASTString(indent string) string {
+// Prints the LHS of a Variable
+func (lhs VarLHS) aststring(indent string) string {
 	return addIndAndNewLine(indent, lhs.ident)
 }
 
-//
-func (rhs PairLiterRHS) ASTString(indent string) string {
-	var nextIndent string = getGreaterIndent(indent)
-	var fstStats string = addIndentForFirst(nextIndent, "FST", rhs.fst.ASTString(getGreaterIndent(nextIndent)))
-	var sndStats string = addIndentForFirst(nextIndent, "SND", rhs.snd.ASTString(getGreaterIndent(nextIndent)))
+// Prints the RHS of a PairLiteral
+func (rhs PairLiterRHS) aststring(indent string) string {
+	nextIndent := getGreaterIndent(indent)
+	fstStats := addIndentForFirst(
+		nextIndent,
+		"FST",
+		rhs.fst.aststring(getGreaterIndent(nextIndent)),
+	)
+	sndStats := addIndentForFirst(
+		nextIndent,
+		"SND",
+		rhs.snd.aststring(getGreaterIndent(nextIndent)),
+	)
 	return addTripleIndentOnlyFst(indent, "NEWPAIR", fstStats, sndStats)
 }
 
-//
-func (rhs ArrayLiterRHS) ASTString(indent string) string {
+// Introduces an Array Literal. Recurses on rhs.elements and prints.
+func (rhs ArrayLiterRHS) aststring(indent string) string {
 	elemArr := []string{}
 
 	for _, element := range rhs.elements {
-		elemArr = append(elemArr, element.ASTString(indent))
+		elemArr = append(elemArr, element.aststring(getGreaterIndent((indent))))
 	}
 
 	return addArrayIndent(indent, "ARRAY LITERAL", elemArr)
 }
 
-//
-func (rhs PairElemRHS) ASTString(indent string) string {
+// Prints the RHS of a PairElem
+func (rhs PairElemRHS) aststring(indent string) string {
 	if rhs.snd {
-		return addIndentForFirst(indent, "SND", rhs.expr.ASTString(getGreaterIndent(indent)))
-	} else {
-		return addIndentForFirst(indent, "FST", rhs.expr.ASTString(getGreaterIndent(indent)))
+		return addIndentForFirst(
+			indent,
+			"SND",
+			rhs.expr.aststring(getGreaterIndent(indent)),
+		)
 	}
+	return addIndentForFirst(indent,
+		"FST",
+		rhs.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-func (rhs FunctionCallRHS) ASTString(indent string) string {
+// Prints the RHS of a function call
+// Lists parameters (rhs.args) at a greater indent
+func (rhs FunctionCallRHS) aststring(indent string) string {
 	var innerStats string
-	var nameStats string = addIndAndNewLine(indent, rhs.ident)
+	nameStats := addIndAndNewLine(indent, rhs.ident)
 
 	for _, param := range rhs.args {
-		innerStats = fmt.Sprintf("%v%v", innerStats, param.ASTString(indent))
+		innerStats = fmt.Sprintf(
+			"%v%v",
+			innerStats,
+			param.aststring(indent),
+		)
 	}
 
 	return fmt.Sprintf("%v%v", nameStats, innerStats)
-
-	//return fmt.Sprintf("call %v(%v)", rhs.ident, params)
 }
 
-func (lpar ExprLPar) ASTString(indent string) string {
-	return ""
-}
-
-func (rpar ExprRPar) ASTString(indent string) string {
-	return ""
-}
-
-func (rhs ExpressionRHS) ASTString(indent string) string {
-	return rhs.expr.ASTString(indent)
-	//return fmt.Sprintf("%v", rhs.expr.ASTString(indent))
-}
-
-//
-func (stmt AssignStatement) ASTString(indent string) string {
-	var declareStats string = fmt.Sprintf("%vASSIGNMENT\n", addMinToIndent(indent))
-	var innerIndent string = getGreaterIndent(indent)
-	var lhsIndent string = addIndentForFirst(innerIndent, "LHS", stmt.target.ASTString(getGreaterIndent(innerIndent)))
-	var rhsIndent string = addIndentForFirst(innerIndent, "RHS", stmt.rhs.ASTString(getGreaterIndent(innerIndent)))
+// Prints the LHS and RHS of an assignment. Format:
+// - ASSIGNMENT
+//   - LHS
+//     - [lhsEXPR]
+//   - RHS
+//     - [rhsEXPR]
+// lhsEXPR and rhsEXPR are recursed upon
+func (stmt AssignStatement) aststring(indent string) string {
+	declareStats := fmt.Sprintf("%vASSIGNMENT\n", addMinToIndent(indent))
+	innerIndent := getGreaterIndent(indent)
+	lhsIndent := addIndentForFirst(
+		innerIndent,
+		"LHS",
+		stmt.target.aststring(getGreaterIndent(innerIndent)),
+	)
+	rhsIndent := addIndentForFirst(
+		innerIndent,
+		"RHS",
+		stmt.rhs.aststring(getGreaterIndent(innerIndent)),
+	)
 
 	return fmt.Sprintf("%v%v%v", declareStats, lhsIndent, rhsIndent)
 }
 
-//
-func (stmt ReadStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "READ", stmt.target.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (stmt FreeStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "FREE", stmt.expr.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (ret ReturnStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "RETURN", ret.expr.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (stmt ExitStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "EXIT", stmt.expr.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (stmt PrintLnStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "PRINTLN", stmt.expr.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (stmt PrintStatement) ASTString(indent string) string {
-	return addIndentForFirst(indent, "PRINT", stmt.expr.ASTString(getGreaterIndent(indent)))
-}
-
-//
-func (stmt IfStatement) ASTString(indent string) string {
+// Prints an IfStatement. Format:
+// - IF
+//   - CONDITION
+//     - [bool]
+//   - THEN
+//     - [thenEXPR]
+//   - ELSE
+//     - [elseEXPR]
+// thenEXPR and elseEXPR are recursed upon
+func (stmt IfStatement) aststring(indent string) string {
 	var stmtStats string
 	var trueStats string
 	var falseStats string
-	var ifStats string
-	var condStats string
-	var thenStats string
-	var elseStats string
 	var trueTmp string
 	var falseTmp string
-	var innerIndent string = getGreaterIndent(indent)
-	var doubleInnerIndent string = getGreaterIndent(innerIndent)
+	innerIndent := getGreaterIndent(indent)
+	doubleInnerIndent := getGreaterIndent(innerIndent)
 
-	ifStats = fmt.Sprintf("%vIF\n", addMinToIndent(indent))
-	condStats = fmt.Sprintf("%vCONDITION\n", addMinToIndent(innerIndent))
-	thenStats = fmt.Sprintf("%vTHEN\n", addMinToIndent(innerIndent))
-	elseStats = fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
+	ifStats := fmt.Sprintf("%vIF\n", addMinToIndent(indent))
+	condStats := fmt.Sprintf("%vCONDITION\n", addMinToIndent(innerIndent))
+	thenStats := fmt.Sprintf("%vTHEN\n", addMinToIndent(innerIndent))
+	elseStats := fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
 
-	stmtStats = stmt.cond.ASTString(doubleInnerIndent)
+	stmtStats = stmt.cond.aststring(doubleInnerIndent)
 
 	st := stmt.trueStat
 	for st.GetNext() != nil {
-		trueTmp = st.ASTString(doubleInnerIndent)
+		trueTmp = st.aststring(doubleInnerIndent)
 		trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 		st = st.GetNext()
 	}
 
-	trueTmp = st.ASTString(doubleInnerIndent)
+	trueTmp = st.aststring(doubleInnerIndent)
 	trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 
 	st = stmt.falseStat
 	for st.GetNext() != nil {
-		falseTmp = st.ASTString(doubleInnerIndent)
+		falseTmp = st.aststring(doubleInnerIndent)
 		falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 		st = st.GetNext()
 	}
 
-	falseTmp = st.ASTString(doubleInnerIndent)
+	falseTmp = st.aststring(doubleInnerIndent)
 	falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 
-	return fmt.Sprintf("%v%v%v%v%v%v%v", ifStats, condStats, stmtStats, thenStats, trueStats, elseStats, falseStats)
+	return fmt.Sprintf(
+		"%v%v%v%v%v%v%v",
+		ifStats,
+		condStats,
+		stmtStats,
+		thenStats,
+		trueStats,
+		elseStats,
+		falseStats,
+	)
 }
 
-//
-func (stmt WhileStatement) ASTString(indent string) string {
+// Prints a WhileLoop. Format:
+// - LOOP
+//   - CONDITION
+//     - [bool]
+//   - DO
+//     - [doEXPR]
+// doEXPR is recursed upon
+func (stmt WhileStatement) aststring(indent string) string {
 	var body string
 	var doStats string
-	var innerIndent string = getGreaterIndent(indent)
+	innerIndent := getGreaterIndent(indent)
 
 	doStats = addIndAndNewLine(innerIndent, "DO")
 
-	var condStats string = addIndentForFirst(innerIndent, "CONDITION", stmt.cond.ASTString(getGreaterIndent(innerIndent)))
+	condStats := addIndentForFirst(
+		innerIndent,
+		"CONDITION",
+		stmt.cond.aststring(getGreaterIndent(innerIndent)),
+	)
 
 	st := stmt.body
 	for st.GetNext() != nil {
-		body = st.ASTString(getGreaterIndent(innerIndent))
+		body = st.aststring(getGreaterIndent(innerIndent))
 		doStats = fmt.Sprintf("%v%v", doStats, body)
 		st = st.GetNext()
 	}
-	body = st.ASTString(getGreaterIndent(innerIndent))
+	body = st.aststring(getGreaterIndent(innerIndent))
 	doStats = fmt.Sprintf("%v%v", doStats, body)
 
-	var loopStats string = addIndAndNewLine(indent, "LOOP")
+	loopStats := addIndAndNewLine(indent, "LOOP")
 
 	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
 }
 
-func (fp FunctionParam) ASTString(indent string) string {
+// Prints FunctionParameters in function declaration.
+func (fp FunctionParam) aststring(indent string) string {
 	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
 }
 
-func (fd FunctionDef) ASTString(indent string) string {
+// Prints a FunctionDefinition. Format:
+// - [type] [ident]([params])
+func (fd FunctionDef) aststring(indent string) string {
 
 	var params string
 	var body string
@@ -280,255 +365,498 @@ func (fd FunctionDef) ASTString(indent string) string {
 		}
 	}
 
-	declaration := addIndAndNewLine(indent, fmt.Sprintf("%v %v(%v)", fd.returnType, fd.ident, params))
+	declaration :=
+		addIndAndNewLine(indent,
+			fmt.Sprintf(
+				"%v %v(%v)",
+				fd.returnType,
+				fd.ident,
+				params))
 
 	st := fd.body
 	for st.GetNext() != nil {
-		body = fmt.Sprintf("%v%v", body, st.ASTString(innerIndent))
+		body = fmt.Sprintf("%v%v", body, st.aststring(innerIndent))
 		st = st.GetNext()
 	}
 
-	body = fmt.Sprintf("%v%v", body, st.ASTString(innerIndent))
+	body = fmt.Sprintf("%v%v", body, st.aststring(innerIndent))
 
 	return fmt.Sprintf("%v%v", declaration, body)
 }
 
-//
-func (ident Ident) ASTString(indent string) string {
-	return addIndAndNewLine(indent, ident.ident)
-}
-
-//
-func (liter IntLiteral) ASTString(indent string) string {
-	return addIndAndNewLine(indent, strconv.Itoa(liter.value))
-}
-
-//
-func (liter BoolLiteralTrue) ASTString(indent string) string {
-	return addIndAndNewLine(indent, "true")
-}
-
-//
-func (liter BoolLiteralFalse) ASTString(indent string) string {
-	return addIndAndNewLine(indent, "false")
-}
-
-//
-func (liter CharLiteral) ASTString(indent string) string {
-	var tmpStats string = fmt.Sprintf("'%v'", liter.char)
-	return addIndAndNewLine(indent, tmpStats)
-}
-
-//
-func (liter StringLiteral) ASTString(indent string) string {
-	var tmp string = fmt.Sprintf("\"%v\"", liter.str)
-	return addIndAndNewLine(indent, tmp)
-}
-
-//
-func (liter PairLiteral) ASTString(indent string) string {
-	//return fmt.Sprintf("%v", liter.fst)
-	return fmt.Sprintf("pair(%v, %v)", liter.fst, liter.snd)
-}
-
-//
-func (liter NullPair) ASTString(indent string) string {
-	return addIndAndNewLine(indent, "null")
-}
-
-//
-func (elem ArrayElem) ASTString(indent string) string {
+// Prints all ArrayElements. Format:
+// - []
+//   -[elems]
+// elems is recursed upon.
+func (elem ArrayElem) aststring(indent string) string {
 	var indexes string
 	var tmpIndex string
 
-	var nextIndent string = getGreaterIndent(indent)
+	nextIndent := getGreaterIndent(indent)
 
 	for _, index := range elem.indexes {
-		tmpIndex = addIndentForFirst(nextIndent, "[]", index.ASTString(getGreaterIndent(nextIndent)))
+		tmpIndex =
+			addIndentForFirst(nextIndent,
+				"[]",
+				index.aststring(getGreaterIndent(nextIndent)))
 		indexes = fmt.Sprintf("%v%v", indexes, tmpIndex)
 	}
 
 	return addIndentForFirst(indent, elem.ident, indexes)
 }
 
-//
-func (op UnaryOperatorNot) ASTString(indent string) string {
-	return addIndentForFirst(indent, "!", op.GetExpression().ASTString(getGreaterIndent(indent)))
+// Prints "[]" in of ArrayType
+func (a ArrayType) aststring(indent string) string {
+	typeStats := fmt.Sprintf("%v[]", a.base)
+	return addType(indent, typeStats)
 }
 
-//
-func (op UnaryOperatorNegate) ASTString(indent string) string {
-	return addIndentForFirst(indent, "-", op.GetExpression().ASTString(getGreaterIndent(indent)))
+// Prints and invalid Type. Format:
+// - TYPE
+//   - <invalid>
+func (i InvalidType) aststring(indent string) string {
+	return addType(indent, "<invalid>")
 }
 
-//
-func (op UnaryOperatorLen) ASTString(indent string) string {
-	return addIndentForFirst(indent, "len", op.GetExpression().ASTString(getGreaterIndent(indent)))
+// Prints and unknown Type. Format:
+// - TYPE
+//   - <unknown>
+func (i UnknownType) aststring(indent string) string {
+	return addType(indent, "<unknown>")
 }
 
-//
-func (op UnaryOperatorOrd) ASTString(indent string) string {
-	return addIndentForFirst(indent, "ord", op.GetExpression().ASTString(getGreaterIndent(indent)))
+// Prints and int Type. Format:
+// - TYPE
+//   - int
+func (i IntType) aststring(indent string) string {
+	return addType(indent, "int")
 }
 
-//
-func (op UnaryOperatorChr) ASTString(indent string) string {
-	return addIndentForFirst(indent, "chr", op.GetExpression().ASTString(getGreaterIndent(indent)))
+// Prints and bool Type. Format:
+// - TYPE
+//   - bool
+func (b BoolType) aststring(indent string) string {
+	return addType(indent, "bool")
 }
 
-//
-func (op BinaryOperatorMult) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "*", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints and char Type. Format:
+// - TYPE
+//   - char
+func (c CharType) aststring(indent string) string {
+	return addType(indent, "char")
 }
 
-//
-func (op BinaryOperatorDiv) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "/", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a SKIP statement. Format:
+// - SKIP
+func (stmt SkipStatement) aststring(indent string) string {
+	return addIndAndNewLine(indent, "SKIP")
 }
 
-//
-func (op BinaryOperatorMod) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "%", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a useless BlockStatement.
+func (stmt BlockStatement) aststring(indent string) string {
+	return fmt.Sprintf("")
 }
 
-//
-func (op BinaryOperatorAdd) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "+", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a useless parenthesis.
+func (par ExprParen) aststring(indent string) string {
+	return ""
 }
 
-//
-func (op BinaryOperatorSub) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "-", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Recurses oh the RHS of an Expression.
+func (rhs ExpressionRHS) aststring(indent string) string {
+	return rhs.expr.aststring(indent)
 }
 
-//
-func (op BinaryOperatorGreaterThan) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, ">", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a READ statement. Format:
+// - READ
+//   - [args]
+// Recurses on args.
+func (stmt ReadStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"READ",
+		stmt.target.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorGreaterEqual) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, ">=", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a FREE statement. Format:
+// - FREE
+//   - [args]
+// Recurses on args.
+func (stmt FreeStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"FREE",
+		stmt.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorLessThan) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "<", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a RETURN statement. Format:
+// - RETURN
+//   - [args]
+// Recurses on args.
+func (ret ReturnStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"RETURN",
+		ret.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorLessEqual) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "<=", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a EXIT statement. Format:
+// - EXIT
+//   - [args]
+// Recurses on args.
+func (stmt ExitStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"EXIT",
+		stmt.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorEqual) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "==", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a PRINTLN statement. Format:
+// - PRINTLN
+//   - [args]
+// Recurses on args.
+func (stmt PrintLnStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"PRINTLN",
+		stmt.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorNotEqual) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "!=", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a PRINT statement. Format:
+// - PRINT
+//   - [args]
+// Recurses on args.
+func (stmt PrintStatement) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"PRINT",
+		stmt.expr.aststring(getGreaterIndent(indent)),
+	)
 }
 
-//
-func (op BinaryOperatorAnd) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "&&", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints an identifier on a new line.
+func (ident Ident) aststring(indent string) string {
+	return addIndAndNewLine(indent, ident.ident)
 }
 
-//
-func (op BinaryOperatorOr) ASTString(indent string) string {
-	return addTripleIndentOnlyFst(indent, "||", op.GetLHS().ASTString(getGreaterIndent(indent)), op.GetRHS().ASTString(getGreaterIndent(indent)))
+// Prints a literal on a new line.
+func (liter IntLiteral) aststring(indent string) string {
+	return addIndAndNewLine(indent, strconv.Itoa(liter.value))
 }
 
-//-----------------------------------------------------
-func addMinToIndent(indent string) string {
-	return (indent + "- ")
+// Prints bool literal "true" on a new line.
+func (liter BoolLiteralTrue) aststring(indent string) string {
+	return addIndAndNewLine(indent, "true")
 }
 
-func addAtGreaterIndent(indent string, value string) string {
-	return fmt.Sprintf("%v%v\n", getGreaterIndent(indent), value)
+// Prints bool literal "false" on a new line.
+func (liter BoolLiteralFalse) aststring(indent string) string {
+	return addIndAndNewLine(indent, "false")
 }
 
-func addIndAndNewLine(indent string, value string) string {
-	return fmt.Sprintf("%v%v\n", addMinToIndent(indent), value)
+// Prints a char literal on a new line.
+func (liter CharLiteral) aststring(indent string) string {
+	tmpStats := fmt.Sprintf("'%v'", liter.char)
+	return addIndAndNewLine(indent, tmpStats)
 }
 
-func addIndentForFirst(indent string, a1 string, a2 string) string {
-	return fmt.Sprintf("%v%v", addIndAndNewLine(indent, a1), a2)
+// Prints a string literal on a new line.
+func (liter StringLiteral) aststring(indent string) string {
+	tmp := fmt.Sprintf("\"%v\"", liter.str)
+	return addIndAndNewLine(indent, tmp)
 }
 
-func addDoubleIndent(indent string, a1 string, a2 string) string {
-	return addTripleIndent(indent, a1, a2, "")
+// Prints a pair on a new line.
+func (liter PairLiteral) aststring(indent string) string {
+	return fmt.Sprintf("pair(%v, %v)", liter.fst, liter.snd)
 }
 
-func addArrayIndent(indent string, a1 string, arr []string) string {
-	var innerIndent string = getGreaterIndent(indent)
-	var innerStats string = ""
-
-	var typeStats string = addIndAndNewLine(indent, a1)
-	for _, element := range arr {
-		innerStats = fmt.Sprintf("%v%v", innerStats, addIndAndNewLine(innerIndent, element))
-	}
-
-	return fmt.Sprintf("%v%v", typeStats, innerStats)
+// Prints a null Pair on a new line.
+func (liter NullPair) aststring(indent string) string {
+	return addIndAndNewLine(indent, "null")
 }
 
-func getGreaterIndent(indent string) string {
-	return fmt.Sprintf("%v%v", indent, basicIndent)
+// Prints a ! unaryOperator. Format:
+// - !
+//   - [args]
+// Recurses on args.
+func (op UnaryOperatorNot) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"!",
+		op.GetExpression().aststring(getGreaterIndent(indent)),
+	)
 }
 
-func addType(indent string, argument string) string {
-
-	return addDoubleIndent(indent, "TYPE", argument)
+// Prints a - unaryOperator. Format:
+// - -
+//   - [args]
+// Recurses on args.
+func (op UnaryOperatorNegate) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"-",
+		op.GetExpression().aststring(getGreaterIndent(indent)),
+	)
 }
 
-func addTripleIndentOnlyFst(indent string, a1 string, a2 string, a3 string) string {
-	var innerStats2 string = a3
-
-	var typeStats string = addIndAndNewLine(indent, a1)
-	var innerStats string = a2
-	if a3 != "" {
-		innerStats2 = a3
-	}
-
-	return fmt.Sprintf("%v%v%v", typeStats, innerStats, innerStats2)
+// Prints a len unaryOperator. Format:
+// - len
+//   - [args]
+// Recurses on args.
+func (op UnaryOperatorLen) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"len",
+		op.GetExpression().aststring(getGreaterIndent(indent)),
+	)
 }
 
-func addTripleIndent(indent string, a1 string, a2 string, a3 string) string {
-	var innerStats2 string = a3
-
-	var innerIndent string = getGreaterIndent(indent)
-
-	var typeStats string = addIndAndNewLine(indent, a1)
-	var innerStats string = addIndAndNewLine(innerIndent, a2)
-	if a3 != "" {
-		innerStats2 = addIndAndNewLine(innerIndent, a3)
-	}
-
-	return fmt.Sprintf("%v%v%v", typeStats, innerStats, innerStats2)
+// Prints a ord unaryOperator. Format:
+// - ord
+//   - [args]
+// Recurses on args.
+func (op UnaryOperatorOrd) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"ord",
+		op.GetExpression().aststring(getGreaterIndent(indent)),
+	)
 }
 
-func (ast AST) ASTString() string {
+// Prints a chr unaryOperator. Format:
+// - chr
+//   - [args]
+// Recurses on args.
+func (op UnaryOperatorChr) aststring(indent string) string {
+	return addIndentForFirst(
+		indent,
+		"chr",
+		op.GetExpression().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a * binaryOperator. Format:
+// - *
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorMult) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"*",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a / binaryOperator. Format:
+// - /
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorDiv) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"/",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a % binaryOperator. Format:
+// - %
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorMod) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"%",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a + binaryOperator. Format:
+// - +
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorAdd) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"+",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a - binaryOperator. Format:
+// - -
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorSub) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"-",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a > binaryOperator. Format:
+// - >
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorGreaterThan) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		">",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a >= binaryOperator. Format:
+// - >=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorGreaterEqual) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		">=",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a < binaryOperator. Format:
+// - <
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorLessThan) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"<",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a <= binaryOperator. Format:
+// - <=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorLessEqual) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"<=",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a == binaryOperator. Format:
+// - ==
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorEqual) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"==",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a != binaryOperator. Format:
+// - !=
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorNotEqual) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"!=",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a && binaryOperator. Format:
+// - &&
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorAnd) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"&&",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a || binaryOperator. Format:
+// - ||
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorOr) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"||",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+//------------------------------------------------------------------------------
+
+// Main method. Format:
+// - [functions]
+// - int main()
+//   - [main]
+// Recurses on functions and main
+func (ast AST) aststring() string {
 	var tree string
 	var tmpIndent string
 
 	tree = addIndAndNewLine("", "Program")
 
 	for _, function := range ast.functions {
-		tree = fmt.Sprintf("%v%v", tree, function.ASTString(basicIndent))
+		tree = fmt.Sprintf(
+			"%v%v",
+			tree,
+			function.aststring(basicIndent),
+		)
 	}
 
 	tmpIndent = getGreaterIndent(basicIndent)
 
-	tree = fmt.Sprintf("%v%v", tree, addIndAndNewLine(basicIndent, "int main()"))
+	tree = fmt.Sprintf("%v%v",
+		tree,
+		addIndAndNewLine(basicIndent, "int main()"),
+	)
 
 	stmt := ast.main
 	for stmt.GetNext() != nil {
-		tree = fmt.Sprintf("%v%v", tree, stmt.ASTString(tmpIndent))
+		tree = fmt.Sprintf("%v%v", tree, stmt.aststring(tmpIndent))
 		stmt = stmt.GetNext()
 	}
-	tree = fmt.Sprintf("%v%v", tree, stmt.ASTString(tmpIndent))
+	tree = fmt.Sprintf("%v%v", tree, stmt.aststring(tmpIndent))
 
 	return tree
 }
