@@ -819,7 +819,13 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 // InvalidType is returned in case of error.
 func (m *ArrayElem) GetType(ts *Scope) Type {
 	array := ts.Lookup(m.ident)
-	for _, _ = range m.indexes {
+	for _, i := range m.indexes {
+		switch i.GetType(ts).(type) {
+		case IntType:
+		default:
+			return InvalidType{}
+		}
+
 		switch arrayT := array.(type) {
 		case ArrayType:
 			array = arrayT.base
