@@ -1,5 +1,18 @@
 package main
 
+// WACC Group 34
+//
+// typecheck.go: functions and auxiliary structures for typechecking
+//
+// Scope: structure for storing the functions, variables and their corresponging
+//   types for use in the TypeCheck and GetType
+// TypeCheck: recursively checks for type mismatches in AST, statements, and
+//   expressions
+// GetType: walks the expression tree to deduce the type of a particular
+//   expression
+
+// Scope stores the available variables, functions, and expected return type
+// during lexical analysis
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
@@ -7,7 +20,8 @@ type Scope struct {
 	returnType Type
 }
 
-func CreateRootScope(ast *AST) *Scope {
+// CreateRootScope creates a global scope that has no parent
+func CreateRootScope() *Scope {
 	scope := &Scope{
 		parent: nil,
 		vars:   make(map[string]Type),
@@ -17,6 +31,8 @@ func CreateRootScope(ast *AST) *Scope {
 	return scope
 }
 
+// Child creates a child scope from a scope that inherits all properties but
+// can declare variable independently
 func (m *Scope) Child() *Scope {
 	return &Scope{
 		parent:     m,
@@ -26,6 +42,8 @@ func (m *Scope) Child() *Scope {
 	}
 }
 
+// Lookup tries to recusively search for the type of a given variable
+// It returns InvalidType if not found
 func (m *Scope) Lookup(ident string) Type {
 	t, ok := m.vars[ident]
 
@@ -40,6 +58,8 @@ func (m *Scope) Lookup(ident string) Type {
 	return t
 }
 
+// LookupFunction tries to return the function given it's identifier
+// returns nil if not found.
 func (m *Scope) LookupFunction(ident string) *FunctionDef {
 	t, ok := m.funcs[ident]
 
@@ -50,6 +70,8 @@ func (m *Scope) LookupFunction(ident string) *FunctionDef {
 	return t
 }
 
+// Declare creates a new variable in the current scope returning the previous
+// type in case of redeclaration, nil otherwise
 func (m *Scope) Declare(ident string, t Type) Type {
 	pt, ok := m.vars[ident]
 
@@ -61,6 +83,8 @@ func (m *Scope) Declare(ident string, t Type) Type {
 	return nil
 }
 
+// DeclareFunction registers a new function in the scope returning the previous
+// one in case of redeclaration, nil otherwise
 func (m *Scope) DeclareFunction(ident string, f *FunctionDef) *FunctionDef {
 	pf, ok := m.funcs[ident]
 
@@ -72,14 +96,17 @@ func (m *Scope) DeclareFunction(ident string, f *FunctionDef) *FunctionDef {
 	return nil
 }
 
+// Match checks whether a type is assignable to the current type
 func (m InvalidType) Match(t Type) bool {
 	return false
 }
 
+// Match checks whether a type is assignable to the current type
 func (m UnknownType) Match(t Type) bool {
 	return true
 }
 
+// Match checks whether a type is assignable to the current type
 func (m IntType) Match(t Type) bool {
 	switch t.(type) {
 	case IntType:
@@ -91,6 +118,7 @@ func (m IntType) Match(t Type) bool {
 	}
 }
 
+// Match checks whether a type is assignable to the current type
 func (m BoolType) Match(t Type) bool {
 	switch t.(type) {
 	case BoolType:
@@ -102,6 +130,7 @@ func (m BoolType) Match(t Type) bool {
 	}
 }
 
+// Match checks whether a type is assignable to the current type
 func (m CharType) Match(t Type) bool {
 	switch t.(type) {
 	case CharType:
@@ -113,6 +142,7 @@ func (m CharType) Match(t Type) bool {
 	}
 }
 
+// Match checks whether a type is assignable to the current type
 func (m PairType) Match(t Type) bool {
 	switch o := t.(type) {
 	case PairType:
@@ -126,6 +156,7 @@ func (m PairType) Match(t Type) bool {
 	}
 }
 
+// Match checks whether a type is assignable to the current type
 func (m ArrayType) Match(t Type) bool {
 	switch o := t.(type) {
 	case ArrayType:
@@ -137,14 +168,17 @@ func (m ArrayType) Match(t Type) bool {
 	}
 }
 
+// TypeCheck checks whether the AST has any type mismatches in expressions and
+// assignments
 func (m *AST) TypeCheck() []error {
 	var errs []error
 
 	errch := make(chan error)
 
 	go func() {
-		global := CreateRootScope(m)
+		global := CreateRootScope()
 
+		// add the functions to the scope
 		for _, f := range m.functions {
 			if pf := global.DeclareFunction(f.ident, f); pf != nil {
 				errch <- CreateFunctionRedelarationError(
@@ -154,10 +188,12 @@ func (m *AST) TypeCheck() []error {
 			}
 		}
 
+		// check the main program
 		main := global.Child()
 		main.returnType = InvalidType{}
 		m.main.TypeCheck(main, errch)
 
+		// check all the functions
 		for _, f := range m.functions {
 			fscope := global.Child()
 			for _, arg := range f.params {
@@ -184,6 +220,8 @@ func (m *AST) TypeCheck() []error {
 	return errs
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *BaseStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	if m.next == nil {
 		return
@@ -191,11 +229,15 @@ func (m *BaseStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.next.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *BlockStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.body.TypeCheck(ts.Child(), errch)
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	if pt := ts.Declare(m.ident, m.waccType); pt != nil {
 		errch <- CreateVariableRedeclarationError(
@@ -218,6 +260,8 @@ func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.target.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -236,6 +280,8 @@ func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.target.TypeCheck(ts, errch)
 
@@ -256,6 +302,8 @@ func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 
 	m.expr.TypeCheck(ts, errch)
@@ -280,6 +328,8 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -297,6 +347,8 @@ func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *ExitStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	exitT := m.expr.GetType(ts)
@@ -312,16 +364,22 @@ func (m *ExitStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *PrintLnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *PrintStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.cond.TypeCheck(ts, errch)
 	boolT := m.cond.GetType(ts)
@@ -340,6 +398,8 @@ func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
 func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.cond.TypeCheck(ts, errch)
 	boolT := m.cond.GetType(ts)
@@ -357,6 +417,8 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the left hand is a valid assignment target.
+// The check propagated recursively.
 func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -371,6 +433,8 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the left hand side assignment target
+// InvalidType is returned in case of mismatch
 func (m *PairElemLHS) GetType(ts *Scope) Type {
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
@@ -383,6 +447,8 @@ func (m *PairElemLHS) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks whether the left hand is a valid assignment target.
+// The check propagated recursively.
 func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	t := ts.Lookup(m.ident)
 
@@ -410,6 +476,8 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the left hand side assignment target
+// InvalidType is returned in case of mismatch
 func (m *ArrayLHS) GetType(ts *Scope) Type {
 	t := ts.Lookup(m.ident)
 
@@ -431,6 +499,8 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 	return t
 }
 
+// TypeCheck checks whether the left hand is a valid assignment target.
+// The check propagated recursively.
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	switch ts.Lookup(m.ident).(type) {
 	case InvalidType:
@@ -441,15 +511,21 @@ func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the left hand side assignment target.
+// InvalidType is returned in case of mismatch.
 func (m *VarLHS) GetType(ts *Scope) Type {
 	return ts.Lookup(m.ident)
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
 func (m *PairLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.fst.TypeCheck(ts, errch)
 	m.snd.TypeCheck(ts, errch)
 }
 
+// GetType returns the deduced type of the right hand side assignment source.
+// InvalidType is returned in case of mismatch.
 func (m *PairLiterRHS) GetType(ts *Scope) Type {
 	fstT := m.fst.GetType(ts)
 	sndT := m.snd.GetType(ts)
@@ -467,6 +543,8 @@ func (m *PairLiterRHS) GetType(ts *Scope) Type {
 	return PairType{first: fstT, second: sndT}
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
 func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 	pairT := m.expr.GetType(ts)
@@ -482,6 +560,8 @@ func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the right hand side assignment source.
+// InvalidType is returned in case of mismatch.
 func (m *PairElemRHS) GetType(ts *Scope) Type {
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
@@ -494,6 +574,8 @@ func (m *PairElemRHS) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
 func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	if len(m.elements) == 0 {
 		return
@@ -514,6 +596,8 @@ func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the right hand side assignment source.
+// InvalidType is returned in case of mismatch.
 func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
 	if len(m.elements) == 0 {
 		return ArrayType{base: UnknownType{}}
@@ -530,6 +614,8 @@ func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
 	return ArrayType{t}
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	fun := ts.LookupFunction(m.ident)
 
@@ -564,6 +650,8 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the right hand side assignment source.
+// InvalidType is returned in case of mismatch.
 func (m *FunctionCallRHS) GetType(ts *Scope) Type {
 	fun := ts.LookupFunction(m.ident)
 
@@ -586,14 +674,21 @@ func (m *FunctionCallRHS) GetType(ts *Scope) Type {
 	return fun.returnType
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
 func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 }
 
+// GetType returns the deduced type of the right hand side assignment source.
+// InvalidType is returned in case of mismatch.
 func (m *ExpressionRHS) GetType(ts *Scope) Type {
 	return m.expr.GetType(ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 	identT := m.GetType(ts)
 
@@ -606,6 +701,8 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *Ident) GetType(ts *Scope) Type {
 	t := ts.Lookup(m.ident)
 	if t == nil {
@@ -615,48 +712,81 @@ func (m *Ident) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *IntLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *IntLiteral) GetType(ts *Scope) Type {
 	return IntType{}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BoolLiteralFalse) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BoolLiteralFalse) GetType(ts *Scope) Type {
 	return BoolType{}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BoolLiteralTrue) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BoolLiteralTrue) GetType(ts *Scope) Type {
 	return BoolType{}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *CharLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *CharLiteral) GetType(ts *Scope) Type {
 	return CharType{}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *StringLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *StringLiteral) GetType(ts *Scope) Type {
 	return ArrayType{CharType{}}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *NullPair) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *NullPair) GetType(ts *Scope) Type {
 	return PairType{first: UnknownType{}, second: UnknownType{}}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 	array := ts.Lookup(m.ident)
 
@@ -685,6 +815,8 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *ArrayElem) GetType(ts *Scope) Type {
 	array := ts.Lookup(m.ident)
 	for _, _ = range m.indexes {
@@ -698,6 +830,9 @@ func (m *ArrayElem) GetType(ts *Scope) Type {
 	return array
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *UnaryOperatorNot) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -712,6 +847,8 @@ func (m *UnaryOperatorNot) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *UnaryOperatorNot) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
 	case BoolType:
@@ -721,6 +858,9 @@ func (m *UnaryOperatorNot) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *UnaryOperatorNegate) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -735,6 +875,8 @@ func (m *UnaryOperatorNegate) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *UnaryOperatorNegate) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
 	case IntType:
@@ -744,6 +886,9 @@ func (m *UnaryOperatorNegate) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *UnaryOperatorLen) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -758,6 +903,8 @@ func (m *UnaryOperatorLen) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *UnaryOperatorLen) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
 	case ArrayType:
@@ -767,6 +914,9 @@ func (m *UnaryOperatorLen) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *UnaryOperatorOrd) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -781,6 +931,8 @@ func (m *UnaryOperatorOrd) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *UnaryOperatorOrd) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
 	case CharType:
@@ -790,6 +942,9 @@ func (m *UnaryOperatorOrd) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *UnaryOperatorChr) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 
@@ -804,6 +959,8 @@ func (m *UnaryOperatorChr) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *UnaryOperatorChr) GetType(ts *Scope) Type {
 	switch m.GetExpression().GetType(ts).(type) {
 	case IntType:
@@ -813,6 +970,9 @@ func (m *UnaryOperatorChr) GetType(ts *Scope) Type {
 	}
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -839,10 +999,15 @@ func (m *BinaryOperatorMult) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorMult) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -869,10 +1034,15 @@ func (m *BinaryOperatorDiv) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorDiv) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -899,10 +1069,15 @@ func (m *BinaryOperatorMod) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorMod) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -929,10 +1104,15 @@ func (m *BinaryOperatorAdd) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorAdd) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -959,10 +1139,15 @@ func (m *BinaryOperatorSub) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorSub) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -990,10 +1175,15 @@ func (m *BinaryOperatorGreaterThan) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorGreaterThan) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1026,10 +1216,15 @@ func (m *BinaryOperatorGreaterEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorGreaterEqual) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1062,10 +1257,15 @@ func (m *BinaryOperatorLessThan) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorLessThan) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1098,10 +1298,15 @@ func (m *BinaryOperatorLessEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorLessEqual) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1118,10 +1323,15 @@ func (m *BinaryOperatorEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorEqual) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1138,10 +1348,15 @@ func (m *BinaryOperatorNotEqual) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorNotEqual) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1168,10 +1383,15 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorAnd) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
 
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 	m.lhs.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
@@ -1198,6 +1418,8 @@ func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
+// GetType returns the deduced type of the expression.
+// InvalidType is returned in case of error.
 func (m *BinaryOperatorOr) GetType(ts *Scope) Type {
 	return GetTypeBinary(m, ts)
 }
@@ -1249,16 +1471,20 @@ func GetTypeBinary(m BinaryOperator, ts *Scope) Type {
 	}
 }
 
+// TypeCheck on ExpLPar to satisfy interface. Never called.
 func (m *ExprLPar) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType on ExpLPar to satisfy interface. Never called.
 func (m *ExprLPar) GetType(ts *Scope) Type {
 	return InvalidType{}
 }
 
+// TypeCheck on ExpRPar to satisfy interface. Never called.
 func (m *ExprRPar) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
+// GetType on ExpRPar to satisfy interface. Never called.
 func (m *ExprRPar) GetType(ts *Scope) Type {
 	return InvalidType{}
 }
