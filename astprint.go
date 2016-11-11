@@ -21,11 +21,6 @@ func addMinToIndent(indent string) string {
 	return (indent + "- ")
 }
 
-// Adds the current string at the next indent level
-func addAtGreaterIndent(indent, value string) string {
-	return addIndAndNewLine(getGreaterIndent(indent), value)
-}
-
 // Adds the current string at the given indent value
 func addIndAndNewLine(indent, value string) string {
 	return fmt.Sprintf("%v%v\n", addMinToIndent(indent), value)
