@@ -12,6 +12,7 @@ import (
 	"fmt"
 )
 
+// Flag structure contains all the flag values and the filename
 type Flags struct {
 	filename     string
 	printPEGTree bool
