@@ -473,6 +473,8 @@ type ExprParen struct {
 	TokenBase
 }
 
+// exprStream given an expression node sends the all the nodes after it to
+// channel skipping over spaces and flattening out the structure
 func exprStream(node *node32) <-chan *node32 {
 	out := make(chan *node32)
 	go func() {
@@ -494,14 +496,19 @@ func exprStream(node *node32) <-chan *node32 {
 	return out
 }
 
+// parseExpr parses an expression and builds an expression tree that respects
+// the operator precedence
+// the function uses the shunting yard algorithm to achieve this
 func parseExpr(node *node32) (Expression, error) {
 	var stack []Expression
 	var opstack []Expression
 
+	// push an expression to the stack
 	push := func(e Expression) {
 		stack = append(stack, e)
 	}
 
+	// peek at the top of the expression stack
 	peek := func() Expression {
 		if len(stack) == 0 {
 			return nil
@@ -509,15 +516,18 @@ func parseExpr(node *node32) (Expression, error) {
 		return stack[len(stack)-1]
 	}
 
+	// pop and return the expression at the top the expression stack
 	pop := func() (ret Expression) {
 		ret, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		return
 	}
 
+	// push an operator to the operator stack
 	pushop := func(e Expression) {
 		opstack = append(opstack, e)
 	}
 
+	// peek at the top the operator stack
 	peekop := func() Expression {
 		if len(opstack) == 0 {
 			return nil
@@ -525,6 +535,7 @@ func parseExpr(node *node32) (Expression, error) {
 		return opstack[len(opstack)-1]
 	}
 
+	// pop and return the operator at the top of the operator stack
 	popop := func() {
 		var exp Expression
 
@@ -545,6 +556,10 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// prio returns the priority of a given operator
+	// the lesser the value the more tightly the operator binds
+	// values taken from the operator precedence of C
+	// special case parenthesis,  otherwise a high value
 	prio := func(exp Expression) int {
 		switch exp.(type) {
 		case *UnaryOperatorNot:
@@ -590,6 +605,7 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// returns whether the operator is right associative
 	rightAssoc := func(exp Expression) bool {
 		switch exp.(type) {
 		case *UnaryOperatorNot:
@@ -607,6 +623,7 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// given a peg rule return the operator with the expressions set
 	ruleToOp := func(outer, inner pegRule) Expression {
 		switch outer {
 		case ruleUNARYOPER:
@@ -656,11 +673,13 @@ func parseExpr(node *node32) (Expression, error) {
 		return nil
 	}
 
+	// process the nodes in order
 	for enode := range exprStream(node) {
 		switch enode.pegRule {
 		case ruleINTLITER:
 			num, err := strconv.ParseInt(enode.match, 10, 32)
 			if err != nil {
+				// number does not fit into WACC integer size
 				numerr := err.(*strconv.NumError)
 				switch numerr.Err {
 				case strconv.ErrRange:
@@ -682,6 +701,7 @@ func parseExpr(node *node32) (Expression, error) {
 			strLiter := &StringLiteral{}
 			strNode := nextNode(enode.up, ruleSTR)
 			if strNode != nil {
+				// string may be empty, only set contents if not
 				strLiter.str = strNode.match
 			}
 			push(strLiter)
@@ -703,6 +723,7 @@ func parseExpr(node *node32) (Expression, error) {
 					break
 				}
 
+				// pop all operators with more tight binding
 				switch {
 				case !rightAssoc(op1) && prio(op1) >= prio(op2),
 					rightAssoc(op1) && prio(op1) > prio(op2):
@@ -715,6 +736,8 @@ func parseExpr(node *node32) (Expression, error) {
 		case ruleLPAR:
 			pushop(&ExprParen{})
 		case ruleRPAR:
+			// when a parenthesis is closed pop all the operators
+			// the were inside
 		parloop:
 			for {
 				switch peekop().(type) {
@@ -727,6 +750,7 @@ func parseExpr(node *node32) (Expression, error) {
 			}
 		}
 
+		// set tokens on newly pushed expressions
 		if val := peek(); val != nil && val.Token() == nil {
 			peek().SetToken(&node.token32)
 		}
@@ -736,6 +760,7 @@ func parseExpr(node *node32) (Expression, error) {
 		}
 	}
 
+	// if operators are still left pop them
 	for peekop() != nil {
 		popop()
 	}
