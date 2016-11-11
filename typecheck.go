@@ -504,7 +504,7 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	switch ts.Lookup(m.ident).(type) {
 	case InvalidType:
-		errch <- CreateUndelaredVariableError(
+		errch <- CreateUndeclaredVariableError(
 			m.Token(),
 			m.ident,
 		)
@@ -694,7 +694,7 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 
 	switch identT.(type) {
 	case InvalidType:
-		errch <- CreateUndelaredVariableError(
+		errch <- CreateUndeclaredVariableError(
 			m.Token(),
 			m.ident,
 		)
