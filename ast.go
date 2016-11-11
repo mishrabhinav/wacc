@@ -42,7 +42,7 @@ type Expression interface {
 type Statement interface {
 	GetNext() Statement
 	SetNext(Statement)
-	IString(level int) string
+	istring(level int) string
 	ASTString(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
