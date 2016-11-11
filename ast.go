@@ -1104,7 +1104,6 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 }
 
 func parseWACC(node *node32) (*AST, error) {
-	var err error
 	ast := &AST{}
 
 	for node := range nodeRange(node) {
@@ -1119,6 +1118,7 @@ func parseWACC(node *node32) (*AST, error) {
 				return nil, err
 			}
 		case ruleSTAT:
+			var err error
 			ast.main, err = parseStatement(node.up)
 			if err != nil {
 				return nil, err
