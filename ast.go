@@ -261,6 +261,7 @@ type FunctionDef struct {
 	body       Statement
 }
 
+// AST is the main struct that represents the abstract syntax tree
 type AST struct {
 	main      Statement
 	functions []*FunctionDef
@@ -304,85 +305,104 @@ func parseArrayElem(node *node32) (Expression, error) {
 	return arrElem, nil
 }
 
+// Ident is the struct to represent an identifier
 type Ident struct {
 	TokenBase
 	ident string
 }
 
+// IntLiteral is the struct to represent an integer literal
 type IntLiteral struct {
 	TokenBase
 	value int
 }
 
+// BoolLiteralTrue is the struct to represent a true boolean literal
 type BoolLiteralTrue struct {
 	TokenBase
 }
 
+// BoolLiteralFalse is the struct to represent a false boolean literal
 type BoolLiteralFalse struct {
 	TokenBase
 }
 
+// CharLiteral is the struct to represent a character literal
 type CharLiteral struct {
 	TokenBase
 	char string
 }
 
+// StringLiteral is the struct to represent a string literal
 type StringLiteral struct {
 	TokenBase
 	str string
 }
 
+// PairLiteral is the struct to represent a pair literal
 type PairLiteral struct {
 	TokenBase
 	fst Expression
 	snd Expression
 }
 
+// NullPair is the struct to represent a null pair
 type NullPair struct {
 	TokenBase
 }
 
+// ArrayElem is the struct to represent an array element
 type ArrayElem struct {
 	TokenBase
 	ident   string
 	indexes []Expression
 }
 
+// UnaryOperator is the struct to represent the unary operators
 type UnaryOperator interface {
 	Expression
 	GetExpression() Expression
 	SetExpression(Expression)
 }
 
+// UnaryOperatorBase is the struct to represent the expression having the unary
+// operator
 type UnaryOperatorBase struct {
 	TokenBase
 	expr Expression
 }
 
+// GetExpression returns the expression associated with UnaryOperator
 func (m *UnaryOperatorBase) GetExpression() Expression {
 	return m.expr
 }
 
+// SetExpression sets the expression associated with UnaryOperator
 func (m *UnaryOperatorBase) SetExpression(exp Expression) {
 	m.expr = exp
 }
 
+// UnaryOperatorNot represents '!'
 type UnaryOperatorNot struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorNegate represents '-'
 type UnaryOperatorNegate struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorLen represents 'len'
 type UnaryOperatorLen struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorOrd represents 'ord'
 type UnaryOperatorOrd struct {
 	UnaryOperatorBase
 }
 
+// UnaryOperatorChr represents 'chr'
 type UnaryOperatorChr struct {
 	UnaryOperatorBase
 }
