@@ -11,15 +11,26 @@ NC='\033[0m'       # White
 # Default path to example files
 DEFAULT_PATH="docs/examples"
 
-# Check if a specific path provided, if not use default
-if [ $# -eq 0 ]; then
-  EXAMPLES_PATH=$DEFAULT_PATH
-else
-  EXAMPLES_PATH=$1
-fi
+case "$1" in
+  -d)
+    SHOWDIFF=true
+    ;;
+  -e)
+    SHOWEXPECTED=true
+    ;;
+esac
+
+case "$2" in
+  -d)
+   SHOWDIFF=true
+   ;;
+  -e)
+   SHOWEXPECTED=true
+   ;;
+esac
 
 # Subdirectories for Valid and Invalid cases
-VALID="$EXAMPLES_PATH/valid"
+VALID="$DEFAULT_PATH/valid"
 
 # Function to test the input file
 testASTPrint() {
@@ -40,15 +51,23 @@ testASTPrint() {
     sed -i '0,/^0\tProgram$/d' refResult.txt
     sed -i 's/^[^-]* - //' refResult.txt
     DIFF="$(diff result.txt refResult.txt)"
-    # Print the result on test failure
+    # Check there are no differences between the files
     if [ -z "$DIFF" ]; then
+      #if there aren't the test passes
       RESULT="${GREEN}Pass${NC}"
     else
+      #if there are the test fails
       RESULT="${RED}Fail${NC}"
-      #echo "EXPECTED"
-      #cat refResult.txt
-      #echo "DIFFERENCE"
-      #diff result.txt refResult.txt
+      # print expected result if flag is set
+      if [ "$SHOWEXPECTED" = true ]; then
+        echo " ------ EXPECTED ------"
+        cat refResult.txt
+      fi
+      # print difference if flag is set
+      if [ "$SHOWDIFF" = true ]; then
+        echo "------ DIFFERENCE ------"
+        diff result.txt refResult.txt
+      fi
     fi
     echo -e "$OUT $RESULT"
   done
