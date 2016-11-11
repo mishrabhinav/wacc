@@ -33,17 +33,20 @@ func (c CharType) String() string {
 }
 
 func (p PairType) String() string {
-	if p.first == nil || p.second == nil {
-		return "pair"
+	var first string = fmt.Sprintf("%v", p.first)
+	var second string = fmt.Sprintf("%v", p.second)
+
+	if p.first == nil {
+		first = "pair"
 	}
-	return fmt.Sprintf("pair(%s, %s)", p.first.String(), p.second.String())
+	if p.second == nil {
+		second = "pair"
+	}
+	return fmt.Sprintf("pair(%v, %v)", first, second)
 }
 
 func (a ArrayType) String() string {
-	if a.base == nil {
-		return "[]"
-	}
-	return fmt.Sprintf("%s[]", a.base.String())
+	return fmt.Sprintf("%v[]", a.base)
 }
 
 func (stmt SkipStatement) IString(level int) string {
@@ -55,7 +58,8 @@ func (stmt BlockStatement) IString(level int) string {
 }
 
 func (stmt DeclareAssignStatement) IString(level int) string {
-	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.waccType, stmt.ident, stmt.rhs)
+	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.waccType,
+		stmt.ident, stmt.rhs)
 }
 
 func (lhs PairElemLHS) String() string {
@@ -125,7 +129,8 @@ func (rhs ExpressionRHS) String() string {
 }
 
 func (stmt AssignStatement) IString(level int) string {
-	return fmt.Sprintf("%v%v = %v", getIndentation(level), stmt.target, stmt.rhs)
+	return fmt.Sprintf("%v%v = %v", getIndentation(level), stmt.target,
+		stmt.rhs)
 }
 
 func (stmt ReadStatement) IString(level int) string {
@@ -174,7 +179,8 @@ func (stmt IfStatement) IString(level int) string {
 
 	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.IString(level+1))
 
-	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent, stmt.cond, indent, trueStats, indent, falseStats, indent)
+	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent, stmt.cond,
+		indent, trueStats, indent, falseStats, indent)
 }
 
 func (stmt WhileStatement) IString(level int) string {
@@ -189,7 +195,8 @@ func (stmt WhileStatement) IString(level int) string {
 
 	body = fmt.Sprintf("%v\n%v", body, st.IString(level+1))
 
-	return fmt.Sprintf("%vwhile (%v) do%v\n%vdone", indent, stmt.cond, body, indent)
+	return fmt.Sprintf("%vwhile (%v) do%v\n%vdone", indent, stmt.cond, body,
+		indent)
 }
 
 func (fp FunctionParam) String() string {
@@ -210,7 +217,8 @@ func (fd FunctionDef) String(level int) string {
 		}
 	}
 
-	declaration := fmt.Sprintf("%v%v %v(%v) is", indent, fd.returnType, fd.ident, params)
+	declaration := fmt.Sprintf("%v%v %v(%v) is", indent, fd.returnType, fd.ident,
+		params)
 
 	st := fd.body
 	for st.GetNext() != nil {
