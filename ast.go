@@ -53,6 +53,8 @@ type Expression interface {
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
+	Weight() int
 }
 
 // Statement is the interface for WACC statements
@@ -64,6 +66,7 @@ type Statement interface {
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, chan<- Instr)
 }
 
 // TokenBase is the base structure that contains the token reference
@@ -124,6 +127,7 @@ type LHS interface {
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
 }
 
 // PairElemLHS is the struct for a pair on the lhs of an assignment
@@ -153,6 +157,7 @@ type RHS interface {
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
 }
 
 // PairLiterRHS is the struct for pair literals on the rhs of an assignment
