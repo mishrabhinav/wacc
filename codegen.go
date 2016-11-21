@@ -92,6 +92,7 @@ func (m *RegAllocator) CleanupScope() {
 	// TODO
 }
 
+// CodeGen for skip statements
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
