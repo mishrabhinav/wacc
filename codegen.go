@@ -96,7 +96,11 @@ func (m *RegAllocator) CleanupScope() {
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
+//CodeGen for block statements
 func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	alloc.StartScope()
+	m.body.CodeGen(alloc, insch)
+	alloc.CleanupScope()
 }
 
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
