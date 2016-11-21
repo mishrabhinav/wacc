@@ -1,22 +1,95 @@
 package main
 
+import (
+	"fmt"
+)
+
+// Instr is the interface for the ARM assembly instructions
 type Instr interface {
 	String() string
 }
 
-type Reg interface {
+// Location is either a register or memory address
+type Location interface {
 	String() string
+}
+
+// Reg represents a register in ARM
+type Reg interface {
+	Location
 	Reg() int
 }
 
-type RegAllocator struct {
+// ARMReg is a specific ARM register that also tracks usage information
+type ARMReg struct {
+	r    int
+	used int
 }
 
+func (m *ARMReg) String() string {
+	return fmt.Sprintf("r%d", m.r)
+}
+
+// Reg returns the register number
+func (m *ARMReg) Reg() int {
+	return m.r
+}
+
+// RegAllocator tracks register usage
+type RegAllocator struct {
+	regs []*ARMReg
+}
+
+// GetReg returns a register that is free and ready for use
 func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
+	r := m.regs[0]
+
+	if r.used > 0 {
+		// TODO push register
+	}
+
+	r.used++
+
+	m.regs = append(m.regs[1:], r)
+
+	return r
+}
+
+// FreeReg frees a register loading back the previous value if necessary
+func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
+	if re.Reg() != m.regs[len(m.regs)-1].Reg() {
+		panic("Register free order mismatch")
+	}
+
+	r := re.(*ARMReg)
+
+	if r.used > 1 {
+		// TODO pop register
+	}
+
+	r.used--
+
+	m.regs = append([]*ARMReg{r}, m.regs[:len(m.regs)-1]...)
+}
+
+// DeclareVar registers a new variable for use
+func (m *RegAllocator) DeclareVar(ident string) {
+}
+
+// ResolveVar returns the location of a variable
+func (m *RegAllocator) ResolveVar(ident string) Location {
+	// TODO
 	return nil
 }
 
-func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
+// StartScope starts a new scope with new variable mappings possible
+func (m *RegAllocator) StartScope() {
+	// TODO
+}
+
+// CleanupScope starts a new scope with new variable mappings possible
+func (m *RegAllocator) CleanupScope() {
+	// TODO
 }
 
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
