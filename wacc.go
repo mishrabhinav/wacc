@@ -74,6 +74,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		defer armFileHandle.Close()
 		armFile = bufio.NewWriter(armFileHandle)
 	}
 
