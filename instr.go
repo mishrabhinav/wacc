@@ -36,6 +36,24 @@ func (m Cond) String() string {
 	return value
 }
 
+type Shift int
+
+var shiftMap = map[int]string{
+	0: "LSL",
+	1: "LSR",
+	2: "ASR",
+	3: "ROR",
+}
+
+func (m Shift) String() string {
+	value, exists := shiftMap[int(m)]
+	if !exists {
+		return ""
+	}
+
+	return value
+}
+
 //------------------------------------------------------------------------------
 //STORE AND LOAD
 //------------------------------------------------------------------------------
@@ -108,9 +126,7 @@ type BaseUnaryInstr struct {
 }
 
 func (m *BaseUnaryInstr) String() string {
-	return fmt.Sprintf("%s, %s",
-		(m.destination).String(),
-		(m.arg).String())
+	return fmt.Sprintf("%s, %s", (m.destination).String(), (m.arg).String())
 }
 
 //NEGInstr struct
@@ -153,26 +169,9 @@ type ImmediateOperand struct {
 	n int
 }
 
-func (m ImmediateOperand) String() string {
-	return fmt.Sprint("d", m.n)
-}
-
-func (m *BaseBinaryInstr) String() string {
-	return fmt.Sprintf("%s, %s, %s",
-		(m.destination).String(),
-		(m.lhs).String(),
-		(m.rhs).String())
-}
-
 //ADDInstr struct
 type ADDInstr struct {
 	base BaseBinaryInstr
-}
-
-func (m *ADDInstr) String() string {
-	return fmt.Sprintf("\tADD%s %s",
-		m.base.cond.String(),
-		m.base.String())
 }
 
 //SUBInstr struct
@@ -180,21 +179,30 @@ type SUBInstr struct {
 	base BaseBinaryInstr
 }
 
-func (m *SUBInstr) String() string {
-	return fmt.Sprintf("\tSUB%s %s",
-		m.base.cond.String(),
-		m.base.String())
-}
-
 //RSBInstr struct
 type RSBInstr struct {
 	base BaseBinaryInstr
 }
 
+func (m ImmediateOperand) String() string {
+	return fmt.Sprint("%d", m.n)
+}
+
+func (m *BaseBinaryInstr) String() string {
+	return fmt.Sprintf("%s, %s, %s", m.destination.String(),
+		m.lhs.String(), m.rhs.String())
+}
+
+func (m *ADDInstr) String() string {
+	return fmt.Sprintf("\tADD%s %s", m.base.cond.String(), m.base.String())
+}
+
+func (m *SUBInstr) String() string {
+	return fmt.Sprintf("\tSUB%s %s", m.base.cond.String(), m.base.String())
+}
+
 func (m *RSBInstr) String() string {
-	return fmt.Sprintf("\tRSB%s %s",
-		m.base.cond.String(),
-		m.base.String())
+	return fmt.Sprintf("\tRSB%s %s", m.base.cond.String(), m.base.String())
 }
 
 //------------------------------------------------------------------------------
@@ -208,9 +216,7 @@ type BaseComparisonInstr struct {
 }
 
 func (m *BaseComparisonInstr) String() string {
-	return fmt.Sprintf("%s, %d",
-		(m.lhs).String(),
-		m.rhs)
+	return fmt.Sprintf("%s, %d", m.lhs.String(), m.rhs)
 }
 
 //CMPInstr struct
@@ -342,22 +348,20 @@ Check above declaration.
 DEPRECATED CODE.
 
 //STRInstr struct
-type STRInstr struct {
+type STRPreIndexInstr struct {
 	source      Reg
 	destination PreIndex
 }
 
 //LDRInstr struct
-type LDRInstr struct {
+type LDRPreIndexInstr struct {
 	destination Reg
 	source      PreIndex
 }
 
-func (m *STRInstr) String() string {
-	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]",
-		m.source.String(),
-		m.destination.Rn.String(),
-		m.destination.Rm.String())
+func (m *STRPreIndexInstr) String() string {
+	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]", m.source.String(),
+		m.destination.Rn.String(), m.destination.Rm.String())
 }
 
 func (m *LDRInstr) String() string {
