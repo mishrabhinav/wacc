@@ -178,12 +178,27 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for DeclareAssignStatement
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	// m.waccType <- Not careing now
+	//TODO: Implement LHS
+	//lhs := m.ident
+
+	rhs := m.rhs
+
+	baseReg := alloc.GetReg(insch)
+	rhs.CodeGen(alloc, baseReg, insch)
+	alloc.FreeReg(baseReg, insch)
 }
 
 //CodeGen generates code for AssignStatement
 func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	//TODO: Implement LHS
+	//lhs := m.target
+
+	rhs := m.rhs
+
+	baseReg := alloc.GetReg(insch)
+	rhs.CodeGen(alloc, baseReg, insch)
+	alloc.FreeReg(baseReg, insch)
 }
 
 //CodeGen generates code for ReadStatement
@@ -263,7 +278,8 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 
 //CodeGen generates code for ExpressionRHS
 func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	//TODO: Does this actually work?
+	m.expr.CodeGen(alloc, target, insch)
 }
 
 //------------------------------------------------------------------------------
