@@ -248,10 +248,7 @@ type DataMovementInstr struct {
 }
 
 func (m *DataMovementInstr) String() string {
-	return fmt.Sprintf("\tMOV%s %s, %s",
-		m.cond.String(),
-		m.destination.String(),
-		m.source.String())
+	return fmt.Sprintf("\tMOV %s, %s", m.destination.String(), m.source.String())
 }
 
 //------------------------------------------------------------------------------

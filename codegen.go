@@ -474,7 +474,7 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
-		binaryInstrSub = &SUBInstr{BaseBinaryInstr{target, target2, target}}
+		binaryInstrSub = &SUBInstr{BaseBinaryInstr{destination: target, lhs: target, rhs: target2}}
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
