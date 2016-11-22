@@ -79,9 +79,21 @@ func (m *NOTInstr) String() string {
 //BaseBinaryInstr struct
 type BaseBinaryInstr struct {
 	cond        Cond
+	destination Reg
 	lhs         Reg
 	rhs         Reg
-	destination Reg
+}
+
+type Operand2 interface {
+	String() string
+}
+
+type ImmediateOperand struct {
+	n int
+}
+
+func (m ImmediateOperand) String() string {
+	return fmt.Sprint("d", m.n)
 }
 
 func (m *BaseBinaryInstr) String() string {
@@ -97,7 +109,9 @@ type ADDInstr struct {
 }
 
 func (m *ADDInstr) String() string {
-	return fmt.Sprintf("\tADD %s", m.base.String())
+	return fmt.Sprintf("\tADD%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //SUBInstr struct
@@ -106,7 +120,9 @@ type SUBInstr struct {
 }
 
 func (m *SUBInstr) String() string {
-	return fmt.Sprintf("\tSUB %s", m.base.String())
+	return fmt.Sprintf("\tSUB%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //RSBInstr struct
@@ -115,7 +131,9 @@ type RSBInstr struct {
 }
 
 func (m *RSBInstr) String() string {
-	return fmt.Sprintf("\tRSB %s", m.base.String())
+	return fmt.Sprintf("\tRSB%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +158,9 @@ type CMPInstr struct {
 }
 
 func (m *CMPInstr) String() string {
-	return fmt.Sprintf("\tCMP %s", m.base.String())
+	return fmt.Sprintf("\tCMP%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //CMNInstr struct
@@ -149,7 +169,9 @@ type CMNInstr struct {
 }
 
 func (m *CMNInstr) String() string {
-	return fmt.Sprintf("\tCMN %s", m.base.String())
+	return fmt.Sprintf("\tCMN%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //TSTInstr struct
@@ -158,7 +180,9 @@ type TSTInstr struct {
 }
 
 func (m *TSTInstr) String() string {
-	return fmt.Sprintf("\tTST %s", m.base.String())
+	return fmt.Sprintf("\tTST%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //TEQInstr struct
@@ -167,7 +191,9 @@ type TEQInstr struct {
 }
 
 func (m *TEQInstr) String() string {
-	return fmt.Sprintf("\tTEQ %s", m.base.String())
+	return fmt.Sprintf("\tTEQ%s %s",
+		m.cond.String(),
+		m.base.String())
 }
 
 //------------------------------------------------------------------------------
@@ -217,11 +243,15 @@ func (m *BICInstr) String() string {
 
 //DataMovementInstr struct
 type DataMovementInstr struct {
-	base BaseBinaryInstr
+	destination Reg
+	source      Operand2
 }
 
 func (m *DataMovementInstr) String() string {
-	return fmt.Sprintf("\tMOV %s", m.base.String())
+	return fmt.Sprintf("\tMOV%s %s, %s",
+		m.cond.String(),
+		m.destination.String(),
+		m.source.String())
 }
 
 //------------------------------------------------------------------------------
