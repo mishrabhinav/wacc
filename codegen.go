@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+//------------------------------------------------------------------------------
+// INTERFACES
+//------------------------------------------------------------------------------
+
 // Instr is the interface for the ARM assembly instructions
 type Instr interface {
 	String() string
@@ -19,6 +23,10 @@ type Reg interface {
 	Location
 	Reg() int
 }
+
+//------------------------------------------------------------------------------
+// REG ALLOCATOR
+//------------------------------------------------------------------------------
 
 // ARMGenReg is a general purpose ARM register
 type ARMGenReg struct {
@@ -143,6 +151,10 @@ func (m *RegAllocator) CleanupScope() {
 	// TODO
 }
 
+//------------------------------------------------------------------------------
+// CODEGEN
+//------------------------------------------------------------------------------
+
 // CodeGen for skip statements
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
@@ -226,6 +238,10 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
 
+//------------------------------------------------------------------------------
+// LITERALS AND ELEMENTS CODEGEN
+//------------------------------------------------------------------------------
+
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
@@ -262,7 +278,11 @@ func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
 
-func CodeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
+//------------------------------------------------------------------------------
+// UNARY OPERATOR CODEGEN
+//------------------------------------------------------------------------------
+
+func codeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
 	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{target, target}}
 	insch <- UnaryInstrNeg
@@ -271,13 +291,13 @@ func CodeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- I
 //CodeGen generates code for UnaryOperatorNot
 func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr := m.GetExpression()
-	CodeGenNeg(expr, alloc, target, insch)
+	codeGenNeg(expr, alloc, target, insch)
 }
 
 //CodeGen generates code for UnaryOperatorNegate
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr := m.GetExpression()
-	CodeGenNeg(expr, alloc, target, insch)
+	codeGenNeg(expr, alloc, target, insch)
 }
 
 //CodeGen generates code for UnaryOperatorLen
@@ -294,6 +314,10 @@ func (m *UnaryOperatorOrd) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	//TODO Implement
 }
+
+//------------------------------------------------------------------------------
+// BINARY OPERATOR CODEGEN
+//------------------------------------------------------------------------------
 
 //CodeGen generates code for BinaryOperatorMult
 // If LHS.Weight > RHS.Weight LHS is executed first
@@ -367,6 +391,10 @@ func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 //CodeGen generates code for ExprParen
 func (m *ExprParen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
+
+//------------------------------------------------------------------------------
+// WEIGHT
+//------------------------------------------------------------------------------
 
 //Weight returns weight of Ident
 func (m *Ident) Weight() int {
