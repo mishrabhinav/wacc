@@ -88,7 +88,11 @@ func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 	r := m.regs[0]
 
 	if r.used > 0 {
-		// TODO push register
+		insch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r},
+			},
+		}
 	}
 
 	r.used++
@@ -107,7 +111,11 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 	r := re.(*ARMGenReg)
 
 	if r.used > 1 {
-		// TODO pop register
+		insch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r},
+			},
+		}
 	}
 
 	r.used--
