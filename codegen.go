@@ -78,7 +78,9 @@ var pc = &ARMNamedReg{name: "pc", r: 15}
 
 // RegAllocator tracks register usage
 type RegAllocator struct {
-	regs []*ARMGenReg
+	fname        string
+	labelCounter int
+	regs         []*ARMGenReg
 }
 
 // CreateRegAllocator returns an allocator initialized with all the general
@@ -129,6 +131,14 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 	r.used--
 
 	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
+}
+
+// GetUniqueLabelSuffix returns a new unique label suffix
+func (m *RegAllocator) GetUniqueLabelSuffix() string {
+	defer func() {
+		m.labelCounter++
+	}()
+	return fmt.Sprintf("_%s_%d", m.fname, m.labelCounter)
 }
 
 // DeclareVar registers a new variable for use
@@ -607,6 +617,7 @@ func (m *FunctionDef) CodeGen() <-chan Instr {
 
 	go func() {
 		alloc := CreateRegAllocator()
+		alloc.fname = m.ident
 
 		ch <- &LABELInstr{m.ident}
 
