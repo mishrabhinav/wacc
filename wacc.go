@@ -9,6 +9,7 @@ package main
 // Handles exit codes in case Syntax/Semantic errors are encountered
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -64,6 +65,24 @@ func main() {
 		}
 		os.Exit(200)
 	}
+
+	//Start Code Generation
+	armFile := bufio.NewWriter(os.Stdout)
+
+	if !flags.printAssembly {
+		armFileHandle, err := os.Create(flags.assemblyfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		armFile = bufio.NewWriter(armFileHandle)
+	}
+
+	for instr := range ast.CodeGen() {
+		fInstr := fmt.Sprintf("%v\n", instr)
+		fmt.Fprint(armFile, fInstr)
+	}
+
+	armFile.Flush()
 
 	flags.Finish()
 }
