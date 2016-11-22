@@ -29,6 +29,15 @@ func (m *NEGInstr) String() string {
 	return fmt.Sprintf("\tNEG %s", m.base.String())
 }
 
+//NOTInstr struct
+type NOTInstr struct {
+	base BaseUnaryInstr
+}
+
+func (m *NOTInstr) String() string {
+	return fmt.Sprintf("\tNOT %s", m.base.String())
+}
+
 //------------------------------------------------------------------------------
 // ARITHMETIC OPERATORS
 //------------------------------------------------------------------------------
