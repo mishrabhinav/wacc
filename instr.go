@@ -120,13 +120,13 @@ func (m *STRInstr) String() string {
 
 //BaseUnaryInstr struct
 type BaseUnaryInstr struct {
-	cond        Cond
-	arg         Reg
-	destination Reg
+	cond Cond
+	arg  Reg
+	dest Reg
 }
 
 func (m *BaseUnaryInstr) String() string {
-	return fmt.Sprintf("%s, %s", (m.destination).String(), (m.arg).String())
+	return fmt.Sprintf("%s, %s", (m.dest).String(), (m.arg).String())
 }
 
 //NEGInstr struct
@@ -155,10 +155,10 @@ func (m *NOTInstr) String() string {
 
 //BaseBinaryInstr struct
 type BaseBinaryInstr struct {
-	cond        Cond
-	destination Reg
-	lhs         Reg
-	rhs         Reg
+	cond Cond
+	dest Reg
+	lhs  Reg
+	rhs  Reg
 }
 
 type Operand2 interface {
@@ -189,7 +189,7 @@ func (m ImmediateOperand) String() string {
 }
 
 func (m *BaseBinaryInstr) String() string {
-	return fmt.Sprintf("%s, %s, %s", m.destination.String(),
+	return fmt.Sprintf("%s, %s, %s", m.dest.String(),
 		m.lhs.String(), m.rhs.String())
 }
 
@@ -310,12 +310,12 @@ func (m *BICInstr) String() string {
 
 //DataMovementInstr struct
 type DataMovementInstr struct {
-	destination Reg
-	source      Operand2
+	dest   Reg
+	source Operand2
 }
 
 func (m *DataMovementInstr) String() string {
-	return fmt.Sprintf("\tMOV %s, %s", m.destination.String(), m.source.String())
+	return fmt.Sprintf("\tMOV %s, %s", m.dest.String(), m.source.String())
 }
 
 //------------------------------------------------------------------------------
@@ -349,19 +349,19 @@ DEPRECATED CODE.
 
 //STRInstr struct
 type STRPreIndexInstr struct {
-	source      Reg
-	destination PreIndex
+	source Reg
+	dest   PreIndex
 }
 
 //LDRInstr struct
 type LDRPreIndexInstr struct {
-	destination Reg
-	source      PreIndex
+	dest   Reg
+	source PreIndex
 }
 
 func (m *STRPreIndexInstr) String() string {
 	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]", m.source.String(),
-		m.destination.Rn.String(), m.destination.Rm.String())
+		m.dest.Rn.String(), m.dest.Rm.String())
 }
 
 func (m *LDRInstr) String() string {
