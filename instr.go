@@ -404,3 +404,23 @@ type LTORGInstr struct {
 func (m *LTORGInstr) String() string {
 	return "\t.ltorg"
 }
+
+//------------------------------------------------------------------------------
+// DATA
+//------------------------------------------------------------------------------
+
+type DataWordInstr struct {
+	n int
+}
+
+func (m *DataWordInstr) String() string {
+	return fmt.Sprintf("\t.word %d", m.n)
+}
+
+type DataAsciiInstr struct {
+	str string
+}
+
+func (m *DataAsciiInstr) String() string {
+	return fmt.Sprintf("\t.ascii \"%s\"", m.str)
+}

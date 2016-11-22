@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
 //------------------------------------------------------------------------------
@@ -78,6 +79,7 @@ var pc = &ARMNamedReg{name: "pc", r: 15}
 
 // RegAllocator tracks register usage
 type RegAllocator struct {
+	stringPool   *StringPool
 	fname        string
 	labelCounter int
 	regs         []*ARMGenReg
@@ -163,6 +165,34 @@ func (m *RegAllocator) StartScope() {
 // CleanupScope starts a new scope with new variable mappings possible
 func (m *RegAllocator) CleanupScope() {
 	// TODO
+}
+
+//------------------------------------------------------------------------------
+// GLOBAL STRING STORAGE
+//------------------------------------------------------------------------------
+
+// StringPool holds the string literals that have been declared in the program
+type StringPool struct {
+	sync.RWMutex
+	pool map[int]string
+}
+
+// Lookup returns the msg number of a string literal
+func (m *StringPool) Lookup(msg string) int {
+	m.Lock()
+	defer m.Unlock()
+
+	if m.pool == nil {
+		m.pool = make(map[int]string)
+	}
+
+	// TODO deduplicate strings
+
+	l := len(m.pool)
+
+	m.pool[l] = msg
+
+	return l
 }
 
 //------------------------------------------------------------------------------
@@ -317,7 +347,15 @@ func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for StringLiteral
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	msgI := alloc.stringPool.Lookup(m.str)
+	msgL := fmt.Sprintf("msg_%d", msgI)
+
+	// TODO create a copy of the string
+	// the string in the data segment is 8bit
+	// it has to be expanded to 32bit in the array
+	if false {
+		fmt.Printf(msgL)
+	}
 }
 
 //CodeGen generates code for PairLiteral
@@ -773,11 +811,12 @@ func CheckDivideByZero(insch chan<- Instr) {
 }
 
 // CodeGen generates instructions for functions
-func (m *FunctionDef) CodeGen() <-chan Instr {
+func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 	ch := make(chan Instr)
 
 	go func() {
 		alloc := CreateRegAllocator()
+		alloc.stringPool = strPool
 		alloc.fname = m.ident
 
 		ch <- &LABELInstr{m.ident}
@@ -799,30 +838,42 @@ func (m *AST) CodeGen() <-chan Instr {
 	ch := make(chan Instr)
 	var charr []<-chan Instr
 
+	strPool := &StringPool{}
+
 	for _, f := range m.functions {
-		charr = append(charr, f.CodeGen())
+		charr = append(charr, f.CodeGen(strPool))
 	}
 	mainF := &FunctionDef{
 		ident:      "main",
 		returnType: InvalidType{},
 		body:       m.main,
 	}
-	charr = append(charr, mainF.CodeGen())
+	charr = append(charr, mainF.CodeGen(strPool))
 
 	go func() {
 		ch <- &DataSegInstr{}
 
-		// TODO add globals here
-
-		ch <- &TextSegInstr{}
-
-		ch <- &GlobalInstr{"main"}
+		var txtInstr []Instr
+		txtInstr = append(txtInstr, &TextSegInstr{})
+		txtInstr = append(txtInstr, &GlobalInstr{"main"})
 
 		for _, fch := range charr {
 			for instr := range fch {
-				ch <- instr
+				txtInstr = append(txtInstr, instr)
 			}
 		}
+
+		for i := 0; i < len(strPool.pool); i++ {
+			v := strPool.pool[i]
+			ch <- &LABELInstr{fmt.Sprintf("msg_%d", i)}
+			ch <- &DataWordInstr{len(v)}
+			ch <- &DataAsciiInstr{v}
+		}
+
+		for _, tin := range txtInstr {
+			ch <- tin
+		}
+
 		close(ch)
 	}()
 
