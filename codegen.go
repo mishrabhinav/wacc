@@ -199,8 +199,16 @@ func (m *StringPool) Lookup(msg string) int {
 // CODEGEN
 //------------------------------------------------------------------------------
 
+// CodeGen base for next instruction
+func (m *BaseStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	if m.next != nil {
+		m.next.CodeGen(alloc, insch)
+	}
+}
+
 // CodeGen for skip statements
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen for block statements
@@ -208,6 +216,8 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	alloc.StartScope()
 	m.body.CodeGen(alloc, insch)
 	alloc.CleanupScope()
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for DeclareAssignStatement
@@ -221,6 +231,8 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	baseReg := alloc.GetReg(insch)
 	rhs.CodeGen(alloc, baseReg, insch)
 	alloc.FreeReg(baseReg, insch)
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for AssignStatement
@@ -233,46 +245,64 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	baseReg := alloc.GetReg(insch)
 	rhs.CodeGen(alloc, baseReg, insch)
 	alloc.FreeReg(baseReg, insch)
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for ReadStatement
 func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for ReturnStatement
 func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for ExitStatement
 func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for PrintStatement
 func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for IfStatement
 func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for WhileStatement
 func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	//TODO
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for PairElemLHS
