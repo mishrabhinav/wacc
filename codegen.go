@@ -238,7 +238,7 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
-	if (lhs.Weight() > rhs.Weight()) {
+	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
@@ -249,7 +249,7 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 	}
 	BinaryInstrMul := &MULInstr{BaseBinaryInstr{target, target2, target}}
 	alloc.FreeReg(target2, insch)
-	insch<-BinaryInstrMul
+	insch <- BinaryInstrMul
 }
 
 //CodeGen generates code for BinaryOperatorDiv
