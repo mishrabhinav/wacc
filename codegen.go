@@ -362,21 +362,21 @@ func (m *UnaryOperatorChr) Weight() int {
 	return m.GetExpression().Weight()
 }
 
-func maxWeight(x int, y int) int {
+func maxWeight(x, y int) int {
 	if x > y {
 		return x
 	}
 	return y
 }
 
-func minWeight(x int, y int) int {
+func minWeight(x, y int) int {
 	if x < y {
 		return x
 	}
 	return y
 }
 
-func binaryWeight(e1 Expression, e2 Expression) int {
+func binaryWeight(e1, e2 Expression) int {
 	cost1 := maxWeight(e1.Weight(), e2.Weight()+1)
 	cost2 := maxWeight(e1.Weight()+1, e2.Weight())
 	return minWeight(cost1, cost2)
