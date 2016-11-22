@@ -232,7 +232,24 @@ func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 }
 
 //CodeGen generates code for BinaryOperatorMult
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
 func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	if (lhs.Weight() > rhs.Weight()) {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+	}
+	BinaryInstrMul := &MULInstr{BaseBinaryInstr{target, target2, target}}
+	alloc.FreeReg(target2, insch)
+	insch<-BinaryInstrMul
 }
 
 //CodeGen generates code for BinaryOperatorDiv
