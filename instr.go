@@ -203,19 +203,6 @@ func (m *MULInstr) String() string {
 }
 
 //------------------------------------------------------------------------------
-//DIV INSTRUCTION
-//------------------------------------------------------------------------------
-
-//DIVInstr struct
-type DIVInstr struct {
-	divisor Reg
-}
-
-func (m *DIVInstr) String() string {
-	return fmt.Sprintf("\tDIV %s", m.divisor.String())
-}
-
-//------------------------------------------------------------------------------
 // LOAD / STORE INSTRUCTIONS
 //------------------------------------------------------------------------------
 
@@ -299,6 +286,53 @@ type LABELInstr struct {
 
 func (m *LABELInstr) String() string {
 	return fmt.Sprintf("%s:", m.ident)
+}
+
+//------------------------------------------------------------------------------
+//BRANCH
+//------------------------------------------------------------------------------
+
+// Conditions
+type Cond int
+
+const (
+	condEQ = 0
+	condNE = 1
+	condGE = 10
+	condLT = 11
+	condGT = 12
+	condLE = 13
+)
+
+func (m Cond) String() string {
+	switch m {
+	case 0:
+		return "EQ"
+	case 1:
+		return "NE"
+	case 10:
+		return "GE"
+	case 11:
+		return "LT"
+	case 12:
+		return "GT"
+	case 13:
+		return "LE"
+	case 14:
+		return "AL"
+	default:
+		return ""
+	}
+}
+
+//BInstr struct
+type BInstr struct {
+	label string
+	cond  Cond
+}
+
+func (m *BInstr) String() string {
+	return fmt.Sprintf("B%s %s", m.cond.String(), m.label)
 }
 
 //------------------------------------------------------------------------------
