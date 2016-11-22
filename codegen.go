@@ -427,16 +427,17 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
+	BinaryInstrSub := &SUBInstr{}
 	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
-		BinaryInstrSub := &SUBInstr{BaseBinaryInstr{target, target2, target}}
+		BinaryInstrSub = &SUBInstr{BaseBinaryInstr{target, target2, target}}
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
-		BinaryInstrSub := &SUBInstr{BaseBinaryInstr{target2, target, target}}
+		BinaryInstrSub = &SUBInstr{BaseBinaryInstr{target2, target, target}}
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- BinaryInstrSub
