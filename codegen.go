@@ -20,24 +20,67 @@ type Reg interface {
 	Reg() int
 }
 
-// ARMReg is a specific ARM register that also tracks usage information
-type ARMReg struct {
+// ARMGenReg is a general purpose ARM register
+type ARMGenReg struct {
 	r    int
 	used int
 }
 
-func (m *ARMReg) String() string {
+func (m *ARMGenReg) String() string {
 	return fmt.Sprintf("r%d", m.r)
 }
 
 // Reg returns the register number
-func (m *ARMReg) Reg() int {
+func (m *ARMGenReg) Reg() int {
 	return m.r
 }
 
+// ARMNamedReg is an ARM register with a specific purpose
+type ARMNamedReg struct {
+	r    int
+	name string
+}
+
+func (m *ARMNamedReg) String() string {
+	return m.name
+}
+
+// Reg returns the register number
+func (m *ARMNamedReg) Reg() int {
+	return m.r
+}
+
+// registers that can be used
+var r0 = &ARMGenReg{r: 0}
+var r1 = &ARMGenReg{r: 1}
+var r2 = &ARMGenReg{r: 2}
+var r3 = &ARMGenReg{r: 3}
+var r4 = &ARMGenReg{r: 4}
+var r5 = &ARMGenReg{r: 5}
+var r6 = &ARMGenReg{r: 6}
+var r7 = &ARMGenReg{r: 7}
+var r8 = &ARMGenReg{r: 8}
+var r9 = &ARMGenReg{r: 9}
+var r10 = &ARMGenReg{r: 10}
+var r11 = &ARMGenReg{r: 11}
+var ip = &ARMNamedReg{name: "ip", r: 12}
+var sp = &ARMNamedReg{name: "sp", r: 13}
+var lr = &ARMNamedReg{name: "lr", r: 14}
+var pc = &ARMNamedReg{name: "pc", r: 15}
+
 // RegAllocator tracks register usage
 type RegAllocator struct {
-	regs []*ARMReg
+	regs []*ARMGenReg
+}
+
+// CreateRegAllocator returns an allocator initialized with all the general
+// purpose registers
+func CreateRegAllocator() *RegAllocator {
+	return &RegAllocator{
+		regs: []*ARMGenReg{
+			r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11,
+		},
+	}
 }
 
 // GetReg returns a register that is free and ready for use
@@ -61,7 +104,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 		panic("Register free order mismatch")
 	}
 
-	r := re.(*ARMReg)
+	r := re.(*ARMGenReg)
 
 	if r.used > 1 {
 		// TODO pop register
@@ -69,7 +112,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 
 	r.used--
 
-	m.regs = append([]*ARMReg{r}, m.regs[:len(m.regs)-1]...)
+	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
 }
 
 // DeclareVar registers a new variable for use
