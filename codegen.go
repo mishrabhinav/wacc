@@ -168,74 +168,92 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for DeclareAssignStatement
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for AssignStatement
 func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ReadStatement
 func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ReturnStatement
 func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ExitStatement
 func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PrintStatement
 func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for IfStatement
 func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for WhileStatement
 func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ArrayLHS
 func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for VarLHS
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PairLiterRHS
 func (m *PairLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ArrayLiterRHS
 func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PairElemRHS
 func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for FunctionCallRHS
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ExpressionRHS
 func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //------------------------------------------------------------------------------
@@ -244,38 +262,47 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BoolLiteralTrue
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BoolLiteralFalse
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for CharLiteral
 func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for StringLiteral
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for PairLiteral
 func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for NullPair
 func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ArrayElem
 func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //------------------------------------------------------------------------------
@@ -342,50 +369,62 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 
 //CodeGen generates code for BinaryOperatorDiv
 func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorMod
 func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorAdd
 func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorSub
 func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorGreaterThan
 func (m *BinaryOperatorGreaterThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorGreaterEqual
 func (m *BinaryOperatorGreaterEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorLessThan
 func (m *BinaryOperatorLessThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorLessEqual
 func (m *BinaryOperatorLessEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorEqual
 func (m *BinaryOperatorEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorNotEqual
 func (m *BinaryOperatorNotEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorAnd
 func (m *BinaryOperatorAnd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for BinaryOperatorOr
 func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO
 }
 
 //CodeGen generates code for ExprParen
