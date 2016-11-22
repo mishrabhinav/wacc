@@ -641,6 +641,8 @@ func (m *FunctionDef) CodeGen() <-chan Instr {
 
 		m.body.CodeGen(alloc, ch)
 
+		ch <- &LTORGInstr{}
+
 		close(ch)
 	}()
 

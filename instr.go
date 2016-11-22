@@ -327,3 +327,12 @@ type GlobalInstr struct {
 func (m *GlobalInstr) String() string {
 	return fmt.Sprintf(".global %s", m.label)
 }
+
+// LTORGInstr ensures subroutines are within range of literal pools
+type LTORGInstr struct {
+	label string
+}
+
+func (m *LTORGInstr) String() string {
+	return "\t.ltorg"
+}
