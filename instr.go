@@ -4,12 +4,44 @@ import (
 	"fmt"
 )
 
+// Conditions
+type Cond int
+
+var condMap = map[int]string{
+	0:  "EQ",
+	1:  "NE",
+	10: "GE",
+	11: "LT",
+	12: "GT",
+	13: "LE",
+	14: "AL",
+}
+
+const (
+	EQ = 0
+	NE = 1
+	GE = 10
+	LT = 11
+	GT = 12
+	LE = 13
+)
+
+func (m Cond) String() string {
+	value, exists := condMap[int(m)]
+	if !exists {
+		return ""
+	}
+
+	return value
+}
+
 //------------------------------------------------------------------------------
 // UNARY OPERATORS
 //------------------------------------------------------------------------------
 
 //BaseUnaryInstr struct
 type BaseUnaryInstr struct {
+	cond        Cond
 	arg         Reg
 	destination Reg
 }
@@ -46,6 +78,7 @@ func (m *NOTInstr) String() string {
 
 //BaseBinaryInstr struct
 type BaseBinaryInstr struct {
+	cond        Cond
 	lhs         Reg
 	rhs         Reg
 	destination Reg
@@ -90,14 +123,15 @@ func (m *RSBInstr) String() string {
 //------------------------------------------------------------------------------
 
 type BaseComparisonInstr struct {
-	lhs Reg
-	rhs Reg
+	cond Cond
+	lhs  Reg
+	rhs  int
 }
 
 func (m *BaseComparisonInstr) String() string {
-	return fmt.Sprintf("%s, %s",
+	return fmt.Sprintf("%s, %d",
 		(m.lhs).String(),
-		(m.rhs).String())
+		m.rhs)
 }
 
 //CMPInstr struct
@@ -142,6 +176,7 @@ func (m *TEQInstr) String() string {
 
 //ANDInstr struct
 type ANDInstr struct {
+	cond Cond
 	base BaseBinaryInstr
 }
 
@@ -208,8 +243,9 @@ func (m *MULInstr) String() string {
 
 //PreIndex struct
 type PreIndex struct {
-	Rn Reg
-	Rm Reg
+	cond Cond
+	Rn   Reg
+	Rm   Reg
 }
 
 //STRInstr struct
@@ -244,6 +280,7 @@ func (m *LDRInstr) String() string {
 
 //BaseStackInstr struct
 type BaseStackInstr struct {
+	cond Cond
 	regs []Reg
 }
 
@@ -291,39 +328,6 @@ func (m *LABELInstr) String() string {
 //------------------------------------------------------------------------------
 //BRANCH
 //------------------------------------------------------------------------------
-
-// Conditions
-type Cond int
-
-const (
-	condEQ = 0
-	condNE = 1
-	condGE = 10
-	condLT = 11
-	condGT = 12
-	condLE = 13
-)
-
-func (m Cond) String() string {
-	switch m {
-	case 0:
-		return "EQ"
-	case 1:
-		return "NE"
-	case 10:
-		return "GE"
-	case 11:
-		return "LT"
-	case 12:
-		return "GT"
-	case 13:
-		return "LE"
-	case 14:
-		return "AL"
-	default:
-		return ""
-	}
-}
 
 //BInstr struct
 type BInstr struct {
