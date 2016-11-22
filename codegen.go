@@ -534,16 +534,56 @@ func (m *ExprParen) Weight() int {
 	return -1
 }
 
-//FunctionDef .
-func (m *AST) FunctionDef() <-chan Instr {
+// CodeGen generates instructions for functions
+func (m *FunctionDef) CodeGen() <-chan Instr {
 	ch := make(chan Instr)
+
+	go func() {
+		alloc := CreateRegAllocator()
+
+		ch <- &LABELInstr{m.ident}
+
+		// TODO add parameters to stack
+
+		m.body.CodeGen(alloc, ch)
+
+		close(ch)
+	}()
 
 	return ch
 }
 
-//CodeGen .
+// CodeGen generates instructions for the whole program
 func (m *AST) CodeGen() <-chan Instr {
 	ch := make(chan Instr)
+	var charr []<-chan Instr
+
+	for _, f := range m.functions {
+		charr = append(charr, f.CodeGen())
+	}
+	mainF := &FunctionDef{
+		ident:      "main",
+		returnType: InvalidType{},
+		body:       m.main,
+	}
+	charr = append(charr, mainF.CodeGen())
+
+	go func() {
+		ch <- &DataSegInstr{}
+
+		// TODO add globals here
+
+		ch <- &TextSegInstr{}
+
+		ch <- &GlobalInstr{"main"}
+
+		for _, fch := range charr {
+			for instr := range fch {
+				ch <- instr
+			}
+		}
+		close(ch)
+	}()
 
 	return ch
 }

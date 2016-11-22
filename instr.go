@@ -276,3 +276,30 @@ type LABELInstr struct {
 func (m *LABELInstr) String() string {
 	return fmt.Sprintf("%s:", m.ident)
 }
+
+//------------------------------------------------------------------------------
+//SEGMENTS
+//------------------------------------------------------------------------------
+
+// DataSegInstr signals the beginning of the data segment
+type DataSegInstr struct{}
+
+func (m *DataSegInstr) String() string {
+	return ".data"
+}
+
+// TextSegInstr signals the beginning of the text segment
+type TextSegInstr struct{}
+
+func (m *TextSegInstr) String() string {
+	return ".text"
+}
+
+// GlobalInstr exposes the argument to the linker
+type GlobalInstr struct {
+	label string
+}
+
+func (m *GlobalInstr) String() string {
+	return fmt.Sprintf(".global %s", m.label)
+}
