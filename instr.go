@@ -110,7 +110,7 @@ type ADDInstr struct {
 
 func (m *ADDInstr) String() string {
 	return fmt.Sprintf("\tADD%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -121,7 +121,7 @@ type SUBInstr struct {
 
 func (m *SUBInstr) String() string {
 	return fmt.Sprintf("\tSUB%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -132,7 +132,7 @@ type RSBInstr struct {
 
 func (m *RSBInstr) String() string {
 	return fmt.Sprintf("\tRSB%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -159,7 +159,7 @@ type CMPInstr struct {
 
 func (m *CMPInstr) String() string {
 	return fmt.Sprintf("\tCMP%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -170,7 +170,7 @@ type CMNInstr struct {
 
 func (m *CMNInstr) String() string {
 	return fmt.Sprintf("\tCMN%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -181,7 +181,7 @@ type TSTInstr struct {
 
 func (m *TSTInstr) String() string {
 	return fmt.Sprintf("\tTST%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
@@ -192,7 +192,7 @@ type TEQInstr struct {
 
 func (m *TEQInstr) String() string {
 	return fmt.Sprintf("\tTEQ%s %s",
-		m.cond.String(),
+		m.base.cond.String(),
 		m.base.String())
 }
 
