@@ -2,6 +2,7 @@
 wacc_34
 .vendor
 *.peg.go
+*.s
 
 # Created by https://www.gitignore.io/api/go
 
