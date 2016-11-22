@@ -89,9 +89,20 @@ func (m *RSBInstr) String() string {
 //COMPARISON OPERATORS
 //------------------------------------------------------------------------------
 
+type BaseComparisonInstr struct {
+	lhs Reg
+	rhs Reg
+}
+
+func (m *BaseComparisonInstr) String() string {
+	return fmt.Sprintf("%s, %s",
+		(m.lhs).String(),
+		(m.rhs).String())
+}
+
 //CMPInstr struct
 type CMPInstr struct {
-	base BaseBinaryInstr
+	base BaseComparisonInstr
 }
 
 func (m *CMPInstr) String() string {
@@ -100,7 +111,7 @@ func (m *CMPInstr) String() string {
 
 //CMNInstr struct
 type CMNInstr struct {
-	base BaseBinaryInstr
+	base BaseComparisonInstr
 }
 
 func (m *CMNInstr) String() string {
@@ -109,7 +120,7 @@ func (m *CMNInstr) String() string {
 
 //TSTInstr struct
 type TSTInstr struct {
-	base BaseBinaryInstr
+	base BaseComparisonInstr
 }
 
 func (m *TSTInstr) String() string {
@@ -118,7 +129,7 @@ func (m *TSTInstr) String() string {
 
 //TEQInstr struct
 type TEQInstr struct {
-	base BaseBinaryInstr
+	base BaseComparisonInstr
 }
 
 func (m *TEQInstr) String() string {
@@ -192,6 +203,19 @@ func (m *MULInstr) String() string {
 }
 
 //------------------------------------------------------------------------------
+//DIV INSTRUCTION
+//------------------------------------------------------------------------------
+
+//DIVInstr struct
+type DIVInstr struct {
+	divisor Reg
+}
+
+func (m *DIVInstr) String() string {
+	return fmt.Sprintf("\tDIV %s", m.divisor.String())
+}
+
+//------------------------------------------------------------------------------
 // LOAD / STORE INSTRUCTIONS
 //------------------------------------------------------------------------------
 
@@ -243,7 +267,7 @@ func RegsToString(regs []Reg) string {
 	for i := 0; i < len(regs)-1; i++ {
 		printedRegs += regs[i].String() + ", "
 	}
-	return "(" + printedRegs + ")"
+	return "{" + printedRegs + "}"
 }
 
 //PUSHInstr struct
