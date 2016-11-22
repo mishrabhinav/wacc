@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // ARITHMETIC OPERATORS
 // lhs is destination REG
 type BaseBinaryInstr struct {
@@ -148,9 +150,9 @@ func (m *STRInstr) String() string {
 
 func (m *LDRInstr) String() string {
 	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]",
-			m.destination.String(),
-			m.source.Rn.String(),
-			m.source.Rm.String())
+		m.destination.String(),
+		m.source.Rn.String(),
+		m.source.Rm.String())
 }
 
 // PUSH AND POP INSTRUCTIONS
@@ -159,10 +161,10 @@ type BaseStackInstr struct {
 	regs []Reg
 }
 
-func String(regs []Reg) string {
+func RegsToString(regs []Reg) string {
 	printedRegs := ""
 	for i := 0; i < len(regs)-1; i++ {
-		printedRegs += regs[i].RegsToString() + ", "
+		printedRegs += regs[i].String() + ", "
 	}
 	return "(" + printedRegs + ")"
 }
@@ -181,6 +183,7 @@ func (m *PushInstr) String() string {
 
 func (m *PopInstr) String() string {
 	return fmt.Sprintf("\tPOP %s", RegsToString(m.regs))
+}
 
 //LABELS
 
@@ -188,7 +191,6 @@ type label struct {
 	ident string
 }
 
-func (m* label) String() string{
+func (m *label) String() string {
 	return fmt.Sprintf("%s:", m.ident)
-}
 }
