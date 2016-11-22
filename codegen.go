@@ -148,6 +148,10 @@ func (m *RegAllocator) DeclareVar(ident string) {
 // ResolveVar returns the location of a variable
 func (m *RegAllocator) ResolveVar(ident string) Location {
 	// TODO
+	// Format: [sp, #8]
+	//var tmp Location
+	//tmp = &"[sp, #4]"
+	//return tmp
 	return nil
 }
 
@@ -337,7 +341,7 @@ func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr)
 
 func codeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
-	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{target, target}}
+	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{arg: target, destination: target}}
 	insch <- UnaryInstrNeg
 }
 
