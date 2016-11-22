@@ -187,10 +187,10 @@ func (m *PopInstr) String() string {
 
 //LABELS
 
-type label struct {
+type Label struct {
 	ident string
 }
 
-func (m *label) String() string {
+func (m *Label) String() string {
 	return fmt.Sprintf("%s:", m.ident)
 }
