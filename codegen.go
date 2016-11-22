@@ -217,18 +217,22 @@ func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 
 //CodeGen generates code for UnaryOperatorNegate
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+
 }
 
 //CodeGen generates code for UnaryOperatorLen
 func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO Implement
 }
 
 //CodeGen generates code for UnaryOperatorOrd
 func (m *UnaryOperatorOrd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO Implement
 }
 
 //CodeGen generates code for UnaryOperatorChr
 func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	//TODO Implement
 }
 
 //CodeGen generates code for BinaryOperatorMult
