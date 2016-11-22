@@ -5,6 +5,31 @@ import (
 )
 
 //------------------------------------------------------------------------------
+// UNARY OPERATORS
+//------------------------------------------------------------------------------
+
+//BaseUnaryInstr struct
+type BaseUnaryInstr struct {
+	arg         Reg
+	destination Reg
+}
+
+func (m *BaseUnaryInstr) String() string {
+	return fmt.Sprintf("%s, %s",
+		(m.destination).String(),
+		(m.arg).String())
+}
+
+//NEGInstr struct
+type NEGInstr struct {
+	base BaseUnaryInstr
+}
+
+func (m *NEGInstr) String() string {
+	return fmt.Sprintf("\tNEG %s", m.base.String())
+}
+
+//------------------------------------------------------------------------------
 // ARITHMETIC OPERATORS
 //------------------------------------------------------------------------------
 
@@ -17,11 +42,6 @@ type BaseBinaryInstr struct {
 	destination Reg
 }
 
-//AddInstr struct
-type AddInstr struct {
-	base BaseBinaryInstr
-}
-
 func (m *BaseBinaryInstr) String() string {
 	return fmt.Sprintf("%s, %s, %s",
 		(m.destination).String(),
@@ -29,16 +49,21 @@ func (m *BaseBinaryInstr) String() string {
 		(m.rhs).String())
 }
 
-func (m *AddInstr) String() string {
-	return fmt.Sprintf("\tADD %s", m.base.String())
-}
-
-//SubInstr struct
-type SubInstr struct {
+//ADDInstr struct
+type ADDInstr struct {
 	base BaseBinaryInstr
 }
 
-func (m *SubInstr) String() string {
+func (m *ADDInstr) String() string {
+	return fmt.Sprintf("\tADD %s", m.base.String())
+}
+
+//SUBInstr struct
+type SUBInstr struct {
+	base BaseBinaryInstr
+}
+
+func (m *SUBInstr) String() string {
 	return fmt.Sprintf("\tSUB %s", m.base.String())
 }
 
@@ -212,21 +237,21 @@ func RegsToString(regs []Reg) string {
 	return "(" + printedRegs + ")"
 }
 
-//PushInstr struct
-type PushInstr struct {
+//PUSHInstr struct
+type PUSHInstr struct {
 	BaseStackInstr
 }
 
-//PopInstr struct
-type PopInstr struct {
+//POPInstr struct
+type POPInstr struct {
 	BaseStackInstr
 }
 
-func (m *PushInstr) String() string {
+func (m *PUSHInstr) String() string {
 	return fmt.Sprintf("\tPUS %s", RegsToString(m.regs))
 }
 
-func (m *PopInstr) String() string {
+func (m *POPInstr) String() string {
 	return fmt.Sprintf("\tPOP %s", RegsToString(m.regs))
 }
 
@@ -234,11 +259,11 @@ func (m *PopInstr) String() string {
 //LABELS
 //------------------------------------------------------------------------------
 
-//Label struct
-type Label struct {
+//LABELInstr struct
+type LABELInstr struct {
 	ident string
 }
 
-func (m *Label) String() string {
+func (m *LABELInstr) String() string {
 	return fmt.Sprintf("%s:", m.ident)
 }

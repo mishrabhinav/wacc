@@ -217,7 +217,10 @@ func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 
 //CodeGen generates code for UnaryOperatorNegate
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-
+	expr := m.GetExpression()
+	expr.CodeGen(alloc, target, insch)
+	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{target, target}}
+	insch <- UnaryInstrNeg
 }
 
 //CodeGen generates code for UnaryOperatorLen
