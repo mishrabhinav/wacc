@@ -267,8 +267,7 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	rhs.CodeGen(alloc, baseReg, insch)
 
 	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{dest: baseReg, value: storeValue}}
-	insch <- StoreInstruction
+	insch <- &STRInstr{StoreInstr{dest: baseReg, value: storeValue}}
 
 	alloc.FreeReg(baseReg, insch)
 
