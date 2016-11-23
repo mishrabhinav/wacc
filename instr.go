@@ -226,7 +226,7 @@ type RSBInstr struct {
 }
 
 func (m ImmediateOperand) String() string {
-	return fmt.Sprintf("%d", m.n)
+	return fmt.Sprintf("#%d", m.n)
 }
 
 func (m *ADDInstr) String() string {
