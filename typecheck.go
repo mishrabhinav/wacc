@@ -439,8 +439,10 @@ func (m *PairElemLHS) GetType(ts *Scope) Type {
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
 		if !m.snd {
+			m.wtype = t.first
 			return t.first
 		}
+		m.wtype = t.second
 		return t.second
 	default:
 		return InvalidType{}
@@ -496,6 +498,7 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 		}
 	}
 
+	m.wtype = t
 	return t
 }
 
@@ -514,6 +517,7 @@ func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
 // GetType returns the deduced type of the left hand side assignment target.
 // InvalidType is returned in case of mismatch.
 func (m *VarLHS) GetType(ts *Scope) Type {
+	m.wtype = ts.Lookup(m.ident)
 	return ts.Lookup(m.ident)
 }
 
@@ -710,6 +714,7 @@ func (m *Ident) GetType(ts *Scope) Type {
 	if t == nil {
 		return InvalidType{}
 	}
+	m.wtype = t
 	return t
 }
 
@@ -834,6 +839,7 @@ func (m *ArrayElem) GetType(ts *Scope) Type {
 			return InvalidType{}
 		}
 	}
+	m.wtype = array
 	return array
 }
 
