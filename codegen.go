@@ -526,7 +526,8 @@ func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 
 //CodeGen generates code for CharLiteral
 func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	MOVInstr := &MOVInstr{dest: target, source: CharOperand{m.char}}
+	insch <- MOVInstr
 }
 
 //CodeGen generates code for StringLiteral

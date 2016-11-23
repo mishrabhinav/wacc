@@ -210,6 +210,10 @@ type ImmediateOperand struct {
 	n int
 }
 
+type CharOperand struct {
+	char string
+}
+
 //ADDInstr struct
 type ADDInstr struct {
 	BaseBinaryInstr
@@ -227,6 +231,10 @@ type RSBInstr struct {
 
 func (m ImmediateOperand) String() string {
 	return fmt.Sprintf("#%d", m.n)
+}
+
+func (m CharOperand) String() string {
+	return fmt.Sprintf("#%s", m.char)
 }
 
 func (m *ADDInstr) String() string {
