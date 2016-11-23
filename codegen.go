@@ -1154,6 +1154,12 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 			},
 		}
 
+		ch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
+			},
+		}
+
 		pl := len(m.params)
 		switch {
 		case pl >= 4:
@@ -1192,12 +1198,14 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		for i := 4; i < len(m.params); i++ {
 			p := m.params[i]
-			alloc.stack[0][p.name] = -4 + i*-4
+			alloc.stack[0][p.name] = -4 + i*-4 + 8*-4
 		}
 
 		alloc.StartScope(ch)
 
 		m.body.CodeGen(alloc, ch)
+
+		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
 
 		if pl := len(m.params); pl > 0 {
 			ppregs := pl * 4
@@ -1211,6 +1219,12 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 					rhs:  ImmediateOperand{ppregs},
 				},
 			}
+		}
+
+		ch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
+			},
 		}
 
 		ch <- &POPInstr{
