@@ -13,6 +13,7 @@ import (
 const (
 	mPrintString      = "%.*s"
 	mPrintInt         = "%d"
+	mPrintReference   = "%p"
 	mTrue             = "true"
 	mFalse            = "false"
 	mFFlush           = "fflush"
@@ -424,22 +425,48 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
-
+	/*target := alloc.GetReg(insch)
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
+	m.CodeGen(alloc, r0, insch)
+	switch t := m.GetType(nil).(type) {
+	case *IntType:
+		PrintInt(alloc, insch)
+	case *BoolType:
+		PrintBool(alloc, insch)
+	case *CharType:
+		PrintChar(alloc, insch)
+	case *PairType:
+		PrintReference(alloc, insch)
+	case *ArrayType:
+		if t.base.GetType(nil) == CharType {
+			PrintString(alloc, insch)
+		} else {
+			PrintReference(alloc, insch)
+		}
+	}
+	if r0.used {
+		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
+	}*/
 }
 
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
-
-	//TODO: Append newline
-
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for PrintStatement
 func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
-
+	msg := ""
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	// TODO: change CharOperand next line
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: CharOperand{msg}}}
+	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
+	insch <- &BLInstr{BInstr{label: "puts"}}
+	insch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
@@ -1176,6 +1203,28 @@ func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+func PrintChar(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup(mPrintInt)
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
+	insch <- &MOVInstr{dest: r1, source: r0}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
+		rhs: ImmediateOperand{n: 4}}}
+
+	insch <- &BLInstr{BInstr{label: mPrintf}}
+
+	//insch <- &MOVInstr{dest: r0, source: &CharOperand{char: "0"}}
+
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
 func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup(mTrue)
 	msg1 := alloc.stringPool.Lookup(mFalse)
@@ -1201,6 +1250,23 @@ func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{label: mFFlush}}
 
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup(mPrintReference)
+	//insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{ls}}}
+	nReg := alloc.GetReg(insch)
+	insch <- &MOVInstr{dest: nReg, source: r0}
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &BasicLoadOperand{value: msg}}}
+	insch <- &ADDInstr{BaseBinaryInstr{
+		dest: r0,
+		lhs:  r0,
+		rhs:  &ImmediateOperand{4}}}
+	insch <- &BLInstr{BInstr{label: mPrintf}}
+	insch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+	//insch <- &POPInstr{BaseStackInstr{regs: []Reg{ls}}}
 }
 
 //CheckDivideByZero function
