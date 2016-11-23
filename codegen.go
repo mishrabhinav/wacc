@@ -327,7 +327,23 @@ func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for ExitStatement
 func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	reg := alloc.GetReg(insch)
+
+	m.expr.CodeGen(alloc, reg, insch)
+	if r0.Reg() != reg.Reg() {
+		insch <- &DataMovementInstr{
+			dest:   r0,
+			source: reg,
+		}
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: "exit",
+		},
+	}
+
+	alloc.FreeReg(reg, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
