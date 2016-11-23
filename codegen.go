@@ -261,7 +261,7 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	rhs.CodeGen(alloc, baseReg, insch)
 
 	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{destination: baseReg, value: storeValue}}
+	StoreInstruction := &STRInstr{StoreInstr{dest: baseReg, value: storeValue}}
 	insch <- StoreInstruction
 
 	alloc.FreeReg(baseReg, insch)
@@ -392,14 +392,14 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &MemoryLoadOperand{alloc.ResolveVar(m.ident)}
-	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
 	insch <- LoadInstruction
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &BasicLoadOperand{strconv.Itoa(m.value)}
-	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
 	insch <- LoadInstruction
 }
 
@@ -805,10 +805,15 @@ func (m *ExprParen) Weight() int {
 }
 
 //CheckDivideByZero function
-func CheckDivideByZero(insch chan<- Instr) {
+func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 
+	messageNum := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
+	msg := fmt.Sprintf("msg_%d", messageNum)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: ImmediateOperand{0}}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: 0}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
+	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
 }
 
