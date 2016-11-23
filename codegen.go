@@ -812,6 +812,7 @@ func (m *ExprParen) Weight() int {
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	messageNum := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
 	msg := fmt.Sprintf("msg_%d", messageNum)
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: &ImmediateOperand{n: 0}}}
 	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
@@ -823,10 +824,28 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	messageNum := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
 	msg := fmt.Sprintf("msg_%d", messageNum)
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
 	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
 	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
+	messageNum := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: negative index\n")
+	msg_0 := fmt.Sprintf("msg_%d", messageNum)
+	messageNum = alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: index too large\n")
+	msg_1 := fmt.Sprintf("msg_%d", messageNum)
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT, value: &BasicLoadOperand{value: msg_0}}}
+	insch <- &BLInstr{BInstr{cond: condLT, label: "p_throw_runtime_error"}}
+	insch <- &LDRInstr{LoadInstr{dest: r1, value: &RegisterLoadOperand{reg: r1}}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: r1}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS, value: &BasicLoadOperand{value: msg_1}}}
+	insch <- &BLInstr{BInstr{cond: condCS, label: "p_throw_runtime_error"}}
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
