@@ -17,6 +17,7 @@ var condMap = map[int]string{
 	5: "GT",
 	6: "LE",
 	7: "AL",
+	8: "CS",
 }
 
 const (
@@ -27,6 +28,7 @@ const (
 	condGT = 5
 	condLE = 6
 	condAL = 7
+	condCS = 8
 )
 
 func (m Cond) String() string {
@@ -89,6 +91,19 @@ type MemoryLoadOperand struct {
 
 func (m *MemoryLoadOperand) String() string {
 	return fmt.Sprintf("[sp, #%d]", m.value)
+}
+
+// RegisterLoadOperand struct
+type RegisterLoadOperand struct {
+	value int
+	reg   Reg
+}
+
+func (m *RegisterLoadOperand) String() string {
+	if m.value == 0 {
+		return fmt.Sprintf("[%v]", m.reg)
+	}
+	return fmt.Sprintf("[%v, #%d]", m.reg, m.value)
 }
 
 //LoadInstr struct
