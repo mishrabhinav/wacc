@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"sync"
 )
 
@@ -25,6 +24,7 @@ const (
 	mFreeLabel        = "free"
 	mPrintStringLabel = "p_print_string"
 	mExitLabel        = "exit"
+	mMalloc           = "malloc"
 	mThrowRuntimeErr  = "p_throw_runtime_error"
 	mDivideByZeroLbl  = "p_check_divide_by_zero"
 	mNullReferenceLbl = "pi_check_null_pointer"
@@ -593,7 +593,8 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &ConstLoadOperand{8}}}
+	insch <- &BLInstr{BInstr{label: mMalloc}}
 }
 
 //CodeGen generates code for ArrayLHS
@@ -617,10 +618,10 @@ func (m *PairLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Ins
 func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 
 	//Call Malloc
-	leng := &BasicLoadOperand{value: strconv.Itoa(len(m.elements)*4 + 4)}
+	leng := &ConstLoadOperand{len(m.elements)*4 + 4}
 	insch <- &LDRInstr{LoadInstr{dest: r0, value: leng}}
 
-	insch <- &BLInstr{BInstr{label: "malloc"}}
+	insch <- &BLInstr{BInstr{label: mMalloc}}
 
 	insch <- &MOVInstr{dest: target, source: r0}
 
@@ -639,7 +640,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 	alloc.FreeReg(arrayReg, insch)
 
 	//Mov length into position 0
-	lenInt := &BasicLoadOperand{value: strconv.Itoa(len(m.elements))}
+	lenInt := &ConstLoadOperand{len(m.elements)}
 	insch <- &LDRInstr{LoadInstr{dest: arrayReg, value: lenInt}}
 
 	insch <- &STRInstr{StoreInstr{dest: arrayReg, value: &RegStoreOperand{target.String()}}}
@@ -694,7 +695,6 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 
 //CodeGen generates code for ExpressionRHS
 func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO: Does this actually work?
 	m.expr.CodeGen(alloc, target, insch)
 }
 
@@ -704,14 +704,14 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	loadValue := &MemoryLoadOperand{alloc.ResolveVar(m.ident)}
+	loadValue := &RegisterLoadOperand{reg: sp, value: alloc.ResolveVar(m.ident)}
 	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
 	insch <- LoadInstruction
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	loadValue := &BasicLoadOperand{strconv.Itoa(m.value)}
+	loadValue := &ConstLoadOperand{m.value}
 	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
 	insch <- LoadInstruction
 }

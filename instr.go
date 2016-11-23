@@ -324,13 +324,13 @@ func (m *BasicLoadOperand) String() string {
 	return fmt.Sprintf("=%s", m.value)
 }
 
-//MemoryLoadOperand struct
-type MemoryLoadOperand struct {
+//ConstLoadOperand struct
+type ConstLoadOperand struct {
 	value int
 }
 
-func (m *MemoryLoadOperand) String() string {
-	return fmt.Sprintf("[sp, #%d]", m.value)
+func (m *ConstLoadOperand) String() string {
+	return fmt.Sprintf("=%d", m.value)
 }
 
 // RegisterLoadOperand struct
