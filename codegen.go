@@ -651,12 +651,12 @@ func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 
 //CodeGen generates code for UnaryOperatorOrd
 func (m *UnaryOperatorOrd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO Implement
+	m.expr.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for UnaryOperatorChr
 func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO Implement
+	m.expr.CodeGen(alloc, target, insch)
 }
 
 //------------------------------------------------------------------------------
