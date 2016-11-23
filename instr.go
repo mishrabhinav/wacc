@@ -187,7 +187,7 @@ type BaseBinaryInstr struct {
 	cond Cond
 	dest Reg
 	lhs  Reg
-	rhs  Reg
+	rhs  Operand2
 }
 
 //Operand2 interface
