@@ -709,7 +709,10 @@ func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for NullPair
 func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	insch <- &MOVInstr{
+		dest:   target,
+		source: ImmediateOperand{0},
+	}
 }
 
 //CodeGen generates code for ArrayElem
