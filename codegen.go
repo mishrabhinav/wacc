@@ -15,6 +15,7 @@ const (
 	mPrintString      = "%.*s\\0"
 	mPrintInt         = "%d\\0"
 	mPrintReference   = "%p\\0"
+	mNullChar         = "\\0"
 	mPutChar          = "putchar"
 	mPuts             = "puts"
 	mTrue             = "true\\0"
@@ -487,14 +488,21 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
-	msg := alloc.stringPool.Lookup8(mPuts)
+	msg := alloc.stringPool.Lookup32(mNullChar)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
 	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{msg}}}
+
 	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
-	insch <- &BLInstr{BInstr{label: msg}}
+
+	insch <- &BLInstr{BInstr{label: mPuts}}
+
 	insch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+
 	insch <- &BLInstr{BInstr{label: mFFlush}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
