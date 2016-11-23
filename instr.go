@@ -5,6 +5,7 @@ import (
 )
 
 // Conditions
+
 type Cond int
 
 var condMap = map[int]string{
@@ -33,6 +34,66 @@ func (m Cond) String() string {
 	}
 
 	return value
+}
+
+//------------------------------------------------------------------------------
+//STORE AND LOAD
+//------------------------------------------------------------------------------
+
+//LoadOperand interface
+type LoadOperand interface {
+	String() string
+}
+
+//BasicLoadOperand struct
+type BasicLoadOperand struct {
+	value string
+}
+
+func (m *BasicLoadOperand) String() string {
+	return fmt.Sprintf("=%s", m.value)
+}
+
+//LoadInstr struct
+type LoadInstr struct {
+	destination Reg
+	value       LoadOperand
+}
+
+func (m *LoadInstr) String() string {
+	return fmt.Sprintf("%s, %s",
+		(m.destination).String(),
+		(m.value).String())
+}
+
+//LDRInstr struct
+type LDRInstr struct {
+	base LoadInstr
+}
+
+func (m *LDRInstr) String() string {
+	return fmt.Sprintf("\tLDR %s", m.base.String())
+}
+
+//StoreInstr struct
+type StoreInstr struct {
+	destination Reg
+	value       Reg
+}
+
+func (m *StoreInstr) String() string {
+	return fmt.Sprintf("%s, %s",
+		(m.destination).String(),
+		(m.value).String())
+}
+
+//STRInstr struct
+type STRInstr struct {
+	base StoreInstr
+}
+
+func (m *STRInstr) String() string {
+	return fmt.Sprintf("\tSTR %s", m.base.String())
 }
 
 //------------------------------------------------------------------------------
@@ -275,6 +336,11 @@ type PreIndex struct {
 	Rm   Reg
 }
 
+/*
+TODO:
+Check above declaration.
+DEPRECATED CODE.
+
 //STRInstr struct
 type STRInstr struct {
 	source      Reg
@@ -299,7 +365,7 @@ func (m *LDRInstr) String() string {
 		m.destination.String(),
 		m.source.Rn.String(),
 		m.source.Rm.String())
-}
+} */
 
 //------------------------------------------------------------------------------
 // PUSH AND POP INSTRUCTIONS

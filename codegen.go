@@ -147,14 +147,21 @@ func (m *RegAllocator) GetUniqueLabelSuffix() string {
 func (m *RegAllocator) DeclareVar(ident string) {
 }
 
+//Temporary Code:
+type tmpLoc struct {
+	loc string
+}
+
+//Temporary Code:
+func (m *tmpLoc) String() string {
+	return m.loc
+}
+
 // ResolveVar returns the location of a variable
 func (m *RegAllocator) ResolveVar(ident string) Location {
 	// TODO
 	// Format: [sp, #8]
-	//var tmp Location
-	//tmp = &"[sp, #4]"
-	//return tmp
-	return nil
+	return &tmpLoc{"[sp, #4]"}
 }
 
 // StartScope starts a new scope with new variable mappings possible
@@ -222,14 +229,21 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for DeclareAssignStatement
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	// m.waccType <- Not careing now
-	//TODO: Implement LHS
-	//lhs := m.ident
+	// TODO: waccType
+	// m.waccType <- Not caring now
+	lhs := m.ident
+	alloc.DeclareVar(lhs)
 
 	rhs := m.rhs
 
 	baseReg := alloc.GetReg(insch)
 	rhs.CodeGen(alloc, baseReg, insch)
+
+	loadValue := &BasicLoadOperand{lhs}
+
+	LoadInstruction := &LDRInstr{LoadInstr{destination: baseReg, value: loadValue}}
+	insch <- LoadInstruction
+
 	alloc.FreeReg(baseReg, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
@@ -317,7 +331,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 
 //CodeGen generates code for VarLHS
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+
 }
 
 //CodeGen generates code for PairLiterRHS
