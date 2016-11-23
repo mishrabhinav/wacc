@@ -168,7 +168,7 @@ func (m *NEGInstr) String() string {
 }
 
 func (m *NOTInstr) String() string {
-	return fmt.Sprintf("\tNOT %v, %v", m.dest, m.arg)
+	return fmt.Sprintf("\tEOR %v, %v, #1", m.dest, m.arg)
 }
 
 //------------------------------------------------------------------------------

@@ -456,22 +456,20 @@ func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr)
 // UNARY OPERATOR CODEGEN
 //------------------------------------------------------------------------------
 
-func codeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	expr.CodeGen(alloc, target, insch)
-	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
-	insch <- UnaryInstrNeg
-}
-
 //CodeGen generates code for UnaryOperatorNot
 func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr := m.GetExpression()
-	codeGenNeg(expr, alloc, target, insch)
+	expr.CodeGen(alloc, target, insch)
+	UnaryInstrNot := &NOTInstr{BaseUnaryInstr{arg: target, dest: target}}
+	insch <- UnaryInstrNot
 }
 
 //CodeGen generates code for UnaryOperatorNegate
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr := m.GetExpression()
-	codeGenNeg(expr, alloc, target, insch)
+	expr.CodeGen(alloc, target, insch)
+	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
+	insch <- UnaryInstrNeg
 }
 
 //CodeGen generates code for UnaryOperatorLen
