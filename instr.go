@@ -93,23 +93,18 @@ func (m *MemoryLoadOperand) String() string {
 
 //LoadInstr struct
 type LoadInstr struct {
-	destination Reg
-	value       LoadOperand
-}
-
-func (m *LoadInstr) String() string {
-	return fmt.Sprintf("%s, %s",
-		(m.destination).String(),
-		(m.value).String())
+	dest  Reg
+	value LoadOperand
+	cond  Cond
 }
 
 //LDRInstr struct
 type LDRInstr struct {
-	base LoadInstr
+	LoadInstr
 }
 
 func (m *LDRInstr) String() string {
-	return fmt.Sprintf("\tLDR %s", m.base.String())
+	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.dest, m.value)
 }
 
 //StoreOperand interface
@@ -128,13 +123,13 @@ func (m *MemoryStoreOperand) String() string {
 
 //StoreInstr struct
 type StoreInstr struct {
-	destination Reg
-	value       StoreOperand
+	dest  Reg
+	value StoreOperand
 }
 
 func (m *StoreInstr) String() string {
 	return fmt.Sprintf("%s, %s",
-		(m.destination).String(),
+		(m.dest).String(),
 		(m.value).String())
 }
 
@@ -446,8 +441,16 @@ type BInstr struct {
 	cond  Cond
 }
 
+type BLInstr struct {
+	BInstr
+}
+
 func (m *BInstr) String() string {
 	return fmt.Sprintf("B%s %s", m.cond.String(), m.label)
+}
+
+func (m *BLInstr) String() string {
+	return fmt.Sprintf("BL%s %s", m.cond.String(), m.label)
 }
 
 //------------------------------------------------------------------------------
