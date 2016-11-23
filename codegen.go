@@ -264,8 +264,14 @@ func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen for block statements
 func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	suffix := alloc.GetUniqueLabelSuffix()
+
 	alloc.StartScope(insch)
+	insch <- &LABELInstr{fmt.Sprintf("block%s", suffix)}
+
 	m.body.CodeGen(alloc, insch)
+
+	insch <- &LABELInstr{fmt.Sprintf("block_end%s", suffix)}
 	alloc.CleanupScope(insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
