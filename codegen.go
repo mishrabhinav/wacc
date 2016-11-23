@@ -354,7 +354,29 @@ func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for ReturnStatement
 func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	reg := alloc.GetReg(insch)
+
+	m.expr.CodeGen(alloc, reg, insch)
+	if r0.Reg() != reg.Reg() {
+		insch <- &MOVInstr{
+			dest:   r0,
+			source: reg,
+		}
+	}
+
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: sp,
+			lhs:  sp,
+			rhs:  ImmediateOperand{alloc.stackSize},
+		},
+	}
+
+	insch <- &BInstr{
+		label: fmt.Sprintf("%s_return", alloc.fname),
+	}
+
+	alloc.FreeReg(reg, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
