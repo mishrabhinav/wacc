@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -386,12 +387,16 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	loadValue := &MemoryLoadOperand{alloc.ResolveVar(m.ident)}
+	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	insch <- LoadInstruction
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	loadValue := &BasicLoadOperand{strconv.Itoa(m.value)}
+	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	insch <- LoadInstruction
 }
 
 //CodeGen generates code for BoolLiteralTrue
