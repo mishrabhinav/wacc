@@ -465,11 +465,11 @@ type BLInstr struct {
 }
 
 func (m *BInstr) String() string {
-	return fmt.Sprintf("B%s %s", m.cond.String(), m.label)
+	return fmt.Sprintf("\tB%s %s", m.cond.String(), m.label)
 }
 
 func (m *BLInstr) String() string {
-	return fmt.Sprintf("BL%s %s", m.cond.String(), m.label)
+	return fmt.Sprintf("\tBL%s %s", m.cond.String(), m.label)
 }
 
 //------------------------------------------------------------------------------
