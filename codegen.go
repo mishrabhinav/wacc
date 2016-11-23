@@ -410,16 +410,22 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
+func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
+
+}
+
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	print(m.expr, alloc, insch)
+
+	//TODO: Append newline
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for PrintStatement
 func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	print(m.expr, alloc, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
