@@ -338,7 +338,27 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	target := alloc.GetReg(insch)
 
+	// Condition
 	m.cond.CodeGen(alloc, target, insch)
+
+	// CMP Check
+	TruthValue := &ImmediateOperand{0}
+	CmpInstruction := &CMPInstr{BaseComparisonInstr{lhs: target, rhs: TruthValue}}
+	insch <- CmpInstruction
+
+	suffix := alloc.GetUniqueLabelSuffix()
+
+	labelTruth := fmt.Sprintf("then_%s", suffix)
+	labelFalse := fmt.Sprintf("else_%s", suffix)
+
+	insch <- &BLInstr{BInstr{label: labelTruth, cond: condEQ}}
+	insch <- &BLInstr{BInstr{label: labelFalse}}
+
+	//TruthCases
+	insch <- &LABELInstr{ident: labelTruth}
+
+	//FalseCases
+	insch <- &LABELInstr{ident: labelFalse}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
@@ -671,32 +691,28 @@ func (m *BoolLiteralFalse) Weight() int {
 
 //Weight returns weight of CharLiteral
 func (m *CharLiteral) Weight() int {
-	//TODO
-	return -1
+	return 1
 }
 
 //Weight returns weight of StringLiteral
 func (m *StringLiteral) Weight() int {
-	//TODO
-	return -1
+	//TODO ??
+	return 2
 }
 
 //Weight returns weight of PairLiteral
 func (m *PairLiteral) Weight() int {
-	//TODO
-	return -1
+	return maxWeight(m.fst.Weight(), m.snd.Weight()) + 1
 }
 
 //Weight returns weight of NullPair
 func (m *NullPair) Weight() int {
-	//TODO
-	return -1
+	return 1
 }
 
 //Weight returns weight of ArrayElem
 func (m *ArrayElem) Weight() int {
-	//TODO
-	return -1
+	return len(m.indexes) + 1
 }
 
 //Weight returns weight of UnaryOperatorNot
