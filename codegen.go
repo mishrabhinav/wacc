@@ -211,8 +211,8 @@ type StringPool struct {
 	pool map[int]string
 }
 
-// Lookup returns the msg number of a string literal
-func (m *StringPool) Lookup(msg string) int {
+// Lookup returns the msg label of a string literal
+func (m *StringPool) Lookup(msg string) string {
 	m.Lock()
 	defer m.Unlock()
 
@@ -226,7 +226,7 @@ func (m *StringPool) Lookup(msg string) int {
 
 	m.pool[l] = msg
 
-	return l
+	return fmt.Sprintf("msg_%d", l)
 }
 
 //------------------------------------------------------------------------------
@@ -817,8 +817,7 @@ func (m *ExprParen) Weight() int {
 
 //CheckDivideByZero function
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
-	messageNum := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
-	msg := fmt.Sprintf("msg_%d", messageNum)
+	msg := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: &ImmediateOperand{n: 0}}}
@@ -829,8 +828,7 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
-	messageNum := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
-	msg := fmt.Sprintf("msg_%d", messageNum)
+	msg := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
@@ -840,27 +838,24 @@ func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
-	messageNum := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: negative index\n")
-	msg_0 := fmt.Sprintf("msg_%d", messageNum)
-	messageNum = alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: index too large\n")
-	msg_1 := fmt.Sprintf("msg_%d", messageNum)
+	msg0 := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: negative index\n")
+	msg1 := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: index too large\n")
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT, value: &BasicLoadOperand{value: msg_0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT, value: &BasicLoadOperand{value: msg0}}}
 	insch <- &BLInstr{BInstr{cond: condLT, label: "p_throw_runtime_error"}}
 	insch <- &LDRInstr{LoadInstr{dest: r1, value: &RegisterLoadOperand{reg: r1}}}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: r1}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS, value: &BasicLoadOperand{value: msg_1}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS, value: &BasicLoadOperand{value: msg1}}}
 	insch <- &BLInstr{BInstr{cond: condCS, label: "p_throw_runtime_error"}}
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
 func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
-	messageNum := alloc.stringPool.Lookup("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n")
-	msg_0 := fmt.Sprintf("msg_%d", messageNum)
+	msg := alloc.stringPool.Lookup("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n")
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{value: msg_0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{value: msg}}}
 	insch <- &BLInstr{BInstr{label: "p_throw_runtime_error"}}
 }
 
