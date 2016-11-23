@@ -331,7 +331,7 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	m.expr.CodeGen(alloc, reg, insch)
 	if r0.Reg() != reg.Reg() {
-		insch <- &DataMovementInstr{
+		insch <- &MOVInstr{
 			dest:   r0,
 			source: reg,
 		}
@@ -478,14 +478,14 @@ func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr
 //CodeGen generates code for BoolLiteralTrue
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	MOVValue := &ImmediateOperand{1}
-	MOVInstruction := &DataMovementInstr{dest: target, source: MOVValue}
+	MOVInstruction := &MOVInstr{dest: target, source: MOVValue}
 	insch <- MOVInstruction
 }
 
 //CodeGen generates code for BoolLiteralFalse
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	MOVValue := &ImmediateOperand{0}
-	MOVInstruction := &DataMovementInstr{dest: target, source: MOVValue}
+	MOVInstruction := &MOVInstr{dest: target, source: MOVValue}
 	insch <- MOVInstruction
 }
 
@@ -653,11 +653,11 @@ func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 	labelFalse := alloc.GetUniqueLabelSuffix()
 	branchInstrGT := &BInstr{label: labelFalse, cond: Cond(condCode)}
 	insch <- branchInstrGT
-	movFalseInstr := &DataMovementInstr{target, ImmediateOperand{0}}
+	movFalseInstr := &MOVInstr{target, ImmediateOperand{0}}
 	insch <- movFalseInstr
 	labelFalseInstr := &LABELInstr{labelFalse}
 	insch <- labelFalseInstr
-	movTrueInstr := &DataMovementInstr{target, ImmediateOperand{1}}
+	movTrueInstr := &MOVInstr{target, ImmediateOperand{1}}
 	insch <- movTrueInstr
 	labelTrue := alloc.GetUniqueLabelSuffix()
 	branchInstrAL := &BInstr{label: labelTrue, cond: Cond(condAL)}
@@ -948,7 +948,7 @@ func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 
 func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_print_string"}}
-	insch <- &DataMovementInstr{dest: r0, source: &ImmediateOperand{n: -1}}
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
 	insch <- &BLInstr{BInstr{label: "exit"}}
 }
 

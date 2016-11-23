@@ -332,13 +332,13 @@ func (m *BICInstr) String() string {
 //DATA MOVEMENT
 //------------------------------------------------------------------------------
 
-//DataMovementInstr struct
-type DataMovementInstr struct {
+//MOVInstr struct
+type MOVInstr struct {
 	dest   Reg
 	source Operand2
 }
 
-func (m *DataMovementInstr) String() string {
+func (m *MOVInstr) String() string {
 	return fmt.Sprintf("\tMOV %v, %v", m.dest, m.source)
 }
 
