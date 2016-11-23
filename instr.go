@@ -400,13 +400,13 @@ func (m *RegStoreOffsetOperand) String() string {
 
 //StoreInstr struct
 type StoreInstr struct {
-	dest  Reg
+	reg   Reg
 	value StoreOperand
 }
 
 func (m *StoreInstr) String() string {
 	return fmt.Sprintf("%s, %s",
-		(m.dest).String(),
+		(m.reg).String(),
 		(m.value).String())
 }
 

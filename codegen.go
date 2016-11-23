@@ -338,7 +338,7 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	rhs.CodeGen(alloc, baseReg, insch)
 
 	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	insch <- &STRInstr{StoreInstr{dest: baseReg, value: storeValue}}
+	insch <- &STRInstr{StoreInstr{reg: baseReg, value: storeValue}}
 
 	alloc.FreeReg(baseReg, insch)
 
@@ -360,7 +360,7 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	rhs.CodeGen(alloc, rhsReg, insch)
 
 	storeValue := &RegStoreOperand{lhsReg.String()}
-	insch <- &STRInstr{StoreInstr{dest: rhsReg, value: storeValue}}
+	insch <- &STRInstr{StoreInstr{reg: rhsReg, value: storeValue}}
 
 	alloc.FreeReg(rhsReg, insch)
 	alloc.FreeReg(lhsReg, insch)
@@ -667,7 +667,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 		element.CodeGen(alloc, arrayReg, insch)
 
 		regOffset := &RegStoreOffsetOperand{reg: target, offset: (pos * 4)}
-		insch <- &STRInstr{StoreInstr{dest: arrayReg, value: regOffset}}
+		insch <- &STRInstr{StoreInstr{reg: arrayReg, value: regOffset}}
 	}
 
 	alloc.FreeReg(arrayReg, insch)
@@ -676,7 +676,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 	lenInt := &ConstLoadOperand{len(m.elements)}
 	insch <- &LDRInstr{LoadInstr{dest: arrayReg, value: lenInt}}
 
-	insch <- &STRInstr{StoreInstr{dest: arrayReg, value: &RegStoreOperand{target.String()}}}
+	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target.String()}}}
 }
 
 //CodeGen generates code for PairElemRHS
