@@ -607,7 +607,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 	//Retrieve content of Array Address
 	//insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: target}}}
 	rhsValue := alloc.ResolveVar(m.ident)
-	insch <- &LDRInstr{LoadInstr{dest: target, value: &MemoryLoadOperand{value: rhsValue}}}
+	insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: sp, value: rhsValue}}}
 
 	//Place index in new Register
 	indexReg := alloc.GetReg(insch)
