@@ -168,16 +168,12 @@ type NOTInstr struct {
 	BaseUnaryInstr
 }
 
-func (m *BaseUnaryInstr) String() string {
-	return fmt.Sprintf("%v, %v", m.dest, m.arg)
-}
-
 func (m *NEGInstr) String() string {
-	return fmt.Sprintf("\tNEG %v", m)
+	return fmt.Sprintf("\tNEG %v, %v", m.dest, m.arg)
 }
 
 func (m *NOTInstr) String() string {
-	return fmt.Sprintf("\tNOT %v", m)
+	return fmt.Sprintf("\tNOT %v, %v", m.dest, m.arg)
 }
 
 //------------------------------------------------------------------------------
