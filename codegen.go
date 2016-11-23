@@ -311,10 +311,17 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	rhs := m.rhs
 
-	baseReg := alloc.GetReg(insch)
-	rhs.CodeGen(alloc, baseReg, insch)
-	lhs.CodeGen(alloc, baseReg, insch)
-	alloc.FreeReg(baseReg, insch)
+	lhsReg := alloc.GetReg(insch)
+	lhs.CodeGen(alloc, lhsReg, insch)
+
+	rhsReg := alloc.GetReg(insch)
+	rhs.CodeGen(alloc, rhsReg, insch)
+
+	storeValue := &RegStoreOperand{lhsReg.String()}
+	insch <- &STRInstr{StoreInstr{dest: rhsReg, value: storeValue}}
+
+	alloc.FreeReg(rhsReg, insch)
+	alloc.FreeReg(lhsReg, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
@@ -531,11 +538,9 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 
 //CodeGen generates code for VarLHS
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	lhs := m.ident
-	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{dest: target,
-		value: storeValue}}
-	insch <- StoreInstruction
+	insch <- &MOVInstr{dest: target, source: sp}
+	rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
+	insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: rhsVal}}
 }
 
 //CodeGen generates code for PairLiterRHS
@@ -584,16 +589,12 @@ func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr
 
 //CodeGen generates code for BoolLiteralTrue
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	MOVValue := &ImmediateOperand{1}
-	MOVInstruction := &MOVInstr{dest: target, source: MOVValue}
-	insch <- MOVInstruction
+	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{1}}
 }
 
 //CodeGen generates code for BoolLiteralFalse
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	MOVValue := &ImmediateOperand{0}
-	MOVInstruction := &MOVInstr{dest: target, source: MOVValue}
-	insch <- MOVInstruction
+	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{0}}
 }
 
 //CodeGen generates code for CharLiteral

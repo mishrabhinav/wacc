@@ -1,5 +1,11 @@
 package main
 
+// WACC Group 34
+//
+// instr.go: Contains interfaces and structs to print instructions as strings.
+//
+// The File contains interfaces and structs for String() functions.
+
 import (
 	"fmt"
 )
@@ -83,97 +89,6 @@ func (m Shift) String() string {
 	}
 
 	return value
-}
-
-//------------------------------------------------------------------------------
-//LOAD / STORE INSTRUCTIONS
-//------------------------------------------------------------------------------
-
-//LoadOperand interface
-type LoadOperand interface {
-	String() string
-}
-
-//BasicLoadOperand struct
-type BasicLoadOperand struct {
-	value string
-}
-
-func (m *BasicLoadOperand) String() string {
-	return fmt.Sprintf("=%s", m.value)
-}
-
-//MemoryLoadOperand struct
-type MemoryLoadOperand struct {
-	value int
-}
-
-func (m *MemoryLoadOperand) String() string {
-	return fmt.Sprintf("[sp, #%d]", m.value)
-}
-
-// RegisterLoadOperand struct
-type RegisterLoadOperand struct {
-	value int
-	reg   Reg
-}
-
-func (m *RegisterLoadOperand) String() string {
-	if m.value == 0 {
-		return fmt.Sprintf("[%v]", m.reg)
-	}
-	return fmt.Sprintf("[%v, #%d]", m.reg, m.value)
-}
-
-//LoadInstr struct
-type LoadInstr struct {
-	dest  Reg
-	value LoadOperand
-	cond  Cond
-}
-
-//LDRInstr struct
-type LDRInstr struct {
-	LoadInstr
-}
-
-func (m *LDRInstr) String() string {
-	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.dest, m.value)
-}
-
-//StoreOperand interface
-type StoreOperand interface {
-	String() string
-}
-
-//MemoryStoreOperand struct
-type MemoryStoreOperand struct {
-	value int
-}
-
-func (m *MemoryStoreOperand) String() string {
-	return fmt.Sprintf("[sp, #%d]", m.value)
-}
-
-//StoreInstr struct
-type StoreInstr struct {
-	dest  Reg
-	value StoreOperand
-}
-
-func (m *StoreInstr) String() string {
-	return fmt.Sprintf("%s, %s",
-		(m.dest).String(),
-		(m.value).String())
-}
-
-//STRInstr struct
-type STRInstr struct {
-	base StoreInstr
-}
-
-func (m *STRInstr) String() string {
-	return fmt.Sprintf("\tSTR %s", m.base.String())
 }
 
 //------------------------------------------------------------------------------
@@ -395,11 +310,103 @@ type PreIndex struct {
 	Rm   Reg
 }
 
-/*
-TODO:
-Check above declaration.
-DEPRECATED CODE.
+//LoadOperand interface
+type LoadOperand interface {
+	String() string
+}
 
+//BasicLoadOperand struct
+type BasicLoadOperand struct {
+	value string
+}
+
+func (m *BasicLoadOperand) String() string {
+	return fmt.Sprintf("=%s", m.value)
+}
+
+//MemoryLoadOperand struct
+type MemoryLoadOperand struct {
+	value int
+}
+
+func (m *MemoryLoadOperand) String() string {
+	return fmt.Sprintf("[sp, #%d]", m.value)
+}
+
+// RegisterLoadOperand struct
+type RegisterLoadOperand struct {
+	value int
+	reg   Reg
+}
+
+func (m *RegisterLoadOperand) String() string {
+	if m.value == 0 {
+		return fmt.Sprintf("[%v]", m.reg)
+	}
+	return fmt.Sprintf("[%v, #%d]", m.reg, m.value)
+}
+
+//LoadInstr struct
+type LoadInstr struct {
+	dest  Reg
+	value LoadOperand
+	cond  Cond
+}
+
+//LDRInstr struct
+type LDRInstr struct {
+	LoadInstr
+}
+
+func (m *LDRInstr) String() string {
+	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.dest, m.value)
+}
+
+//StoreOperand interface
+type StoreOperand interface {
+	String() string
+}
+
+//MemoryStoreOperand struct
+type MemoryStoreOperand struct {
+	value int
+}
+
+func (m *MemoryStoreOperand) String() string {
+	return fmt.Sprintf("[sp, #%d]", m.value)
+}
+
+//RegStoreOperand struct
+type RegStoreOperand struct {
+	value string
+}
+
+func (m *RegStoreOperand) String() string {
+	return fmt.Sprintf("[%s]", m.value)
+}
+
+//StoreInstr struct
+type StoreInstr struct {
+	dest  Reg
+	value StoreOperand
+}
+
+func (m *StoreInstr) String() string {
+	return fmt.Sprintf("%s, %s",
+		(m.dest).String(),
+		(m.value).String())
+}
+
+//STRInstr struct
+type STRInstr struct {
+	base StoreInstr
+}
+
+func (m *STRInstr) String() string {
+	return fmt.Sprintf("\tSTR %s", m.base.String())
+}
+
+/*
 //STRInstr struct
 type STRPreIndexInstr struct {
 	source Reg
