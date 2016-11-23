@@ -248,18 +248,6 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
-func assignStatement(rhs RHS, lhs string, alloc *RegAllocator, insch chan<- Instr) {
-	baseReg := alloc.GetReg(insch)
-
-	rhs.CodeGen(alloc, baseReg, insch)
-
-	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{destination: baseReg, value: storeValue}}
-	insch <- StoreInstruction
-
-	alloc.FreeReg(baseReg, insch)
-}
-
 //CodeGen generates code for DeclareAssignStatement
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	// TODO: waccType
