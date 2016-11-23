@@ -392,10 +392,14 @@ type BaseStackInstr struct {
 
 //RegsToString .
 func RegsToString(regs []Reg) string {
-	//TODO Implement comment
-	printedRegs := ""
-	for i := 0; i < len(regs)-1; i++ {
-		printedRegs += regs[i].String() + ", "
+	var printedRegs string
+	if len(regs) == 1 {
+		printedRegs = regs[0].String()
+	} else {
+		for i := 0; i < len(regs)-1; i++ {
+			printedRegs += regs[i].String() + ", "
+		}
+		printedRegs += regs[len(regs)-1].String()
 	}
 	return "{" + printedRegs + "}"
 }
@@ -411,7 +415,7 @@ type POPInstr struct {
 }
 
 func (m *PUSHInstr) String() string {
-	return fmt.Sprintf("\tPUS %s", RegsToString(m.regs))
+	return fmt.Sprintf("\tPUSH %s", RegsToString(m.regs))
 }
 
 func (m *POPInstr) String() string {
