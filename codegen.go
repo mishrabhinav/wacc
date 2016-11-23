@@ -652,12 +652,40 @@ func (m *BinaryOperatorNotEqual) CodeGen(alloc *RegAllocator, target Reg, insch 
 
 //CodeGen generates code for BinaryOperatorAnd
 func (m *BinaryOperatorAnd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+	}
+	binaryInstrAnd := &ANDInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+	alloc.FreeReg(target2, insch)
+	insch <- binaryInstrAnd
 }
 
 //CodeGen generates code for BinaryOperatorOr
 func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+	}
+	binaryInstrOrr := &ORRInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+	alloc.FreeReg(target2, insch)
+	insch <- binaryInstrOrr
 }
 
 //CodeGen generates code for ExprParen
