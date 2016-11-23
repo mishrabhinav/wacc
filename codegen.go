@@ -423,7 +423,7 @@ func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr)
 
 func codeGenNeg(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
-	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{arg: target, destination: target}}
+	UnaryInstrNeg := &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 	insch <- UnaryInstrNeg
 }
 
@@ -474,7 +474,7 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrMul := &MULInstr{BaseBinaryInstr{destination: target, lhs: target, rhs: target2}}
+	binaryInstrMul := &MULInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: target2}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrMul
 }
@@ -503,7 +503,7 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{destination: target, lhs: target2, rhs: target}}
+	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrAdd
 }
@@ -518,12 +518,12 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
-		binaryInstrSub = &SUBInstr{BaseBinaryInstr{destination: target, lhs: target, rhs: target2}}
+		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: target2}}
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
-		binaryInstrSub = &SUBInstr{BaseBinaryInstr{destination: target, lhs: target2, rhs: target}}
+		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrSub
@@ -539,12 +539,12 @@ func (m *BinaryOperatorGreaterThan) CodeGen(alloc *RegAllocator, target Reg, ins
 	// 	lhs.CodeGen(alloc, target, insch)
 	// 	target2 = alloc.GetReg(insch)
 	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{destination:target, lhs:target2, ths:target}}
+	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, ths:target}}
 	// } else {
 	// 	rhs.CodeGen(alloc, target, insch)
 	// 	target2 = alloc.GetReg(insch)
 	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{destination:target, lhs:target2, rhs:target}}
+	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
 	// }
 	// alloc.FreeReg(target2, insch)
 	// insch <- binaryInstrCMP
@@ -563,12 +563,12 @@ func (m *BinaryOperatorGreaterEqual) CodeGen(alloc *RegAllocator, target Reg, in
 			lhs.CodeGen(alloc, target, insch)
 			target2 = alloc.GetReg(insch)
 			rhs.CodeGen(alloc, target2, insch)
-			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{destination:target, lhs:target2, rhs:target}}
+			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
 		} else {
 			rhs.CodeGen(alloc, target, insch)
 			target2 = alloc.GetReg(insch)
 			lhs.CodeGen(alloc, target2, insch)
-			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{destination:target, lhs:target2, rhs:target}}
+			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
 		}
 		alloc.FreeReg(target2, insch)
 		insch <- BinaryInstrSub
@@ -850,7 +850,7 @@ func (m *ExprParen) Weight() int {
 func CheckDivideByZero(insch chan<- Instr) {
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{base: BaseComparisonInstr{lhs: r1, rhs: 0}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: 0}}
 
 }
 
