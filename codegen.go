@@ -599,7 +599,37 @@ func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for ArrayLHS
 func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+
+	//Load array Address
+	//rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
+	//insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: sp, rhs: rhsVal}}
+
+	//Retrieve content of Array Address
+	//insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: target}}}
+	rhsValue := alloc.ResolveVar(m.ident)
+	insch <- &LDRInstr{LoadInstr{dest: target, value: &MemoryLoadOperand{value: rhsValue}}}
+
+	//Place index in new Register
+	indexReg := alloc.GetReg(insch)
+	for index := 0; index < len(m.index); index++ {
+		m.index[0].CodeGen(alloc, indexReg, insch)
+
+		//Check array Bounds
+		insch <- &MOVInstr{dest: r0, source: indexReg}
+		insch <- &MOVInstr{dest: r1, source: target}
+		insch <- &BLInstr{BInstr{label: "p_check_array_bounds"}}
+
+		//Target now points to the first element
+		rhsVal := &ImmediateOperand{4}
+		insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: rhsVal}}
+
+		//Target now points to the index element
+		OpTwoRegLSL := &LSLRegOperand{reg: indexReg, offset: 2}
+		insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: OpTwoRegLSL}}
+	}
+
+	alloc.FreeReg(indexReg, insch)
+
 }
 
 //CodeGen generates code for VarLHS

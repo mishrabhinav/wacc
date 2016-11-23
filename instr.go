@@ -373,6 +373,9 @@ type MemoryStoreOperand struct {
 }
 
 func (m *MemoryStoreOperand) String() string {
+	if m.value == 0 {
+		return fmt.Sprintf("[sp]")
+	}
 	return fmt.Sprintf("[sp, #%d]", m.value)
 }
 
@@ -494,6 +497,20 @@ type LABELInstr struct {
 
 func (m *LABELInstr) String() string {
 	return fmt.Sprintf("%s:", m.ident)
+}
+
+//------------------------------------------------------------------------------
+//SHIFTED OPERANDS
+//------------------------------------------------------------------------------
+
+//LSLRegOperand struct
+type LSLRegOperand struct {
+	reg    Reg
+	offset int
+}
+
+func (m *LSLRegOperand) String() string {
+	return fmt.Sprintf("%v, LSL #%d", m.reg, m.offset)
 }
 
 //------------------------------------------------------------------------------
