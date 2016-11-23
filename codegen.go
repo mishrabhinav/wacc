@@ -84,6 +84,8 @@ type RegAllocator struct {
 	fname        string
 	labelCounter int
 	regs         []*ARMGenReg
+	stackSize    int
+	stack        []map[string]int
 }
 
 // CreateRegAllocator returns an allocator initialized with all the general
@@ -106,6 +108,7 @@ func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 				regs: []Reg{r},
 			},
 		}
+		m.PushStack(4)
 	}
 
 	r.used++
@@ -129,6 +132,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 				regs: []Reg{r},
 			},
 		}
+		m.PopStack(4)
 	}
 
 	r.used--
@@ -144,35 +148,51 @@ func (m *RegAllocator) GetUniqueLabelSuffix() string {
 	return fmt.Sprintf("_%s_%d", m.fname, m.labelCounter)
 }
 
+// PushStack increases the stack size by size
+func (m *RegAllocator) PushStack(size int) {
+	m.stackSize += size
+}
+
+// PopStack decreases the stack size by size
+func (m *RegAllocator) PopStack(size int) {
+	m.stackSize -= size
+}
+
 // DeclareVar registers a new variable for use
-func (m *RegAllocator) DeclareVar(ident string) {
-}
+func (m *RegAllocator) DeclareVar(ident string, insch chan<- Instr) {
+	// TODO extend stack
+	//insch <- &SUBInstr{
+	//}
+	m.PushStack(4)
 
-//Temporary Code:
-type tmpLoc struct {
-	loc string
-}
+	m.stack[0][ident] = m.stackSize
 
-//Temporary Code:
-func (m *tmpLoc) String() string {
-	return m.loc
+	m.stackSize++
 }
 
 // ResolveVar returns the location of a variable
-func (m *RegAllocator) ResolveVar(ident string) Location {
-	// TODO
-	// Format: [sp, #8]
-	return &tmpLoc{"4"}
+func (m *RegAllocator) ResolveVar(ident string) int {
+	for _, scope := range m.stack {
+		if v, ok := scope[ident]; ok {
+			return (m.stackSize - v)
+		}
+	}
+
+	panic(fmt.Sprintf("var %s not found in scope", ident))
 }
 
 // StartScope starts a new scope with new variable mappings possible
-func (m *RegAllocator) StartScope() {
-	// TODO
+func (m *RegAllocator) StartScope(insch chan<- Instr) {
+	m.stack = append([]map[string]int{make(map[string]int)}, m.stack...)
 }
 
 // CleanupScope starts a new scope with new variable mappings possible
-func (m *RegAllocator) CleanupScope() {
-	// TODO
+func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
+	// TODO rollback stack
+	//insch <- &ADDInstr{
+	//}
+	m.PopStack(len(m.stack[0]))
+	m.stack = m.stack[1:]
 }
 
 //------------------------------------------------------------------------------
@@ -221,9 +241,9 @@ func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen for block statements
 func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	alloc.StartScope()
+	alloc.StartScope(insch)
 	m.body.CodeGen(alloc, insch)
-	alloc.CleanupScope()
+	alloc.CleanupScope(insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
@@ -233,7 +253,7 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	// TODO: waccType
 	// m.waccType <- Not caring now
 	lhs := m.ident
-	alloc.DeclareVar(lhs)
+	alloc.DeclareVar(lhs, insch)
 
 	rhs := m.rhs
 
@@ -870,7 +890,11 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		ch <- &LABELInstr{m.ident}
 
+		alloc.StartScope(ch)
+
 		// TODO add parameters to stack
+
+		alloc.StartScope(ch)
 
 		m.body.CodeGen(alloc, ch)
 

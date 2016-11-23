@@ -82,11 +82,11 @@ func (m *BasicLoadOperand) String() string {
 
 //MemoryLoadOperand struct
 type MemoryLoadOperand struct {
-	value Location
+	value int
 }
 
 func (m *MemoryLoadOperand) String() string {
-	return fmt.Sprintf("[sp, #%s]", m.value)
+	return fmt.Sprintf("[sp, #%d]", m.value)
 }
 
 //LoadInstr struct
@@ -117,11 +117,11 @@ type StoreOperand interface {
 
 //MemoryStoreOperand struct
 type MemoryStoreOperand struct {
-	value Location
+	value int
 }
 
 func (m *MemoryStoreOperand) String() string {
-	return fmt.Sprintf("[sp, #%s]", m.value)
+	return fmt.Sprintf("[sp, #%d]", m.value)
 }
 
 //StoreInstr struct
