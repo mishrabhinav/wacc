@@ -260,10 +260,9 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	baseReg := alloc.GetReg(insch)
 	rhs.CodeGen(alloc, baseReg, insch)
 
-	loadValue := &BasicLoadOperand{lhs}
-
-	LoadInstruction := &LDRInstr{LoadInstr{destination: baseReg, value: loadValue}}
-	insch <- LoadInstruction
+	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
+	StoreInstruction := &STRInstr{StoreInstr{destination: baseReg, value: storeValue}}
+	insch <- StoreInstruction
 
 	alloc.FreeReg(baseReg, insch)
 
