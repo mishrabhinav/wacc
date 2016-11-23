@@ -13,6 +13,8 @@ import (
 const (
 	mPrintString      = "%.*s"
 	mPrintInt         = "%d"
+	mTrue             = "true"
+	mFalse            = "false"
 	mFFlush           = "fflush"
 	mPrintf           = "printf"
 	mFreeLabel        = "free"
@@ -1101,6 +1103,33 @@ func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{LoadInstr{dest: r0,
 		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
+		rhs: ImmediateOperand{n: 4}}}
+
+	insch <- &BLInstr{BInstr{label: mPrintf}}
+
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: 0}}
+
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
+	msg0 := alloc.stringPool.Lookup(mTrue)
+	msg1 := alloc.stringPool.Lookup(mFalse)
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
+		rhs: &ImmediateOperand{n: 0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condNE,
+		value: &BasicLoadOperand{value: msg0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+		value: &BasicLoadOperand{value: msg1}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
 		rhs: ImmediateOperand{n: 4}}}
