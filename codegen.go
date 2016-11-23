@@ -351,27 +351,41 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	target := alloc.GetReg(insch)
 
+	suffix := alloc.GetUniqueLabelSuffix()
+
+	labelIf := fmt.Sprintf("if%s", suffix)
+	labelThen := fmt.Sprintf("then%s", suffix)
+	labelElse := fmt.Sprintf("else%s", suffix)
+	labelEnd := fmt.Sprintf("end%s", suffix)
+
 	// Condition
+	insch <- &LABELInstr{ident: labelIf}
 	m.cond.CodeGen(alloc, target, insch)
+	alloc.FreeReg(target, insch)
 
 	// CMP Check
 	TruthValue := &ImmediateOperand{0}
-	CmpInstruction := &CMPInstr{BaseComparisonInstr{lhs: target, rhs: TruthValue}}
-	insch <- CmpInstruction
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: TruthValue}}
 
-	suffix := alloc.GetUniqueLabelSuffix()
-
-	labelTruth := fmt.Sprintf("then_%s", suffix)
-	labelFalse := fmt.Sprintf("else_%s", suffix)
-
-	insch <- &BLInstr{BInstr{label: labelTruth, cond: condEQ}}
-	insch <- &BLInstr{BInstr{label: labelFalse}}
+	insch <- &BInstr{label: labelElse, cond: condEQ}
 
 	//TruthCases
-	insch <- &LABELInstr{ident: labelTruth}
+	insch <- &LABELInstr{ident: labelThen}
+	alloc.StartScope(insch)
+
+	m.trueStat.CodeGen(alloc, insch)
+
+	alloc.CleanupScope(insch)
+	insch <- &BInstr{label: labelEnd}
 
 	//FalseCases
-	insch <- &LABELInstr{ident: labelFalse}
+	insch <- &LABELInstr{ident: labelElse}
+	alloc.StartScope(insch)
+
+	m.falseStat.CodeGen(alloc, insch)
+
+	alloc.CleanupScope(insch)
+	insch <- &LABELInstr{ident: labelEnd}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
