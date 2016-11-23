@@ -912,7 +912,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		for i := 4; i < len(m.params); i++ {
 			p := m.params[i]
-			alloc.stack[0][p.name] = 4*-4 + -4 + i*-4
+			alloc.stack[0][p.name] = -4 + i*-4
 		}
 
 		alloc.StartScope(ch)
