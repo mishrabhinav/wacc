@@ -51,7 +51,7 @@ func (m Cond) String() string {
 	return value
 }
 
-func (m Cond) GetOpposite() Cond {
+func (m Cond) getOpposite() Cond {
 	value, exists := oppCondMap[int(m)]
 	if !exists {
 		return Cond(condAL)
@@ -229,6 +229,7 @@ type ImmediateOperand struct {
 	n int
 }
 
+//CharOperand struct
 type CharOperand struct {
 	char string
 }
@@ -488,6 +489,7 @@ type BInstr struct {
 	cond  Cond
 }
 
+//BLInstr struct
 type BLInstr struct {
 	BInstr
 }
@@ -549,11 +551,11 @@ func (m *DataWordInstr) String() string {
 	return fmt.Sprintf("\t.word %d", m.n)
 }
 
-//DataAsciiInstr type
-type DataAsciiInstr struct {
+//DataASCIIInstr type
+type DataASCIIInstr struct {
 	str string
 }
 
-func (m *DataAsciiInstr) String() string {
+func (m *DataASCIIInstr) String() string {
 	return fmt.Sprintf("\t.ascii \"%s\"", m.str)
 }

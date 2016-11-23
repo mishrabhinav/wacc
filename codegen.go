@@ -817,7 +817,7 @@ func codeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 	insch <- &MOVInstr{cond: Cond(condCode),
 		dest:   target,
 		source: ImmediateOperand{1}}
-	insch <- &MOVInstr{cond: Cond(condCode).GetOpposite(),
+	insch <- &MOVInstr{cond: Cond(condCode).getOpposite(),
 		dest:   target,
 		source: ImmediateOperand{0}}
 }
@@ -1305,7 +1305,7 @@ func (m *AST) CodeGen() <-chan Instr {
 			v := strPool.pool[i]
 			ch <- &LABELInstr{fmt.Sprintf("msg_%d", i)}
 			ch <- &DataWordInstr{len(v)}
-			ch <- &DataAsciiInstr{v}
+			ch <- &DataASCIIInstr{v}
 		}
 
 		for _, tin := range txtInstr {
