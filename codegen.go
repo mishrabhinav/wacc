@@ -1326,88 +1326,221 @@ func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
 
-	insch <- &LABELInstr{ident: mDivideByZeroLbl}
+	insch <- &LABELInstr{
+		ident: mDivideByZeroLbl,
+	}
 
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{regs: []Reg{lr}},
+	}
 
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1,
-		rhs: &ImmediateOperand{n: 0}}}
+	insch <- &CMPInstr{
+		BaseComparisonInstr: BaseComparisonInstr{
+			lhs: r1,
+			rhs: &ImmediateOperand{
+				n: 0,
+			},
+		},
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
-		value: &BasicLoadOperand{value: msg}}}
+	insch <- &LDRInstr{
+		LoadInstr{
+			dest: r0,
+			cond: condEQ,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
 
-	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condEQ,
+			label: mThrowRuntimeErr,
+		},
+	}
 
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
+		},
+	}
 
 }
 
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
 
-	insch <- &LABELInstr{ident: mNullReferenceLbl}
+	insch <- &LABELInstr{
+		ident: mNullReferenceLbl,
+	}
 
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{lr},
+		},
+	}
 
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
-		rhs: &ImmediateOperand{n: 0}}}
+	insch <- &CMPInstr{
+		BaseComparisonInstr: BaseComparisonInstr{
+			lhs: r0,
+			rhs: &ImmediateOperand{
+				n: 0,
+			},
+		},
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
-		value: &BasicLoadOperand{value: msg}}}
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest: r0,
+			cond: condEQ,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
 
-	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condEQ,
+			label: mThrowRuntimeErr,
+		},
+	}
 
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
+		},
+	}
 }
 
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
 
-	insch <- &LABELInstr{ident: mArrayBoundLbl}
+	insch <- &LABELInstr{
+		ident: mArrayBoundLbl,
+	}
 
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{lr},
+		},
+	}
 
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
-		rhs: &ImmediateOperand{n: 0}}}
+	insch <- &CMPInstr{
+		BaseComparisonInstr: BaseComparisonInstr{
+			lhs: r0,
+			rhs: &ImmediateOperand{
+				n: 0,
+			},
+		},
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT,
-		value: &BasicLoadOperand{value: msg0}}}
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest: r0,
+			cond: condLT,
+			value: &BasicLoadOperand{
+				value: msg0,
+			},
+		},
+	}
 
-	insch <- &BLInstr{BInstr{cond: condLT, label: mThrowRuntimeErr}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condLT,
+			label: mThrowRuntimeErr,
+		},
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r1,
-		value: &RegisterLoadOperand{reg: r1}}}
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest: r1,
+			value: &RegisterLoadOperand{
+				reg: r1,
+			},
+		},
+	}
 
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: r1}}
+	insch <- &CMPInstr{
+		BaseComparisonInstr: BaseComparisonInstr{
+			lhs: r0,
+			rhs: r1,
+		},
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS,
-		value: &BasicLoadOperand{value: msg1}}}
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest: r0,
+			cond: condCS,
+			value: &BasicLoadOperand{
+				value: msg1,
+			},
+		},
+	}
 
-	insch <- &BLInstr{BInstr{cond: condCS, label: mThrowRuntimeErr}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condCS,
+			label: mThrowRuntimeErr,
+		},
+	}
 
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
+		},
+	}
 }
 
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mOverflowErr)
 
-	insch <- &LABELInstr{ident: mOverflowLbl}
+	insch <- &LABELInstr{
+		ident: mOverflowLbl,
+	}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
-		value: &BasicLoadOperand{value: msg}}}
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest: r0,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
 
-	insch <- &BLInstr{BInstr{label: mThrowRuntimeErr}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mThrowRuntimeErr,
+		},
+	}
 }
 
 func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
-	insch <- &LABELInstr{ident: mThrowRuntimeErr}
+	insch <- &LABELInstr{
+		ident: mThrowRuntimeErr,
+	}
 
-	insch <- &BLInstr{BInstr{cond: condEQ, label: mPrintStringLabel}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condEQ,
+			label: mPrintStringLabel,
+		},
+	}
 
-	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
+	insch <- &MOVInstr{
+		dest: r0,
+		source: &ImmediateOperand{
+			n: -1,
+		},
+	}
 
-	insch <- &BLInstr{BInstr{label: mExitLabel}}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mExitLabel,
+		},
+	}
 }
 
 // CodeGen generates instructions for functions
