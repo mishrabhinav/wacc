@@ -593,10 +593,12 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		regsToSave = regsToSave[:pl]
 	}
 
-	insch <- &PUSHInstr{
-		BaseStackInstr: BaseStackInstr{
-			regs: regsToSave,
-		},
+	if len(regsToSave) > 0 {
+		insch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: regsToSave,
+			},
+		}
 	}
 
 	for i := len(m.args) - 1; i >= 0; i-- {
@@ -636,10 +638,12 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		}
 	}
 
-	insch <- &POPInstr{
-		BaseStackInstr: BaseStackInstr{
-			regs: regsToSave,
-		},
+	if len(regsToSave) > 0 {
+		insch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: regsToSave,
+			},
+		}
 	}
 
 	alloc.PopStack(len(m.args) * 4)
@@ -1355,6 +1359,9 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 
 // CodeGenBL generates code for BL, saving the parameter registers
 func CodeGenBL(label string, paramNum int, insch chan<- Instr) {
+	if paramNum == 0 {
+		paramNum = 1
+	}
 	if paramNum < 4 {
 		insch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
