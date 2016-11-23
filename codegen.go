@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 )
 
@@ -258,12 +257,12 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	rhs := m.rhs
 
 	baseReg := alloc.GetReg(insch)
-
 	rhs.CodeGen(alloc, baseReg, insch)
 
-	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{destination: baseReg, value: storeValue}}
-	insch <- StoreInstruction
+	loadValue := &BasicLoadOperand{lhs}
+
+	LoadInstruction := &LDRInstr{LoadInstr{destination: baseReg, value: loadValue}}
+	insch <- LoadInstruction
 
 	alloc.FreeReg(baseReg, insch)
 
@@ -352,7 +351,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 
 //CodeGen generates code for VarLHS
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+
 }
 
 //CodeGen generates code for PairLiterRHS
@@ -387,16 +386,12 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	loadValue := &MemoryLoadOperand{alloc.ResolveVar(m.ident)}
-	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
-	insch <- LoadInstruction
+	//TODO
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	loadValue := &BasicLoadOperand{strconv.Itoa(m.value)}
-	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
-	insch <- LoadInstruction
+	//TODO
 }
 
 //CodeGen generates code for BoolLiteralTrue
@@ -554,138 +549,66 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- binaryInstrSub
 }
 
+func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch chan<- Instr, condCode int) {
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	binaryInstrCMP := &CMPInstr{}
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2, rhs: target}}
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2, rhs: target}}
+	}
+	alloc.FreeReg(target2, insch)
+	insch <- binaryInstrCMP
+	labelFalse := alloc.GetUniqueLabelSuffix()
+	branchInstrGT := &BInstr{label: labelFalse, cond: Cond(condCode)}
+	insch <- branchInstrGT
+	movFalseInstr := &DataMovementInstr{target, ImmediateOperand{0}}
+	insch <- movFalseInstr
+	labelFalseInstr := &LABELInstr{labelFalse}
+	insch <- labelFalseInstr
+	movTrueInstr := &DataMovementInstr{target, ImmediateOperand{1}}
+	insch <- movTrueInstr
+	labelTrue := alloc.GetUniqueLabelSuffix()
+	branchInstrAL := &BInstr{label: labelTrue, cond: Cond(condAL)}
+	insch <- branchInstrAL
+}
+
 //CodeGen generates code for BinaryOperatorGreaterThan
 func (m *BinaryOperatorGreaterThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// lhs := m.GetLHS()
-	// rhs := m.GetRHS()
-	// var target2 Reg
-	// binaryInstrCMP := &CMPInstr{}
-	// if lhs.Weight() > rhs.Weight() {
-	// 	lhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, ths:target}}
-	// } else {
-	// 	rhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
-	// }
-	// alloc.FreeReg(target2, insch)
-	// insch <- binaryInstrCMP
-	// branchInstrGT := &BInstr{alloc.GetUniqueLabelSuffix(), Cond{12}}
-	// insch <- branchInstrGT
-	// movInstr := &movInstr
+	CodeGenComparators(m, alloc, target, insch, condGT)
 }
 
 //CodeGen generates code for BinaryOperatorGreaterEqual
 func (m *BinaryOperatorGreaterEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	/*	lhs := m.GetLHS()
-		rhs := m.GetRHS()
-		var target2 Reg
-		binaryInstrCMP := &CMPInstr{}
-		if lhs.Weight() > rhs.Weight() {
-			lhs.CodeGen(alloc, target, insch)
-			target2 = alloc.GetReg(insch)
-			rhs.CodeGen(alloc, target2, insch)
-			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
-		} else {
-			rhs.CodeGen(alloc, target, insch)
-			target2 = alloc.GetReg(insch)
-			lhs.CodeGen(alloc, target2, insch)
-			binaryInstrCMP = &CMPInstr{BaseBinaryInstr{dest:target, lhs:target2, rhs:target}}
-		}
-		alloc.FreeReg(target2, insch)
-		insch <- BinaryInstrSub
-		branchInstrGT = &BInstr{alloc.GetUniqueLabelSuffix(), Cond{10}}*/
+	CodeGenComparators(m, alloc, target, insch, condGE)
 }
 
 //CodeGen generates code for BinaryOperatorLessThan
 func (m *BinaryOperatorLessThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// lhs := m.GetLHS()
-	// rhs := m.GetRHS()
-	// var target2 Reg
-	// binaryInstrCMP := &CMPInstr{}
-	// if lhs.Weight() > rhs.Weight() {
-	// 	lhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target, target2, target}}
-	// } else {
-	// 	rhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target2, target, target}}
-	// }
-	// alloc.FreeReg(target2, insch)
-	// insch <- BinaryInstrSub
-	// branchInstrGT = &BInstr{alloc.GetUniqueLabelSuffix(), Cond{11}}
+	CodeGenComparators(m, alloc, target, insch, condLT)
 }
 
 //CodeGen generates code for BinaryOperatorLessEqual
 func (m *BinaryOperatorLessEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// lhs := m.GetLHS()
-	// rhs := m.GetRHS()
-	// var target2 Reg
-	// binaryInstrCMP := &CMPInstr{}
-	// if lhs.Weight() > rhs.Weight() {
-	// 	lhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target, target2, target}}
-	// } else {
-	// 	rhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target2, target, target}}
-	// }
-	// alloc.FreeReg(target2, insch)
-	// insch <- BinaryInstrSub
-	// branchInstrGT = &BInstr{alloc.GetUniqueLabelSuffix(), Cond{13}}
+	CodeGenComparators(m, alloc, target, insch, condLE)
 }
 
 //CodeGen generates code for BinaryOperatorEqual
 func (m *BinaryOperatorEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// lhs := m.GetLHS()
-	// rhs := m.GetRHS()
-	// var target2 Reg
-	// binaryInstrCMP := &CMPInstr{}
-	// if lhs.Weight() > rhs.Weight() {
-	// 	lhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target, target2, target}}
-	// } else {
-	// 	rhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target2, target, target}}
-	// }
-	// alloc.FreeReg(target2, insch)
-	// insch <- BinaryInstrSub
-	// branchInstrGT = &BInstr{alloc.GetUniqueLabelSuffix(), Cond{0}}
+	CodeGenComparators(m, alloc, target, insch, condEQ)
 }
 
 //CodeGen generates code for BinaryOperatorNotEqual
 func (m *BinaryOperatorNotEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// lhs := m.GetLHS()
-	// rhs := m.GetRHS()
-	// var target2 Reg
-	// binaryInstrCMP := &CMPInstr{}
-	// if lhs.Weight() > rhs.Weight() {
-	// 	lhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	rhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target, target2, target}}
-	// } else {
-	// 	rhs.CodeGen(alloc, target, insch)
-	// 	target2 = alloc.GetReg(insch)
-	// 	lhs.CodeGen(alloc, target2, insch)
-	// 	binaryInstrCMP = &CMPInstr{BaseBinaryInstr{target2, target, target}}
-	// }
-	// alloc.FreeReg(target2, insch)
-	// insch <- BinaryInstrSub
-	// branchInstrGT = &BInstr{alloc.GetUniqueLabelSuffix(), Cond{1}}
+	CodeGenComparators(m, alloc, target, insch, condNE)
 }
 
 //CodeGen generates code for BinaryOperatorAnd
@@ -876,7 +799,7 @@ func (m *ExprParen) Weight() int {
 func CheckDivideByZero(insch chan<- Instr) {
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: 0}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: ImmediateOperand{0}}}
 
 }
 

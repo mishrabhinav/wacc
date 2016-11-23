@@ -216,7 +216,7 @@ type RSBInstr struct {
 }
 
 func (m ImmediateOperand) String() string {
-	return fmt.Sprint("%d", m.n)
+	return fmt.Sprint("d", m.n)
 }
 
 func (m *ADDInstr) String() string {
@@ -239,7 +239,7 @@ func (m *RSBInstr) String() string {
 type BaseComparisonInstr struct {
 	cond Cond
 	lhs  Reg
-	rhs  int
+	rhs  Operand2
 }
 
 //CMPInstr struct
@@ -263,19 +263,19 @@ type TEQInstr struct {
 }
 
 func (m *CMPInstr) String() string {
-	return fmt.Sprintf("\tCMP%v %v, %d", m.cond, m.lhs, m.rhs)
+	return fmt.Sprintf("\tCMP%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
 func (m *CMNInstr) String() string {
-	return fmt.Sprintf("\tCMN%v %v, %d", m.cond, m.lhs, m.rhs)
+	return fmt.Sprintf("\tCMN%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
 func (m *TSTInstr) String() string {
-	return fmt.Sprintf("\tTST%v %v, %d", m.cond, m.lhs, m.rhs)
+	return fmt.Sprintf("\tTST%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
 func (m *TEQInstr) String() string {
-	return fmt.Sprintf("\tTEQ%v %v, %d", m.cond, m.lhs, m.rhs)
+	return fmt.Sprintf("\tTEQ%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
