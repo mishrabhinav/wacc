@@ -1233,6 +1233,8 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		m.body.CodeGen(alloc, ch)
 
+		alloc.CleanupScope(ch)
+
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
 
 		if pl := len(m.params); pl > 0 {
