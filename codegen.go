@@ -111,6 +111,9 @@ var sp = &ARMNamedReg{name: "sp", r: 13}
 var lr = &ARMNamedReg{name: "lr", r: 14}
 var pc = &ARMNamedReg{name: "pc", r: 15}
 
+var argRegs = []Reg{r0, r1, r2, r3}
+var resReg = r0
+
 // RegAllocator tracks register usage
 type RegAllocator struct {
 	stringPool   *StringPool
@@ -126,7 +129,7 @@ type RegAllocator struct {
 func CreateRegAllocator() *RegAllocator {
 	return &RegAllocator{
 		regs: []*ARMGenReg{
-			r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11,
+			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
 	}
 }
@@ -444,18 +447,13 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
 	m.expr.CodeGen(alloc, reg, insch)
-	if r0.Reg() != reg.Reg() {
-		insch <- &MOVInstr{
-			dest:   r0,
-			source: reg,
-		}
+
+	insch <- &MOVInstr{
+		dest:   r0,
+		source: reg,
 	}
 
-	insch <- &BLInstr{
-		BInstr: BInstr{
-			label: "exit",
-		},
-	}
+	insch <- &BLInstr{BInstr: BInstr{label: "exit"}}
 
 	alloc.FreeReg(reg, insch)
 
@@ -463,7 +461,6 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
 	m.CodeGen(alloc, r0, insch)
 	switch t := m.Type().(type) {
 	case IntType:
@@ -482,7 +479,6 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 			PrintReference(alloc, insch)
 		}
 	}
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
 }
 
 //CodeGen generates code for PrintLnStatement
@@ -656,19 +652,6 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for FunctionCallRHS
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	regsToSave := []Reg{r0, r1, r2, r3}
-	if pl := len(m.args); pl < 4 {
-		regsToSave = regsToSave[:pl]
-	}
-
-	if len(regsToSave) > 0 {
-		insch <- &PUSHInstr{
-			BaseStackInstr: BaseStackInstr{
-				regs: regsToSave,
-			},
-		}
-	}
-
 	for i := len(m.args) - 1; i >= 0; i-- {
 		reg := alloc.GetReg(insch)
 		m.args[i].CodeGen(alloc, reg, insch)
@@ -681,18 +664,18 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		alloc.FreeReg(reg, insch)
 	}
 
-	for i := 0; i < len(regsToSave); i++ {
+	for i := 0; i < 4 && i < len(m.args); i++ {
 		insch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
-				regs: []Reg{regsToSave[i]},
+				regs: []Reg{argRegs[i]},
 			},
 		}
 	}
 
-	CodeGenBL(m.ident, len(m.args), insch)
+	insch <- &BLInstr{BInstr: BInstr{label: m.ident}}
 
 	insch <- &MOVInstr{
-		dest:   ip,
+		dest:   target,
 		source: r0,
 	}
 
@@ -706,20 +689,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		}
 	}
 
-	if len(regsToSave) > 0 {
-		insch <- &POPInstr{
-			BaseStackInstr: BaseStackInstr{
-				regs: regsToSave,
-			},
-		}
-	}
-
 	alloc.PopStack(len(m.args) * 4)
-
-	insch <- &MOVInstr{
-		dest:   target,
-		source: ip,
-	}
 }
 
 //CodeGen generates code for ExpressionRHS
@@ -871,19 +841,11 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhsResult = target2
 		rhsResult = target
 	}
-	divParamN := 2
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
-	CodeGenBL(mDivideByZeroLbl, divParamN, insch)
-	CodeGenBL("__aeabi_idiv", divParamN, insch)
+	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
+	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idiv"}}
 	insch <- &MOVInstr{dest: target, source: r0}
-	if target.Reg() != r0.Reg() {
-		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
-	}
-	if target.Reg() != r1.Reg() {
-		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r1}}}
-	}
 	alloc.FreeReg(target2, insch)
 
 }
@@ -906,19 +868,11 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhsResult = target2
 		rhsResult = target
 	}
-	divParamN := 2
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
-	CodeGenBL(mDivideByZeroLbl, divParamN, insch)
-	CodeGenBL("__aeabi_idivmod", divParamN, insch)
+	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
+	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idivmod"}}
 	insch <- &MOVInstr{dest: target, source: r1}
-	if target.Reg() != r0.Reg() {
-		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
-	}
-	if target.Reg() != r1.Reg() {
-		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r1}}}
-	}
 	alloc.FreeReg(target2, insch)
 }
 
@@ -1424,32 +1378,6 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
 
 	insch <- &BLInstr{BInstr{label: mExitLabel}}
-}
-
-// CodeGenBL generates code for BL, saving the parameter registers
-func CodeGenBL(label string, paramNum int, insch chan<- Instr) {
-	if paramNum == 0 {
-		paramNum = 1
-	}
-	if paramNum < 4 {
-		insch <- &PUSHInstr{
-			BaseStackInstr: BaseStackInstr{
-				regs: []Reg{r0, r1, r2, r3}[paramNum:],
-			},
-		}
-	}
-	insch <- &BLInstr{
-		BInstr: BInstr{
-			label: label,
-		},
-	}
-	if paramNum < 4 {
-		insch <- &POPInstr{
-			BaseStackInstr: BaseStackInstr{
-				regs: []Reg{r0, r1, r2, r3}[paramNum:],
-			},
-		}
-	}
 }
 
 // CodeGen generates instructions for functions
