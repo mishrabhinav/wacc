@@ -20,6 +20,17 @@ var condMap = map[int]string{
 	8: "CS",
 }
 
+var oppCondMap = map[int]int{
+	1: condNE,
+	2: condEQ,
+	3: condLT,
+	4: condGE,
+	5: condLE,
+	6: condGT,
+	7: condAL,
+	8: condCS,
+}
+
 const (
 	condEQ = 1
 	condNE = 2
@@ -38,6 +49,14 @@ func (m Cond) String() string {
 	}
 
 	return value
+}
+
+func (m Cond) GetOpposite() Cond {
+	value, exists := oppCondMap[int(m)]
+	if !exists {
+		return Cond(condAL)
+	}
+	return Cond(value)
 }
 
 //Shift type
@@ -342,12 +361,13 @@ func (m *BICInstr) String() string {
 
 //MOVInstr struct
 type MOVInstr struct {
+	cond   Cond
 	dest   Reg
 	source Operand2
 }
 
 func (m *MOVInstr) String() string {
-	return fmt.Sprintf("\tMOV %v, %v", m.dest, m.source)
+	return fmt.Sprintf("\tMOV%v %v, %v", m.cond, m.dest, m.source)
 }
 
 //------------------------------------------------------------------------------

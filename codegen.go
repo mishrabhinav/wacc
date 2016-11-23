@@ -808,18 +808,12 @@ func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrCMP
-	labelFalse := alloc.GetUniqueLabelSuffix()
-	branchInstrGT := &BInstr{label: labelFalse, cond: Cond(condCode)}
-	insch <- branchInstrGT
-	movFalseInstr := &MOVInstr{target, ImmediateOperand{0}}
-	insch <- movFalseInstr
-	labelFalseInstr := &LABELInstr{labelFalse}
-	insch <- labelFalseInstr
-	movTrueInstr := &MOVInstr{target, ImmediateOperand{1}}
-	insch <- movTrueInstr
-	labelTrue := alloc.GetUniqueLabelSuffix()
-	branchInstrAL := &BInstr{label: labelTrue, cond: Cond(condAL)}
-	insch <- branchInstrAL
+	insch <- &MOVInstr{cond: Cond(condCode),
+		dest:   target,
+		source: ImmediateOperand{1}}
+	insch <- &MOVInstr{cond: Cond(condCode).GetOpposite(),
+		dest:   target,
+		source: ImmediateOperand{0}}
 }
 
 //CodeGen generates code for BinaryOperatorGreaterThan
