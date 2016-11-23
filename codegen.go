@@ -398,9 +398,6 @@ func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for IfStatement
 func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-
-	target := alloc.GetReg(insch)
-
 	suffix := alloc.GetUniqueLabelSuffix()
 
 	labelIf := fmt.Sprintf("if%s", suffix)
@@ -410,12 +407,15 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	// Condition
 	insch <- &LABELInstr{ident: labelIf}
+	target := alloc.GetReg(insch)
+
 	m.cond.CodeGen(alloc, target, insch)
-	alloc.FreeReg(target, insch)
 
 	// CMP Check
 	TruthValue := &ImmediateOperand{0}
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: TruthValue}}
+
+	alloc.FreeReg(target, insch)
 
 	insch <- &BInstr{label: labelElse, cond: condEQ}
 
@@ -442,7 +442,39 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for WhileStatement
 func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	suffix := alloc.GetUniqueLabelSuffix()
+
+	labelWhile := fmt.Sprintf("while%s", suffix)
+	labelCond := fmt.Sprintf("cond%s", suffix)
+	labelDo := fmt.Sprintf("do%s", suffix)
+	labelEnd := fmt.Sprintf("end%s", suffix)
+
+	// CMP Check
+
+	insch <- &LABELInstr{ident: labelWhile}
+	insch <- &BInstr{label: labelCond}
+
+	//Body
+	insch <- &LABELInstr{ident: labelDo}
+	alloc.StartScope(insch)
+
+	m.body.CodeGen(alloc, insch)
+
+	alloc.CleanupScope(insch)
+
+	// Condition
+	insch <- &LABELInstr{ident: labelCond}
+	target := alloc.GetReg(insch)
+
+	m.cond.CodeGen(alloc, target, insch)
+
+	alloc.FreeReg(target, insch)
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: &ImmediateOperand{1}}}
+
+	insch <- &BInstr{label: labelDo, cond: condEQ}
+
+	insch <- &LABELInstr{ident: labelEnd}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
