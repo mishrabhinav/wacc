@@ -299,7 +299,21 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	msg := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
+	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: r0}}}
+	insch <- &BLInstr{BInstr{label: "free"}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: sp}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: r0, value: 4}}}
+	insch <- &BLInstr{BInstr{label: "free"}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
+	insch <- &BLInstr{BInstr{label: "free"}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
