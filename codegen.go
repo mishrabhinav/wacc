@@ -1018,7 +1018,7 @@ func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{cond: condEQ, label: mPrintStringLabel}}
 
-	insch <- &DataMovementInstr{dest: r0, source: &ImmediateOperand{n: -1}}
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
 
 	insch <- &BLInstr{BInstr{label: mExitLabel}}
 }
