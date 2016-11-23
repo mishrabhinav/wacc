@@ -385,6 +385,16 @@ func (m *RegStoreOperand) String() string {
 	return fmt.Sprintf("[%s]", m.value)
 }
 
+//RegStoreOffsetOperand struct
+type RegStoreOffsetOperand struct {
+	reg    Reg
+	offset int
+}
+
+func (m *RegStoreOffsetOperand) String() string {
+	return fmt.Sprintf("[%v, #%d]", m.reg, m.offset)
+}
+
 //StoreInstr struct
 type StoreInstr struct {
 	dest  Reg

@@ -619,7 +619,34 @@ func (m *PairLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Ins
 
 //CodeGen generates code for ArrayLiterRHS
 func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+
+	//Call Malloc
+	leng := &BasicLoadOperand{value: strconv.Itoa(len(m.elements)*4 + 4)}
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: leng}}
+
+	insch <- &BLInstr{BInstr{label: "malloc"}}
+
+	insch <- &MOVInstr{dest: target, source: r0}
+
+	//Array Pos Reg
+	arrayReg := alloc.GetReg(insch)
+
+	//Populate Heap at array indexes
+	for pos := 1; pos <= len(m.elements); pos++ {
+		element := m.elements[pos-1]
+		element.CodeGen(alloc, arrayReg, insch)
+
+		regOffset := &RegStoreOffsetOperand{reg: target, offset: (pos * 4)}
+		insch <- &STRInstr{StoreInstr{dest: arrayReg, value: regOffset}}
+	}
+
+	alloc.FreeReg(arrayReg, insch)
+
+	//Mov length into position 0
+	lenInt := &BasicLoadOperand{value: strconv.Itoa(len(m.elements))}
+	insch <- &LDRInstr{LoadInstr{dest: arrayReg, value: lenInt}}
+
+	insch <- &STRInstr{StoreInstr{dest: arrayReg, value: &RegStoreOperand{target.String()}}}
 }
 
 //CodeGen generates code for PairElemRHS
