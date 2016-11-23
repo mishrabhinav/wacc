@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"sync"
@@ -232,26 +233,55 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 // GLOBAL STRING STORAGE
 //------------------------------------------------------------------------------
 
+type DataString struct {
+	len int
+	str string
+}
+
 // StringPool holds the string literals that have been declared in the program
 type StringPool struct {
 	sync.RWMutex
-	pool map[int]string
+	pool map[int]*DataString
 }
 
-// Lookup returns the msg label of a string literal
-func (m *StringPool) Lookup(msg string) string {
+// Lookup8 returns the msg label of a string literal
+func (m *StringPool) Lookup8(msg string) string {
 	m.Lock()
 	defer m.Unlock()
 
 	if m.pool == nil {
-		m.pool = make(map[int]string)
+		m.pool = make(map[int]*DataString)
 	}
 
 	// TODO deduplicate strings
 
 	l := len(m.pool)
 
-	m.pool[l] = msg
+	m.pool[l] = &DataString{len: len(msg), str: msg}
+
+	return fmt.Sprintf("msg_%d", l)
+}
+
+// Lookup32 returns the msg label of a string literal, converted to 32 bit chars
+func (m *StringPool) Lookup32(msg string) string {
+	m.Lock()
+	defer m.Unlock()
+
+	if m.pool == nil {
+		m.pool = make(map[int]*DataString)
+	}
+
+	// TODO deduplicate strings
+
+	l := len(m.pool)
+
+	var buffer bytes.Buffer
+
+	for i := 0; i < len(msg); i++ {
+		buffer.WriteString(fmt.Sprintf("%c\\0\\0\\0", msg[i]))
+	}
+
+	m.pool[l] = &DataString{len: len(msg), str: buffer.String()}
 
 	return fmt.Sprintf("msg_%d", l)
 }
@@ -339,7 +369,7 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mNullReferenceErr)
+	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -453,7 +483,7 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
-	msg := alloc.stringPool.Lookup(mPuts)
+	msg := alloc.stringPool.Lookup8(mPuts)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{msg}}}
 	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
@@ -695,14 +725,13 @@ func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for StringLiteral
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	msgI := alloc.stringPool.Lookup(m.str)
-	msgL := fmt.Sprintf("msg_%s", msgI)
+	msg := alloc.stringPool.Lookup32(m.str)
 
-	// TODO create a copy of the string
-	// the string in the data segment is 8bit
-	// it has to be expanded to 32bit in the array
-	if false {
-		fmt.Printf(msgL)
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			dest:  target,
+			value: &BasicLoadOperand{msg},
+		},
 	}
 }
 
@@ -1165,7 +1194,8 @@ func (m *ExprParen) Weight() int {
 }
 
 func PrintString(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mPrintString)
+	msg := alloc.stringPool.Lookup8(mPrintString)
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
 	insch <- &LDRInstr{LoadInstr{dest: r1,
@@ -1190,7 +1220,8 @@ func PrintString(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mPrintInt)
+	msg := alloc.stringPool.Lookup8(mPrintInt)
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
 	insch <- &MOVInstr{dest: r1, source: r0}
@@ -1215,8 +1246,8 @@ func PrintChar(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
-	msg0 := alloc.stringPool.Lookup(mTrue)
-	msg1 := alloc.stringPool.Lookup(mFalse)
+	msg0 := alloc.stringPool.Lookup8(mTrue)
+	msg1 := alloc.stringPool.Lookup8(mFalse)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1242,7 +1273,7 @@ func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mPrintReference)
+	msg := alloc.stringPool.Lookup8(mPrintReference)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1269,7 +1300,7 @@ func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
 
 //CheckDivideByZero function
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mDivideByZeroErr)
+	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1286,7 +1317,7 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mNullReferenceErr)
+	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1302,8 +1333,8 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
-	msg0 := alloc.stringPool.Lookup(mArrayNegIndexErr)
-	msg1 := alloc.stringPool.Lookup(mArrayLrgIndexErr)
+	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
+	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1329,7 +1360,7 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup(mOverflowErr)
+	msg := alloc.stringPool.Lookup8(mOverflowErr)
 
 	insch <- &LDRInstr{LoadInstr{dest: r0,
 		value: &BasicLoadOperand{value: msg}}}
@@ -1524,8 +1555,8 @@ func (m *AST) CodeGen() <-chan Instr {
 		for i := 0; i < len(strPool.pool); i++ {
 			v := strPool.pool[i]
 			ch <- &LABELInstr{fmt.Sprintf("msg_%d", i)}
-			ch <- &DataWordInstr{len(v)}
-			ch <- &DataASCIIInstr{v}
+			ch <- &DataWordInstr{v.len}
+			ch <- &DataASCIIInstr{v.str}
 		}
 
 		for _, tin := range txtInstr {
