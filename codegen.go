@@ -355,7 +355,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.ident
 	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{destination: target, value: storeValue}}
+	StoreInstruction := &STRInstr{StoreInstr{dest: target, value: storeValue}}
 	insch <- StoreInstruction
 }
 
@@ -810,7 +810,7 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	messageNum := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
 	msg := fmt.Sprintf("msg_%d", messageNum)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: 0}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: &ImmediateOperand{n: 0}}}
 	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
 	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
