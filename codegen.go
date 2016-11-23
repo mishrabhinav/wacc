@@ -465,7 +465,7 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
 	m.CodeGen(alloc, r0, insch)
-	switch t := m.GetType(nil).(type) {
+	switch t := m.Type().(type) {
 	case IntType:
 		PrintInt(alloc, insch)
 	case BoolType:
