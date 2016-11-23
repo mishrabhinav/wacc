@@ -22,6 +22,7 @@ const (
 	mPrintStringLabel = "p_print_string"
 	mExitLabel        = "exit"
 	mThrowRuntimeErr  = "p_throw_runtime_error"
+	mDivideByZeroLbl  = "p_check_divide_by_zero"
 	mDivideByZeroErr  = "DivideByZeroError: divide or modulo by zero\n"
 	mNullReferenceErr = "NullReferenceError: dereference a null reference\n"
 	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\n"
@@ -803,6 +804,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
+	CodeGenBL(mDivideByZeroLbl, divParamN, insch)
 	CodeGenBL("__aeabi_idiv", divParamN, insch)
 	insch <- &MOVInstr{dest: target, source: r0}
 	if target.Reg() != r0.Reg() {
@@ -836,6 +838,7 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
+	CodeGenBL(mDivideByZeroLbl, divParamN, insch)
 	CodeGenBL("__aeabi_idivmod", divParamN, insch)
 	insch <- &MOVInstr{dest: target, source: r1}
 	if target.Reg() != r0.Reg() {
