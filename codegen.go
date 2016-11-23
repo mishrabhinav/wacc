@@ -11,6 +11,10 @@ import (
 //------------------------------------------------------------------------------
 
 const (
+	mPrintString      = "%.*s"
+	mPrintInt         = "%d"
+	mFFlush           = "fflush"
+	mPrintf           = "printf"
 	mFreeLabel        = "free"
 	mPrintStringLabel = "p_print_string"
 	mExitLabel        = "exit"
@@ -1060,6 +1064,54 @@ func (m *BinaryOperatorOr) Weight() int {
 func (m *ExprParen) Weight() int {
 	//TODO
 	return -1
+}
+
+func PrintString(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup(mPrintString)
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r1,
+		value: &RegisterLoadOperand{reg: r0}}}
+
+	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r2, lhs: r0,
+		rhs: ImmediateOperand{n: 4}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
+		rhs: ImmediateOperand{n: 4}}}
+
+	insch <- &BLInstr{BInstr{label: mPrintf}}
+
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: 0}}
+
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup(mPrintInt)
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
+	insch <- &MOVInstr{dest: r1, source: r0}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
+		rhs: ImmediateOperand{n: 4}}}
+
+	insch <- &BLInstr{BInstr{label: mPrintf}}
+
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: 0}}
+
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
 //CheckDivideByZero function
