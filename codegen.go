@@ -335,7 +335,10 @@ func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for IfStatement
 func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+
+	target := alloc.GetReg(insch)
+
+	m.cond.CodeGen(alloc, target, insch)
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
@@ -411,12 +414,16 @@ func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr
 
 //CodeGen generates code for BoolLiteralTrue
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	MOVValue := &ImmediateOperand{1}
+	MOVInstruction := &DataMovementInstr{dest: target, source: MOVValue}
+	insch <- MOVInstruction
 }
 
 //CodeGen generates code for BoolLiteralFalse
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	MOVValue := &ImmediateOperand{0}
+	MOVInstruction := &DataMovementInstr{dest: target, source: MOVValue}
+	insch <- MOVInstruction
 }
 
 //CodeGen generates code for CharLiteral
