@@ -881,6 +881,29 @@ func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{label: "exit"}}
 }
 
+// CodeGenBL generates code for BL, saving the parameter registers
+func CodeGenBL(label string, paramNum int, insch chan<- Instr) {
+	if paramNum < 4 {
+		insch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r0, r1, r2, r3}[paramNum:],
+			},
+		}
+	}
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: label,
+		},
+	}
+	if paramNum < 4 {
+		insch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{r0, r1, r2, r3}[paramNum:],
+			},
+		}
+	}
+}
+
 // CodeGen generates instructions for functions
 func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 	ch := make(chan Instr)
