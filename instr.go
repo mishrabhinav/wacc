@@ -6,6 +6,7 @@ import (
 
 // Conditions
 
+//Cond type
 type Cond int
 
 var condMap = map[int]string{
@@ -37,6 +38,7 @@ func (m Cond) String() string {
 	return value
 }
 
+//Shift type
 type Shift int
 
 var shiftMap = map[int]string{
@@ -192,10 +194,12 @@ type BaseBinaryInstr struct {
 	rhs  Reg
 }
 
+//Operand2 interface
 type Operand2 interface {
 	String() string
 }
 
+//ImmediateOperand struct
 type ImmediateOperand struct {
 	n int
 }
@@ -240,6 +244,7 @@ func (m *RSBInstr) String() string {
 //COMPARISON OPERATORS
 //------------------------------------------------------------------------------
 
+//BaseComparisonInstr struct
 type BaseComparisonInstr struct {
 	cond Cond
 	lhs  Reg
@@ -499,6 +504,7 @@ func (m *LTORGInstr) String() string {
 // DATA
 //------------------------------------------------------------------------------
 
+//DataWordInstr struct
 type DataWordInstr struct {
 	n int
 }
@@ -507,6 +513,7 @@ func (m *DataWordInstr) String() string {
 	return fmt.Sprintf("\t.word %d", m.n)
 }
 
+//DataAsciiInstr type
 type DataAsciiInstr struct {
 	str string
 }

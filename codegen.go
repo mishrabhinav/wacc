@@ -872,6 +872,7 @@ func (m *ExprParen) Weight() int {
 	return -1
 }
 
+//CheckDivideByZero function
 func CheckDivideByZero(insch chan<- Instr) {
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
