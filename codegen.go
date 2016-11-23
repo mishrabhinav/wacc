@@ -560,7 +560,66 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for FunctionCallRHS
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	regsToSave := []Reg{r0, r1, r2, r3}
+	if pl := len(m.args); pl < 4 {
+		regsToSave = regsToSave[:pl]
+	}
+
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: regsToSave,
+		},
+	}
+
+	for i := len(m.args) - 1; i >= 0; i-- {
+		reg := alloc.GetReg(insch)
+		m.args[i].CodeGen(alloc, reg, insch)
+		insch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{reg},
+			},
+		}
+		alloc.PushStack(4)
+		alloc.FreeReg(reg, insch)
+	}
+
+	for i := 0; i < len(regsToSave); i++ {
+		insch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{regsToSave[i]},
+			},
+		}
+	}
+
+	CodeGenBL(m.ident, len(m.args), insch)
+
+	insch <- &MOVInstr{
+		dest:   ip,
+		source: r0,
+	}
+
+	if pl := len(m.args); pl > 4 {
+		insch <- &ADDInstr{
+			BaseBinaryInstr: BaseBinaryInstr{
+				dest: sp,
+				lhs:  sp,
+				rhs:  ImmediateOperand{(pl - 4) * 4},
+			},
+		}
+	}
+
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: regsToSave,
+		},
+	}
+
+	alloc.PopStack(len(m.args) * 4)
+
+	insch <- &MOVInstr{
+		dest:   target,
+		source: ip,
+	}
 }
 
 //CodeGen generates code for ExpressionRHS
@@ -1266,6 +1325,12 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		ch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{ip},
+			},
+		}
+
+		ch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
 			},
 		}
@@ -1308,7 +1373,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		for i := 4; i < len(m.params); i++ {
 			p := m.params[i]
-			alloc.stack[0][p.name] = -4 + i*-4 + 8*-4
+			alloc.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
 		}
 
 		alloc.StartScope(ch)
@@ -1336,6 +1401,12 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 		ch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
+			},
+		}
+
+		ch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{ip},
 			},
 		}
 
