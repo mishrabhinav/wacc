@@ -845,11 +845,76 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		alloc.StartScope(ch)
 
-		// TODO add parameters to stack
+		ch <- &PUSHInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{lr},
+			},
+		}
+
+		pl := len(m.params)
+		switch {
+		case pl >= 4:
+			ch <- &PUSHInstr{
+				BaseStackInstr: BaseStackInstr{
+					regs: []Reg{r3},
+				},
+			}
+			fallthrough
+		case pl == 3:
+			ch <- &PUSHInstr{
+				BaseStackInstr: BaseStackInstr{
+					regs: []Reg{r2},
+				},
+			}
+			fallthrough
+		case pl == 2:
+			ch <- &PUSHInstr{
+				BaseStackInstr: BaseStackInstr{
+					regs: []Reg{r1},
+				},
+			}
+			fallthrough
+		case pl == 1:
+			ch <- &PUSHInstr{
+				BaseStackInstr: BaseStackInstr{
+					regs: []Reg{r0},
+				},
+			}
+		}
+
+		for i := 0; i < 4 && i < len(m.params); i++ {
+			p := m.params[i]
+			alloc.stack[0][p.name] = i * -4
+		}
+
+		for i := 4; i < len(m.params); i++ {
+			p := m.params[i]
+			alloc.stack[0][p.name] = 4*-4 + -4 + i*-4
+		}
 
 		alloc.StartScope(ch)
 
 		m.body.CodeGen(alloc, ch)
+
+		if pl := len(m.params); pl > 0 {
+			ppregs := pl * 4
+			if ppregs > 16 {
+				ppregs = 16
+			}
+			ch <- &ADDInstr{
+				BaseBinaryInstr: BaseBinaryInstr{
+					dest: sp,
+					lhs:  sp,
+					rhs:  ImmediateOperand{ppregs},
+				},
+			}
+		}
+
+		ch <- &POPInstr{
+			BaseStackInstr: BaseStackInstr{
+				regs: []Reg{pc},
+			},
+		}
 
 		ch <- &LTORGInstr{}
 
