@@ -194,7 +194,7 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 		BaseBinaryInstr: BaseBinaryInstr{
 			dest: sp,
 			lhs:  sp,
-			rhs:  ImmediateOperand{sl},
+			rhs:  ImmediateOperand{sl * 4},
 		},
 	}
 	m.PopStack(sl)
