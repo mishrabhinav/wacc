@@ -7,6 +7,23 @@ import (
 )
 
 //------------------------------------------------------------------------------
+// RUNTIME ERRORS
+//------------------------------------------------------------------------------
+
+const (
+	mFreeLabel        = "free"
+	mPrintStringLabel = "p_print_string"
+	mExitLabel        = "exit"
+	mThrowRuntimeErr  = "p_throw_runtime_error"
+	mDivideByZeroErr  = "DivideByZeroError: divide or modulo by zero\n"
+	mNullReferenceErr = "NullReferenceError: dereference a null reference\n"
+	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\n"
+	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\n"
+	mOverflowErr      = "OverflowError: the result is too small/large to" +
+		"store in a 4-byte signed-integer.\n"
+)
+
+//------------------------------------------------------------------------------
 // INTERFACES
 //------------------------------------------------------------------------------
 
@@ -299,20 +316,37 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
+	msg := alloc.stringPool.Lookup(mNullReferenceErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
-	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
+		rhs: &ImmediateOperand{n: 0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: r0}}}
-	insch <- &BLInstr{BInstr{label: "free"}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: sp}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &RegisterLoadOperand{reg: r0, value: 4}}}
-	insch <- &BLInstr{BInstr{label: "free"}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &RegisterLoadOperand{reg: r0}}}
+
+	insch <- &BLInstr{BInstr{label: mFreeLabel}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &RegisterLoadOperand{reg: sp}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &RegisterLoadOperand{reg: r0, value: 4}}}
+
+	insch <- &BLInstr{BInstr{label: mFreeLabel}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
-	insch <- &BLInstr{BInstr{label: "free"}}
+
+	insch <- &BLInstr{BInstr{label: mFreeLabel}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
 	m.BaseStatement.CodeGen(alloc, insch)
@@ -427,7 +461,8 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.ident
 	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
-	StoreInstruction := &STRInstr{StoreInstr{dest: target, value: storeValue}}
+	StoreInstruction := &STRInstr{StoreInstr{dest: target,
+		value: storeValue}}
 	insch <- StoreInstruction
 }
 
@@ -577,7 +612,8 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrMul := &MULInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: target2}}
+	binaryInstrMul := &MULInstr{BaseBinaryInstr{dest: target, lhs: target,
+		rhs: target2}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrMul
 }
@@ -606,7 +642,8 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{dest: target, lhs: target2,
+		rhs: target}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrAdd
 }
@@ -621,12 +658,14 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
-		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: target2}}
+		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target,
+			lhs: target, rhs: target2}}
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
-		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target,
+			lhs: target2, rhs: target}}
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrSub
@@ -641,12 +680,14 @@ func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
-		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2, rhs: target}}
+		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2,
+			rhs: target}}
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
-		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2, rhs: target}}
+		binaryInstrCMP = &CMPInstr{BaseComparisonInstr{lhs: target2,
+			rhs: target}}
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrCMP
@@ -708,7 +749,8 @@ func (m *BinaryOperatorAnd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrAnd := &ANDInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+	binaryInstrAnd := &ANDInstr{BaseBinaryInstr{dest: target, lhs: target2,
+		rhs: target}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrAnd
 }
@@ -727,7 +769,8 @@ func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrOrr := &ORRInstr{BaseBinaryInstr{dest: target, lhs: target2, rhs: target}}
+	binaryInstrOrr := &ORRInstr{BaseBinaryInstr{dest: target, lhs: target2,
+		rhs: target}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrOrr
 }
@@ -904,52 +947,80 @@ func (m *ExprParen) Weight() int {
 
 //CheckDivideByZero function
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
+	msg := alloc.stringPool.Lookup(mDivideByZeroErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1, rhs: &ImmediateOperand{n: 0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
-	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1,
+		rhs: &ImmediateOperand{n: 0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
 }
 
 func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
+	msg := alloc.stringPool.Lookup(mNullReferenceErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
-	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
+		rhs: &ImmediateOperand{n: 0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
 func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
-	msg0 := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: negative index\n")
-	msg1 := alloc.stringPool.Lookup("ArrayIndexOutOfBoundsError: index too large\n")
+	msg0 := alloc.stringPool.Lookup(mArrayNegIndexErr)
+	msg1 := alloc.stringPool.Lookup(mArrayLrgIndexErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT, value: &BasicLoadOperand{value: msg0}}}
-	insch <- &BLInstr{BInstr{cond: condLT, label: "p_throw_runtime_error"}}
-	insch <- &LDRInstr{LoadInstr{dest: r1, value: &RegisterLoadOperand{reg: r1}}}
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
+		rhs: &ImmediateOperand{n: 0}}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condLT,
+		value: &BasicLoadOperand{value: msg0}}}
+
+	insch <- &BLInstr{BInstr{cond: condLT, label: mThrowRuntimeErr}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r1,
+		value: &RegisterLoadOperand{reg: r1}}}
+
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: r1}}
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS, value: &BasicLoadOperand{value: msg1}}}
-	insch <- &BLInstr{BInstr{cond: condCS, label: "p_throw_runtime_error"}}
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condCS,
+		value: &BasicLoadOperand{value: msg1}}}
+
+	insch <- &BLInstr{BInstr{cond: condCS, label: mThrowRuntimeErr}}
+
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
 func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n")
+	msg := alloc.stringPool.Lookup(mOverflowErr)
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{value: msg}}}
-	insch <- &BLInstr{BInstr{label: "p_throw_runtime_error"}}
+	insch <- &LDRInstr{LoadInstr{dest: r0,
+		value: &BasicLoadOperand{value: msg}}}
+
+	insch <- &BLInstr{BInstr{label: mThrowRuntimeErr}}
 }
 
 func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
-	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_print_string"}}
-	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
-	insch <- &BLInstr{BInstr{label: "exit"}}
+	insch <- &BLInstr{BInstr{cond: condEQ, label: mPrintStringLabel}}
+
+	insch <- &DataMovementInstr{dest: r0, source: &ImmediateOperand{n: -1}}
+
+	insch <- &BLInstr{BInstr{label: mExitLabel}}
 }
 
 // CodeGenBL generates code for BL, saving the parameter registers
