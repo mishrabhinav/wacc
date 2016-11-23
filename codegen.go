@@ -601,18 +601,21 @@ func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 
 	//Load array Address
-	//rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
-	//insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: sp, rhs: rhsVal}}
+	rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
+	insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: sp, rhs: rhsVal}}
 
 	//Retrieve content of Array Address
-	//insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: target}}}
-	rhsValue := alloc.ResolveVar(m.ident)
-	insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: sp, value: rhsValue}}}
+	//rhsValue := alloc.ResolveVar(m.ident)
+	//insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: sp, value: rhsValue}}}
 
 	//Place index in new Register
 	indexReg := alloc.GetReg(insch)
 	for index := 0; index < len(m.index); index++ {
-		m.index[0].CodeGen(alloc, indexReg, insch)
+
+		//Retrieve content of Array Address
+		insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: target}}}
+
+		m.index[index].CodeGen(alloc, indexReg, insch)
 
 		//Check array Bounds
 		insch <- &MOVInstr{dest: r0, source: indexReg}
