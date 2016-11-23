@@ -849,6 +849,14 @@ func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
+	messageNum := alloc.stringPool.Lookup("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n")
+	msg_0 := fmt.Sprintf("msg_%d", messageNum)
+
+	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{value: msg_0}}}
+	insch <- &BLInstr{BInstr{label: "p_throw_runtime_error"}}
+}
+
 func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_print_string"}}
 	insch <- &DataMovementInstr{dest: r0, source: &ImmediateOperand{n: -1}}
