@@ -160,14 +160,15 @@ func (m *RegAllocator) PopStack(size int) {
 
 // DeclareVar registers a new variable for use
 func (m *RegAllocator) DeclareVar(ident string, insch chan<- Instr) {
-	// TODO extend stack
-	//insch <- &SUBInstr{
-	//}
 	m.PushStack(4)
-
 	m.stack[0][ident] = m.stackSize
-
-	m.stackSize++
+	insch <- &SUBInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: sp,
+			lhs:  sp,
+			rhs:  ImmediateOperand{4},
+		},
+	}
 }
 
 // ResolveVar returns the location of a variable
@@ -188,10 +189,15 @@ func (m *RegAllocator) StartScope(insch chan<- Instr) {
 
 // CleanupScope starts a new scope with new variable mappings possible
 func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
-	// TODO rollback stack
-	//insch <- &ADDInstr{
-	//}
-	m.PopStack(len(m.stack[0]))
+	sl := len(m.stack[0])
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: sp,
+			lhs:  sp,
+			rhs:  ImmediateOperand{sl},
+		},
+	}
+	m.PopStack(sl)
 	m.stack = m.stack[1:]
 }
 
