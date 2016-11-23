@@ -223,20 +223,16 @@ func (m ImmediateOperand) String() string {
 	return fmt.Sprint("%d", m.n)
 }
 
-func (m *BaseBinaryInstr) String() string {
-	return fmt.Sprintf("%v, %v, %v", m.dest, m.lhs, m.rhs)
-}
-
 func (m *ADDInstr) String() string {
-	return fmt.Sprintf("\tADD%v %v", m.cond, m)
+	return fmt.Sprintf("\tADD%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *SUBInstr) String() string {
-	return fmt.Sprintf("\tSUB%v %v", m.cond, m)
+	return fmt.Sprintf("\tSUB%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *RSBInstr) String() string {
-	return fmt.Sprintf("\tRSB%v %v", m.cond, m)
+	return fmt.Sprintf("\tRSB%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
@@ -270,24 +266,20 @@ type TEQInstr struct {
 	BaseComparisonInstr
 }
 
-func (m *BaseComparisonInstr) String() string {
-	return fmt.Sprintf("%v, %d", m.lhs, m.rhs)
-}
-
 func (m *CMPInstr) String() string {
-	return fmt.Sprintf("\tCMP%v %v", m.cond, m)
+	return fmt.Sprintf("\tCMP%v %v, %d", m.cond, m.lhs, m.rhs)
 }
 
 func (m *CMNInstr) String() string {
-	return fmt.Sprintf("\tCMN%v %v", m.cond, m)
+	return fmt.Sprintf("\tCMN%v %v, %d", m.cond, m.lhs, m.rhs)
 }
 
 func (m *TSTInstr) String() string {
-	return fmt.Sprintf("\tTST%v %v", m.cond, m)
+	return fmt.Sprintf("\tTST%v %v, %d", m.cond, m.lhs, m.rhs)
 }
 
 func (m *TEQInstr) String() string {
-	return fmt.Sprintf("\tTEQ%v %v", m.cond, m)
+	return fmt.Sprintf("\tTEQ%v %v, %d", m.cond, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
@@ -315,19 +307,19 @@ type BICInstr struct {
 }
 
 func (m *ANDInstr) String() string {
-	return fmt.Sprintf("\tAND %v", m)
+	return fmt.Sprintf("\tAND%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *EORInstr) String() string {
-	return fmt.Sprintf("\tEOR %v", m)
+	return fmt.Sprintf("\tEOR%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *ORRInstr) String() string {
-	return fmt.Sprintf("\tORR %v", m)
+	return fmt.Sprintf("\tORR%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *BICInstr) String() string {
-	return fmt.Sprintf("\tBIC %v", m)
+	return fmt.Sprintf("\tBIC%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
@@ -354,7 +346,7 @@ type MULInstr struct {
 }
 
 func (m *MULInstr) String() string {
-	return fmt.Sprintf("\tMUL %v", m)
+	return fmt.Sprintf("\tMUL%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
