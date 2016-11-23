@@ -806,7 +806,6 @@ func (m *ExprParen) Weight() int {
 
 //CheckDivideByZero function
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
-
 	messageNum := alloc.stringPool.Lookup("DivideByZeroError: divide or modulo by zero\n")
 	msg := fmt.Sprintf("msg_%d", messageNum)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
@@ -815,6 +814,22 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
+}
+
+func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
+	messageNum := alloc.stringPool.Lookup("NullReferenceError: dereference a null reference\n")
+	msg := fmt.Sprintf("msg_%d", messageNum)
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0, rhs: &ImmediateOperand{n: 0}}}
+	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ, value: &BasicLoadOperand{value: msg}}}
+	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_throw_runtime_error"}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
+	insch <- &BLInstr{BInstr{cond: condEQ, label: "p_print_string"}}
+	insch <- &DataMovementInstr{dest: r0, source: &ImmediateOperand{n: -1}}
+	insch <- &BLInstr{BInstr{label: "exit"}}
 }
 
 // CodeGen generates instructions for functions
