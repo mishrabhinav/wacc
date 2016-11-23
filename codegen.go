@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -161,7 +162,7 @@ func (m *tmpLoc) String() string {
 func (m *RegAllocator) ResolveVar(ident string) Location {
 	// TODO
 	// Format: [sp, #8]
-	return &tmpLoc{"[sp, #4]"}
+	return &tmpLoc{"4"}
 }
 
 // StartScope starts a new scope with new variable mappings possible
@@ -237,12 +238,12 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 	rhs := m.rhs
 
 	baseReg := alloc.GetReg(insch)
+
 	rhs.CodeGen(alloc, baseReg, insch)
 
-	loadValue := &BasicLoadOperand{lhs}
-
-	LoadInstruction := &LDRInstr{LoadInstr{destination: baseReg, value: loadValue}}
-	insch <- LoadInstruction
+	storeValue := &MemoryStoreOperand{alloc.ResolveVar(lhs)}
+	StoreInstruction := &STRInstr{StoreInstr{destination: baseReg, value: storeValue}}
+	insch <- StoreInstruction
 
 	alloc.FreeReg(baseReg, insch)
 
@@ -331,7 +332,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 
 //CodeGen generates code for VarLHS
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-
+	//TODO
 }
 
 //CodeGen generates code for PairLiterRHS
@@ -366,12 +367,16 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	loadValue := &MemoryLoadOperand{alloc.ResolveVar(m.ident)}
+	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	insch <- LoadInstruction
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	loadValue := &BasicLoadOperand{strconv.Itoa(m.value)}
+	LoadInstruction := &LDRInstr{LoadInstr{destination: target, value: loadValue}}
+	insch <- LoadInstruction
 }
 
 //CodeGen generates code for BoolLiteralTrue

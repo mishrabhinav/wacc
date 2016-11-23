@@ -63,7 +63,7 @@ func (m Shift) String() string {
 }
 
 //------------------------------------------------------------------------------
-//STORE AND LOAD
+//LOAD / STORE INSTRUCTIONS
 //------------------------------------------------------------------------------
 
 //LoadOperand interface
@@ -78,6 +78,15 @@ type BasicLoadOperand struct {
 
 func (m *BasicLoadOperand) String() string {
 	return fmt.Sprintf("=%s", m.value)
+}
+
+//MemoryLoadOperand struct
+type MemoryLoadOperand struct {
+	value Location
+}
+
+func (m *MemoryLoadOperand) String() string {
+	return fmt.Sprintf("[sp, #%s]", m.value)
 }
 
 //LoadInstr struct
@@ -101,10 +110,24 @@ func (m *LDRInstr) String() string {
 	return fmt.Sprintf("\tLDR %s", m.base.String())
 }
 
+//StoreOperand interface
+type StoreOperand interface {
+	String() string
+}
+
+//MemoryStoreOperand struct
+type MemoryStoreOperand struct {
+	value Location
+}
+
+func (m *MemoryStoreOperand) String() string {
+	return fmt.Sprintf("[sp, #%s]", m.value)
+}
+
 //StoreInstr struct
 type StoreInstr struct {
 	destination Reg
-	value       Reg
+	value       StoreOperand
 }
 
 func (m *StoreInstr) String() string {
