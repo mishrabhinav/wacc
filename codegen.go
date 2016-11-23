@@ -12,13 +12,13 @@ import (
 //------------------------------------------------------------------------------
 
 const (
-	mPrintString      = "%.*s"
-	mPrintInt         = "%d"
-	mPrintReference   = "%p"
+	mPrintString      = "%.*s\\0"
+	mPrintInt         = "%d\\0"
+	mPrintReference   = "%p\\0"
 	mPutChar          = "putchar"
 	mPuts             = "puts"
-	mTrue             = "true"
-	mFalse            = "false"
+	mTrue             = "true\\0"
+	mFalse            = "false\\0"
 	mFFlush           = "fflush"
 	mPrintf           = "printf"
 	mFreeLabel        = "free"
@@ -26,12 +26,16 @@ const (
 	mExitLabel        = "exit"
 	mThrowRuntimeErr  = "p_throw_runtime_error"
 	mDivideByZeroLbl  = "p_check_divide_by_zero"
-	mDivideByZeroErr  = "DivideByZeroError: divide or modulo by zero\n"
-	mNullReferenceErr = "NullReferenceError: dereference a null reference\n"
-	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\n"
-	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\n"
+	mNullReferenceLbl = "pi_check_null_pointer"
+	mOverflowLbl      = "p_throw_overflow_error"
+	mArrayBoundLbl    = "p_check_array_bounds"
+	mDivideByZeroErr  = "DivideByZeroError: divide or modulo by zero\\n\\0"
+	mNullReferenceErr = "NullReferenceError: dereference a null reference" +
+		"\\n\\0"
+	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\\n\\0"
+	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\\n\\0"
 	mOverflowErr      = "OverflowError: the result is too small/large to" +
-		"store in a 4-byte signed-integer.\n"
+		"store in a 4-byte signed-integer.\\n\\0"
 )
 
 //------------------------------------------------------------------------------
@@ -846,6 +850,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r1}}}
 	}
 	alloc.FreeReg(target2, insch)
+
 }
 
 //CodeGen generates code for BinaryOperatorMod
@@ -1302,6 +1307,8 @@ func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
 func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
 
+	insch <- &LABELInstr{ident: mDivideByZeroLbl}
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r1,
@@ -1319,6 +1326,8 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
 
+	insch <- &LABELInstr{ident: mNullReferenceLbl}
+
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
@@ -1335,6 +1344,8 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
+
+	insch <- &LABELInstr{ident: mArrayBoundLbl}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1362,6 +1373,8 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mOverflowErr)
 
+	insch <- &LABELInstr{ident: mOverflowLbl}
+
 	insch <- &LDRInstr{LoadInstr{dest: r0,
 		value: &BasicLoadOperand{value: msg}}}
 
@@ -1369,6 +1382,8 @@ func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
+	insch <- &LABELInstr{ident: mThrowRuntimeErr}
+
 	insch <- &BLInstr{BInstr{cond: condEQ, label: mPrintStringLabel}}
 
 	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
