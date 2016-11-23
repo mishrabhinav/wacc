@@ -599,7 +599,7 @@ func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 //CodeGen generates code for StringLiteral
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	msgI := alloc.stringPool.Lookup(m.str)
-	msgL := fmt.Sprintf("msg_%d", msgI)
+	msgL := fmt.Sprintf("msg_%s", msgI)
 
 	// TODO create a copy of the string
 	// the string in the data segment is 8bit
@@ -776,7 +776,7 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
-	binaryInstrSub := &SUBInstr{}
+	var binaryInstrSub *SUBInstr
 	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
@@ -794,11 +794,11 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- binaryInstrSub
 }
 
-func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch chan<- Instr, condCode int) {
+func codeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch chan<- Instr, condCode int) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
-	binaryInstrCMP := &CMPInstr{}
+	var binaryInstrCMP *CMPInstr
 	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
@@ -824,32 +824,32 @@ func CodeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 
 //CodeGen generates code for BinaryOperatorGreaterThan
 func (m *BinaryOperatorGreaterThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condGT)
+	codeGenComparators(m, alloc, target, insch, condGT)
 }
 
 //CodeGen generates code for BinaryOperatorGreaterEqual
 func (m *BinaryOperatorGreaterEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condGE)
+	codeGenComparators(m, alloc, target, insch, condGE)
 }
 
 //CodeGen generates code for BinaryOperatorLessThan
 func (m *BinaryOperatorLessThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condLT)
+	codeGenComparators(m, alloc, target, insch, condLT)
 }
 
 //CodeGen generates code for BinaryOperatorLessEqual
 func (m *BinaryOperatorLessEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condLE)
+	codeGenComparators(m, alloc, target, insch, condLE)
 }
 
 //CodeGen generates code for BinaryOperatorEqual
 func (m *BinaryOperatorEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condEQ)
+	codeGenComparators(m, alloc, target, insch, condEQ)
 }
 
 //CodeGen generates code for BinaryOperatorNotEqual
 func (m *BinaryOperatorNotEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	CodeGenComparators(m, alloc, target, insch, condNE)
+	codeGenComparators(m, alloc, target, insch, condNE)
 }
 
 //CodeGen generates code for BinaryOperatorAnd
@@ -1080,7 +1080,7 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 
 }
 
-func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
+func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup(mNullReferenceErr)
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
@@ -1096,7 +1096,7 @@ func CheckNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
+func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup(mArrayLrgIndexErr)
 
@@ -1123,7 +1123,7 @@ func CheckArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
+func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup(mOverflowErr)
 
 	insch <- &LDRInstr{LoadInstr{dest: r0,
@@ -1132,7 +1132,7 @@ func CheckOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{label: mThrowRuntimeErr}}
 }
 
-func ThrowRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
+func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr{cond: condEQ, label: mPrintStringLabel}}
 
 	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: -1}}
