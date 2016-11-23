@@ -620,12 +620,68 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 
 //CodeGen generates code for BinaryOperatorDiv
 func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	lhsResult := target
+	rhsResult := target2
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+		lhsResult = target2
+		rhsResult = target
+	}
+	divParamN := 2
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
+	insch <- &MOVInstr{dest: r0, source: lhsResult}
+	insch <- &MOVInstr{dest: r1, source: rhsResult}
+	CodeGenBL("__aeabi_idiv", divParamN, insch)
+	insch <- &MOVInstr{dest: target, source: r0}
+	if target.Reg() != r0.Reg() {
+		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
+	}
+	if target.Reg() != r1.Reg() {
+		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r1}}}
+	}
+	alloc.FreeReg(target2, insch)
 }
 
 //CodeGen generates code for BinaryOperatorMod
 func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	lhs := m.GetLHS()
+	rhs := m.GetRHS()
+	var target2 Reg
+	lhsResult := target
+	rhsResult := target2
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		rhs.CodeGen(alloc, target2, insch)
+	} else {
+		rhs.CodeGen(alloc, target, insch)
+		target2 = alloc.GetReg(insch)
+		lhs.CodeGen(alloc, target2, insch)
+		lhsResult = target2
+		rhsResult = target
+	}
+	divParamN := 2
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0, r1}}}
+	insch <- &MOVInstr{dest: r0, source: lhsResult}
+	insch <- &MOVInstr{dest: r1, source: rhsResult}
+	CodeGenBL("__aeabi_idivmod", divParamN, insch)
+	insch <- &MOVInstr{dest: target, source: r1}
+	if target.Reg() != r0.Reg() {
+		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
+	}
+	if target.Reg() != r1.Reg() {
+		insch <- &POPInstr{BaseStackInstr{regs: []Reg{r1}}}
+	}
+	alloc.FreeReg(target2, insch)
 }
 
 //CodeGen generates code for BinaryOperatorAdd
