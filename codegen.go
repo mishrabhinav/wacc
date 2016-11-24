@@ -968,6 +968,7 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
 		rhs.CodeGen(alloc, target2, insch)
+		rhsResult = target2
 	} else {
 		rhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
