@@ -470,7 +470,10 @@ func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
-	m.CodeGen(alloc, r0, insch)
+	r := alloc.GetReg(insch)
+	m.CodeGen(alloc, r, insch)
+	insch <- &MOVInstr{dest: r0, source: r}
+	alloc.FreeReg(r, insch)
 	switch t := m.Type().(type) {
 	case IntType:
 		insch <- &BLInstr{BInstr: BInstr{label: mPrintIntLabel}}
