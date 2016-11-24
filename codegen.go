@@ -831,8 +831,7 @@ func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch cha
 
 //CodeGen generates code for UnaryOperatorLen
 func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	leng := &RegisterLoadOperand{reg: sp, value: 4}
-	insch <- &LDRInstr{LoadInstr{reg: target, value: leng}}
+	m.expr.CodeGen(alloc, target, insch)
 
 	//Load length into target
 	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
