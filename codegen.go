@@ -1590,13 +1590,6 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 		ident: mThrowRuntimeErr,
 	}
 
-	insch <- &BLInstr{
-		BInstr: BInstr{
-			cond:  condEQ,
-			label: mPrintStringLabel,
-		},
-	}
-
 	insch <- &PUSHInstr{
 		BaseStackInstr: BaseStackInstr{
 			regs: []Reg{lr},
@@ -1865,6 +1858,26 @@ func (m *AST) CodeGen() <-chan Instr {
 		}
 
 		for instr := range CodeGenBuiltin(strPool, printNewLine) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, checkDivideByZero) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, checkNullPointer) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, checkArrayBounds) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, checkOverflowUnderflow) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, throwRuntimeError) {
 			txtInstr = append(txtInstr, instr)
 		}
 
