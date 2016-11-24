@@ -590,8 +590,7 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
-	insch <- &BLInstr{BInstr{label: mMalloc}}
+	//TODO
 }
 
 //CodeGen generates code for ArrayLHS
@@ -776,7 +775,20 @@ func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for PairLiteral
 func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
+	insch <- &BLInstr{BInstr{label: mMalloc}}
+	//target cointains address of newpair
+	insch <- &MOVInstr{dest: target, source: r0}
+	elemReg := alloc.GetReg(insch)
+	m.fst.CodeGen(alloc, elemReg, insch)
+	insch <- &STRInstr{StoreInstr{
+		reg:   elemReg,
+		value: &RegStoreOperand{target}}}
+	m.snd.CodeGen(alloc, elemReg, insch)
+	insch <- &STRInstr{StoreInstr{
+		reg:   elemReg,
+		value: &RegStoreOffsetOperand{reg: target, offset: 4}}}
+	alloc.FreeReg(elemReg, insch)
 }
 
 //CodeGen generates code for NullPair
