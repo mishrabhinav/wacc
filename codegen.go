@@ -1834,6 +1834,11 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		alloc.CleanupScope(ch)
 
+		switch m.returnType.(type) {
+		case InvalidType:
+			ch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+		}
+
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
 
 		if pl := len(m.params); pl > 0 {
