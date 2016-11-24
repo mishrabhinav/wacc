@@ -304,7 +304,7 @@ func (m *StringPool) Lookup32(msg string) string {
 		if c := msg[i]; c == '\\' {
 			buffer.WriteString(fmt.Sprintf("%c", msg[i]))
 		} else {
-			buffer.WriteString(fmt.Sprintf("%c\\0\\0\\0", msg[i]))
+			buffer.WriteString(fmt.Sprintf("%c\\000\\000\\000", msg[i]))
 		}
 	}
 
