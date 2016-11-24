@@ -615,7 +615,7 @@ func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target R
 		//Check array Bounds
 		insch <- &MOVInstr{dest: r0, source: indexReg}
 		insch <- &MOVInstr{dest: r1, source: target}
-		insch <- &BLInstr{BInstr{label: "p_check_array_bounds"}}
+		insch <- &BLInstr{BInstr{label: mArrayBoundLbl}}
 
 		//Target now points to the first element
 		rhsVal := &ImmediateOperand{4}
@@ -943,6 +943,13 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		rhs: target}}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrAdd
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condVS,
+			label: mOverflowLbl,
+		},
+	}
 }
 
 //CodeGen generates code for BinaryOperatorSub
@@ -966,6 +973,13 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	}
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrSub
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condVS,
+			label: mOverflowLbl,
+		},
+	}
 }
 
 func codeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch chan<- Instr, condCode int) {
