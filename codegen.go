@@ -595,7 +595,7 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	pairElem(m.expr, m.snd, alloc, target, insch)
 }
 
 func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
@@ -678,9 +678,8 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target}}}
 }
 
-//CodeGen generates code for PairElemRHS
-func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	m.expr.CodeGen(alloc, target, insch)
+func pairElem(expr Expression, b bool, alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	expr.CodeGen(alloc, target, insch)
 
 	//Mov + CheckNullPointer Label
 	insch <- &MOVInstr{dest: r0, source: target}
@@ -688,13 +687,17 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 	offset := 0
 
-	if m.snd {
+	if b {
 		offset = 4
 	}
 
 	//Load fst or snd
 	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target, value: offset}}}
+}
 
+//CodeGen generates code for PairElemRHS
+func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	pairElem(m.expr, m.snd, alloc, target, insch)
 }
 
 //CodeGen generates code for FunctionCallRHS
@@ -810,10 +813,7 @@ func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 
 //CodeGen generates code for NullPair
 func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	insch <- &MOVInstr{
-		dest:   target,
-		source: ImmediateOperand{0},
-	}
+	insch <- &MOVInstr{dest: target, source: ImmediateOperand{0}}
 }
 
 //CodeGen generates code for ArrayElem
