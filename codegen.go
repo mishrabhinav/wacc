@@ -11,27 +11,35 @@ import (
 //------------------------------------------------------------------------------
 
 const (
-	mPrintString      = "%.*s\\0"
-	mPrintInt         = "%d\\0"
-	mPrintReference   = "%p\\0"
-	mNullChar         = "\\0"
-	mPutChar          = "putchar"
-	mPuts             = "puts"
-	mTrue             = "true\\0"
-	mFalse            = "false\\0"
-	mFFlush           = "fflush"
-	mPrintf           = "printf"
-	mFreeLabel        = "free"
-	mPrintStringLabel = "p_print_string"
-	mExitLabel        = "exit"
-	mMalloc           = "malloc"
-	mThrowRuntimeErr  = "p_throw_runtime_error"
-	mDivideByZeroLbl  = "p_check_divide_by_zero"
-	mNullReferenceLbl = "pi_check_null_pointer"
-	mOverflowLbl      = "p_throw_overflow_error"
-	mArrayBoundLbl    = "p_check_array_bounds"
-	mDivideByZeroErr  = "DivideByZeroError: divide or modulo by zero\\n\\0"
-	mNullReferenceErr = "NullReferenceError: dereference a null reference" +
+	mPrintString          = "%.*s\\0"
+	mPrintInt             = "%d\\0"
+	mPrintReference       = "%p\\0"
+	mNullChar             = "\\0"
+	mNewLine              = "\\n\\0"
+	mPutChar              = "putchar"
+	mPuts                 = "puts"
+	mTrue                 = "true\\0"
+	mFalse                = "false\\0"
+	mFFlush               = "fflush"
+	mPrintf               = "printf"
+	mFreeLabel            = "free"
+	mPrintNewLineLabel    = "p_print_ln"
+	mPrintIntLabel        = "p_print_int"
+	mPrintStringLabel     = "p_print_string"
+	mPrintStringLoopLabel = "p_print_string_loop"
+	mPrintStringEndLabel  = "p_print_string_return"
+	mPrintCharLabel       = "p_print_char"
+	mPrintBoolLabel       = "p_print_bool"
+	mPrintReferenceLabel  = "p_print_reference"
+	mExitLabel            = "exit"
+	mMalloc               = "malloc"
+	mThrowRuntimeErr      = "p_throw_runtime_error"
+	mDivideByZeroLbl      = "p_check_divide_by_zero"
+	mNullReferenceLbl     = "pi_check_null_pointer"
+	mOverflowLbl          = "p_throw_overflow_error"
+	mArrayBoundLbl        = "p_check_array_bounds"
+	mDivideByZeroErr      = "DivideByZeroError: divide or modulo by zero\\n\\0"
+	mNullReferenceErr     = "NullReferenceError: dereference a null reference" +
 		"\\n\\0"
 	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\\n\\0"
 	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\\n\\0"
@@ -465,19 +473,19 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 	m.CodeGen(alloc, r0, insch)
 	switch t := m.Type().(type) {
 	case IntType:
-		PrintInt(alloc, insch)
+		insch <- &BLInstr{BInstr: BInstr{label: mPrintIntLabel}}
 	case BoolType:
-		PrintBool(alloc, insch)
+		insch <- &BLInstr{BInstr: BInstr{label: mPrintBoolLabel}}
 	case CharType:
-		PrintChar(alloc, insch)
+		insch <- &BLInstr{BInstr: BInstr{label: mPrintCharLabel}}
 	case PairType:
-		PrintReference(alloc, insch)
+		insch <- &BLInstr{BInstr: BInstr{label: mPrintReferenceLabel}}
 	case ArrayType:
 		switch t.base.(type) {
 		case CharType:
-			PrintString(alloc, insch)
+			insch <- &BLInstr{BInstr: BInstr{label: mPrintStringLabel}}
 		default:
-			PrintReference(alloc, insch)
+			insch <- &BLInstr{BInstr: BInstr{label: mPrintReferenceLabel}}
 		}
 	}
 }
@@ -485,20 +493,8 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 //CodeGen generates code for PrintLnStatement
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
-	msg := alloc.stringPool.Lookup32(mNullChar)
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
-	insch <- &LDRInstr{LoadInstr{reg: r0, value: &BasicLoadOperand{msg}}}
-
-	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
-
-	insch <- &BLInstr{BInstr{label: mPuts}}
-
-	insch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
-
-	insch <- &BLInstr{BInstr{label: mFFlush}}
-
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+	insch <- &BLInstr{BInstr{label: mPrintNewLineLabel}}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
@@ -1221,34 +1217,92 @@ func (m *ExprParen) Weight() int {
 	return -1
 }
 
-func PrintString(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup8(mPrintString)
+func printNewLine(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup8(mNewLine)
+
+	insch <- &LABELInstr{mPrintNewLineLabel}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
-	insch <- &LDRInstr{LoadInstr{reg: r1,
-		value: &RegisterLoadOperand{reg: r0}}}
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: &BasicLoadOperand{msg}}}
 
-	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r2, lhs: r0,
-		rhs: ImmediateOperand{n: 4}}}
-
-	insch <- &LDRInstr{LoadInstr{reg: r0,
-		value: &BasicLoadOperand{value: msg}}}
-
-	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
-		rhs: ImmediateOperand{n: 4}}}
+	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
 
 	insch <- &BLInstr{BInstr{label: mPrintf}}
 
-	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: 0}}
+	insch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
 
 	insch <- &BLInstr{BInstr{label: mFFlush}}
 
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
+func printString(alloc *RegAllocator, insch chan<- Instr) {
+	insch <- &LABELInstr{mPrintStringLabel}
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r4, r5}}}
+
+	insch <- &LDRInstr{LoadInstr{
+		reg:   r4,
+		value: &RegisterLoadOperand{reg: r0},
+	}}
+
+	insch <- &ADDInstr{BaseBinaryInstr{
+		dest: r5,
+		lhs:  r0,
+		rhs:  ImmediateOperand{4},
+	}}
+
+	insch <- &LABELInstr{mPrintStringLoopLabel}
+
+	insch <- &TEQInstr{BaseComparisonInstr{
+		lhs: r4,
+		rhs: &ImmediateOperand{0},
+	}}
+
+	insch <- &BInstr{
+		cond:  condEQ,
+		label: mPrintStringEndLabel,
+	}
+
+	insch <- &LDRInstr{LoadInstr{
+		reg:   r0,
+		value: &RegisterLoadOperand{reg: r5},
+	}}
+
+	insch <- &BLInstr{BInstr{label: mPutChar}}
+
+	insch <- &SUBInstr{BaseBinaryInstr{
+		dest: r4,
+		lhs:  r4,
+		rhs:  ImmediateOperand{1},
+	}}
+
+	insch <- &ADDInstr{BaseBinaryInstr{
+		dest: r5,
+		lhs:  r5,
+		rhs:  ImmediateOperand{4},
+	}}
+
+	insch <- &BInstr{label: mPrintStringLoopLabel}
+
+	insch <- &LABELInstr{mPrintStringEndLabel}
+
+	insch <- &MOVInstr{dest: r0, source: &ImmediateOperand{n: 0}}
+
+	insch <- &BLInstr{BInstr{label: mFFlush}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{r4, r5}}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
+}
+
+func printInt(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintInt)
+
+	insch <- &LABELInstr{mPrintIntLabel}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1269,13 +1323,21 @@ func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func PrintChar(alloc *RegAllocator, insch chan<- Instr) {
+func printChar(alloc *RegAllocator, insch chan<- Instr) {
+	insch <- &LABELInstr{mPrintCharLabel}
+
+	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+
 	insch <- &BLInstr{BInstr{label: mPutChar}}
+
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
+func printBool(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mTrue)
 	msg1 := alloc.stringPool.Lookup8(mFalse)
+
+	insch <- &LABELInstr{mPrintBoolLabel}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
@@ -1300,14 +1362,14 @@ func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
-func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
+func printReference(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintReference)
+
+	insch <- &LABELInstr{mPrintReferenceLabel}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
-	nReg := alloc.GetReg(insch)
-
-	insch <- &MOVInstr{dest: nReg, source: r0}
+	insch <- &MOVInstr{dest: r1, source: r0}
 
 	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &BasicLoadOperand{value: msg}}}
@@ -1323,7 +1385,7 @@ func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &BLInstr{BInstr{label: mFFlush}}
 
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{lr}}}
+	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
 //CheckDivideByZero function
@@ -1547,6 +1609,20 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	}
 }
 
+func CodeGenBuiltin(strPool *StringPool, f func(*RegAllocator, chan<- Instr)) <-chan Instr {
+	ch := make(chan Instr)
+
+	alloc := CreateRegAllocator()
+	alloc.stringPool = strPool
+
+	go func() {
+		f(alloc, ch)
+		close(ch)
+	}()
+
+	return ch
+}
+
 // CodeGen generates instructions for functions
 func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 	ch := make(chan Instr)
@@ -1695,6 +1771,30 @@ func (m *AST) CodeGen() <-chan Instr {
 			for instr := range fch {
 				txtInstr = append(txtInstr, instr)
 			}
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printInt) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printChar) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printBool) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printString) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printReference) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, printNewLine) {
+			txtInstr = append(txtInstr, instr)
 		}
 
 		for i := 0; i < len(strPool.pool); i++ {
