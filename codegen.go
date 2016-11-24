@@ -490,6 +490,8 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 		default:
 			insch <- &BLInstr{BInstr: BInstr{label: mPrintReferenceLabel}}
 		}
+	default:
+		panic(fmt.Errorf("%v has no type information", m))
 	}
 }
 
