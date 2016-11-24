@@ -593,25 +593,19 @@ func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 	//TODO
 }
 
-//CodeGen generates code for ArrayLHS
-func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-
+func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	//Load array Address
-	rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
+	rhsVal := &ImmediateOperand{alloc.ResolveVar(ident)}
 	insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: sp, rhs: rhsVal}}
-
-	//Retrieve content of Array Address
-	//rhsValue := alloc.ResolveVar(m.ident)
-	//insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: sp, value: rhsValue}}}
 
 	//Place index in new Register
 	indexReg := alloc.GetReg(insch)
-	for index := 0; index < len(m.index); index++ {
+	for index := 0; index < len(exprs); index++ {
 
 		//Retrieve content of Array Address
 		insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
 
-		m.index[index].CodeGen(alloc, indexReg, insch)
+		exprs[index].CodeGen(alloc, indexReg, insch)
 
 		//Check array Bounds
 		insch <- &MOVInstr{dest: r0, source: indexReg}
@@ -628,7 +622,11 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 	}
 
 	alloc.FreeReg(indexReg, insch)
+}
 
+//CodeGen generates code for ArrayLHS
+func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	arrayHelper(m.ident, m.index, alloc, target, insch)
 }
 
 //CodeGen generates code for VarLHS
@@ -801,7 +799,9 @@ func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 
 //CodeGen generates code for ArrayElem
 func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	arrayHelper(m.ident, m.indexes, alloc, target, insch)
+
+	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
 }
 
 //------------------------------------------------------------------------------
