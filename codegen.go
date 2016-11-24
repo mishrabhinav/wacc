@@ -234,12 +234,18 @@ func (m *RegAllocator) StartScope(insch chan<- Instr) {
 // CleanupScope starts a new scope with new variable mappings possible
 func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 	sl := len(m.stack[0])
-	insch <- &ADDInstr{
-		BaseBinaryInstr: BaseBinaryInstr{
-			dest: sp,
-			lhs:  sp,
-			rhs:  ImmediateOperand{sl * 4},
-		},
+	for o := sl * 4; o > 0; o -= 255 {
+		od := o
+		if od > 255 {
+			od = 255
+		}
+		insch <- &ADDInstr{
+			BaseBinaryInstr: BaseBinaryInstr{
+				dest: sp,
+				lhs:  sp,
+				rhs:  ImmediateOperand{od},
+			},
+		}
 	}
 	m.PopStack(sl)
 	m.stack = m.stack[1:]
