@@ -1389,7 +1389,7 @@ func printReference(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CheckDivideByZero function
-func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
+func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
 
 	insch <- &LABELInstr{
@@ -1584,6 +1584,8 @@ func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup8(mPrintString)
+
 	insch <- &LABELInstr{
 		ident: mThrowRuntimeErr,
 	}
@@ -1592,6 +1594,75 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 		BInstr: BInstr{
 			cond:  condEQ,
 			label: mPrintStringLabel,
+		},
+	}
+
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{lr},
+		},
+	}
+
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			reg: r1,
+			value: &RegisterLoadOperand{
+				reg: r0,
+			},
+		},
+	}
+
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: r2,
+			lhs:  r0,
+			rhs: ImmediateOperand{
+				n: 4,
+			},
+		},
+	}
+
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			reg: r0,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
+
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: r0,
+			lhs:  r0,
+			rhs: ImmediateOperand{
+				n: 4,
+			},
+		},
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mPrintf,
+		},
+	}
+
+	insch <- &MOVInstr{
+		dest: r0,
+		source: &ImmediateOperand{
+			n: 0,
+		},
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mFFlush,
+		},
+	}
+
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
 		},
 	}
 
