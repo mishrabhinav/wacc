@@ -295,7 +295,11 @@ func (m *StringPool) Lookup32(msg string) string {
 	var buffer bytes.Buffer
 
 	for i := 0; i < len(msg); i++ {
-		buffer.WriteString(fmt.Sprintf("%c\\0\\0\\0", msg[i]))
+		if c := msg[i]; c == '\\' {
+			buffer.WriteString(fmt.Sprintf("%c", msg[i]))
+		} else {
+			buffer.WriteString(fmt.Sprintf("%c\\0\\0\\0", msg[i]))
+		}
 	}
 
 	m.pool[l] = &DataString{len: len(msg), str: buffer.String()}
