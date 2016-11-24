@@ -843,6 +843,13 @@ func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch cha
 	expr := m.GetExpression()
 	expr.CodeGen(alloc, target, insch)
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condVS,
+			label: mOverflowLbl,
+		},
+	}
 }
 
 //CodeGen generates code for UnaryOperatorLen
