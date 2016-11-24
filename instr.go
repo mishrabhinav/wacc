@@ -24,6 +24,7 @@ var condMap = map[int]string{
 	6: "LE",
 	7: "AL",
 	8: "CS",
+	9: "VS",
 }
 
 var oppCondMap = map[int]int{
@@ -35,6 +36,7 @@ var oppCondMap = map[int]int{
 	6: condGT,
 	7: condAL,
 	8: condCS,
+	9: condVS,
 }
 
 const (
@@ -46,6 +48,7 @@ const (
 	condLE = 6
 	condAL = 7
 	condCS = 8
+	condVS = 9
 )
 
 func (m Cond) String() string {
