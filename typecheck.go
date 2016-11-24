@@ -300,6 +300,8 @@ func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 			t,
 		)
 	}
+
+	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 // TypeCheck checks whether the statement has any type mismatches in expressions
