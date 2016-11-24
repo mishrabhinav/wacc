@@ -116,7 +116,7 @@ type NOTInstr struct {
 }
 
 func (m *NEGInstr) String() string {
-	return fmt.Sprintf("\tNEG %v, %v", m.dest, m.arg)
+	return fmt.Sprintf("\tNEGS %v, %v", m.dest, m.arg)
 }
 
 func (m *NOTInstr) String() string {
@@ -190,15 +190,15 @@ func (m CharOperand) String() string {
 }
 
 func (m *ADDInstr) String() string {
-	return fmt.Sprintf("\tADD%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
+	return fmt.Sprintf("\tADDS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *SUBInstr) String() string {
-	return fmt.Sprintf("\tSUB%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
+	return fmt.Sprintf("\tSUBS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 func (m *RSBInstr) String() string {
-	return fmt.Sprintf("\tRSB%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
+	return fmt.Sprintf("\tRSBS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 //------------------------------------------------------------------------------
