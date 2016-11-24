@@ -147,6 +147,12 @@ type ImmediateOperand struct {
 	n int
 }
 
+type RegisterOperand struct {
+	reg    Reg
+	shift  Shift
+	amount int
+}
+
 //CharOperand struct
 type CharOperand struct {
 	char string
@@ -169,6 +175,14 @@ type RSBInstr struct {
 
 func (m ImmediateOperand) String() string {
 	return fmt.Sprintf("#%d", m.n)
+}
+
+func (m RegisterOperand) String() string {
+	if m.shift > 0 {
+		return fmt.Sprintf("%v, %v #%d", m.reg, m.shift, m.amount)
+	}
+
+	return fmt.Sprintf("%v", m.reg)
 }
 
 func (m CharOperand) String() string {
@@ -300,6 +314,18 @@ type MULInstr struct {
 
 func (m *MULInstr) String() string {
 	return fmt.Sprintf("\tMUL%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
+}
+
+type SMULLInstr struct {
+	cond Cond
+	RdLo Reg
+	RdHi Reg
+	Rm   Reg
+	Rs   Reg
+}
+
+func (m *SMULLInstr) String() string {
+	return fmt.Sprintf("\tSMULL%v %v, %v, %v %v", m.cond, m.RdLo, m.RdHi, m.Rm, m.Rs)
 }
 
 //------------------------------------------------------------------------------
