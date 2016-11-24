@@ -595,7 +595,11 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	pairElem(m.expr, m.snd, alloc, target, insch)
+	pairElem(m.expr, alloc, target, insch)
+
+	if m.snd {
+		insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: &ImmediateOperand{4}}}
+	}
 }
 
 func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
@@ -678,26 +682,26 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target}}}
 }
 
-func pairElem(expr Expression, b bool, alloc *RegAllocator, target Reg, insch chan<- Instr) {
+func pairElem(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
 
 	//Mov + CheckNullPointer Label
 	insch <- &MOVInstr{dest: r0, source: target}
 	insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
+}
+
+//CodeGen generates code for PairElemRHS
+func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	pairElem(m.expr, alloc, target, insch)
 
 	offset := 0
 
-	if b {
+	if m.snd {
 		offset = 4
 	}
 
 	//Load fst or snd
 	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target, value: offset}}}
-}
-
-//CodeGen generates code for PairElemRHS
-func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	pairElem(m.expr, m.snd, alloc, target, insch)
 }
 
 //CodeGen generates code for FunctionCallRHS
