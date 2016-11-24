@@ -186,7 +186,7 @@ func (m RegisterOperand) String() string {
 }
 
 func (m CharOperand) String() string {
-	return fmt.Sprintf("#%s", m.char)
+	return fmt.Sprintf("#'%s'", m.char)
 }
 
 func (m *ADDInstr) String() string {
