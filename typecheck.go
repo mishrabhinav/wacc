@@ -424,6 +424,10 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
+		if !m.snd {
+			m.wtype = t.first
+		}
+		m.wtype = t.second
 	default:
 		errch <- CreateTypeMismatchError(
 			m.Token(),
@@ -439,10 +443,8 @@ func (m *PairElemLHS) GetType(ts *Scope) Type {
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
 		if !m.snd {
-			m.wtype = t.first
 			return t.first
 		}
-		m.wtype = t.second
 		return t.second
 	default:
 		return InvalidType{}
@@ -476,6 +478,8 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 			)
 		}
 	}
+
+	m.wtype = t
 }
 
 // GetType returns the deduced type of the left hand side assignment target
@@ -498,26 +502,26 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 		}
 	}
 
-	m.wtype = t
 	return t
 }
 
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
-	switch ts.Lookup(m.ident).(type) {
+	switch t := ts.Lookup(m.ident).(type) {
 	case InvalidType:
 		errch <- CreateUndeclaredVariableError(
 			m.Token(),
 			m.ident,
 		)
+	default:
+		m.wtype = t
 	}
 }
 
 // GetType returns the deduced type of the left hand side assignment target.
 // InvalidType is returned in case of mismatch.
 func (m *VarLHS) GetType(ts *Scope) Type {
-	m.wtype = ts.Lookup(m.ident)
 	return ts.Lookup(m.ident)
 }
 
@@ -705,6 +709,8 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 			m.ident,
 		)
 	}
+
+	m.wtype = identT
 }
 
 // GetType returns the deduced type of the expression.
@@ -714,7 +720,6 @@ func (m *Ident) GetType(ts *Scope) Type {
 	if t == nil {
 		return InvalidType{}
 	}
-	m.wtype = t
 	return t
 }
 
@@ -811,6 +816,7 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 
 		switch arrayT := array.(type) {
 		case ArrayType:
+			array = arrayT.base
 		default:
 			errch <- CreateTypeMismatchError(
 				m.Token(),
@@ -819,6 +825,8 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 			)
 		}
 	}
+
+	m.wtype = array
 }
 
 // GetType returns the deduced type of the expression.
@@ -839,7 +847,6 @@ func (m *ArrayElem) GetType(ts *Scope) Type {
 			return InvalidType{}
 		}
 	}
-	m.wtype = array
 	return array
 }
 
