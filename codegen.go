@@ -1602,12 +1602,6 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 		ident: mThrowRuntimeErr,
 	}
 
-	insch <- &PUSHInstr{
-		BaseStackInstr: BaseStackInstr{
-			regs: []Reg{lr},
-		},
-	}
-
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
 			reg: r1,
@@ -1662,12 +1656,6 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{
 		BInstr: BInstr{
 			label: mFFlush,
-		},
-	}
-
-	insch <- &POPInstr{
-		BaseStackInstr: BaseStackInstr{
-			regs: []Reg{pc},
 		},
 	}
 
