@@ -360,7 +360,7 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	rhsReg := alloc.GetReg(insch)
 	rhs.CodeGen(alloc, rhsReg, insch)
 
-	storeValue := &RegStoreOperand{lhsReg.String()}
+	storeValue := &RegStoreOperand{lhsReg}
 	insch <- &STRInstr{StoreInstr{reg: rhsReg, value: storeValue}}
 
 	alloc.FreeReg(rhsReg, insch)
@@ -677,7 +677,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 	lenInt := &ConstLoadOperand{len(m.elements)}
 	insch <- &LDRInstr{LoadInstr{reg: arrayReg, value: lenInt}}
 
-	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target.String()}}}
+	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target}}}
 }
 
 //CodeGen generates code for PairElemRHS

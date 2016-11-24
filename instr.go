@@ -381,11 +381,11 @@ func (m *MemoryStoreOperand) String() string {
 
 //RegStoreOperand struct
 type RegStoreOperand struct {
-	value string
+	reg Reg
 }
 
 func (m *RegStoreOperand) String() string {
-	return fmt.Sprintf("[%s]", m.value)
+	return fmt.Sprintf("[%v]", m.reg)
 }
 
 //RegStoreOffsetOperand struct
