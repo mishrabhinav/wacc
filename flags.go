@@ -42,7 +42,12 @@ func (f *Flags) Parse() {
 
 	flag.Parse()
 
-	f.assemblyfile = strings.TrimSuffix(f.filename, filepath.Ext(f.filename)) + ".s"
+	f.assemblyfile = filepath.Base(
+		strings.TrimSuffix(
+			f.filename,
+			filepath.Ext(f.filename),
+		) + ".s",
+	)
 }
 
 // Start prints compiling message when verbose flag is set
