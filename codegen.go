@@ -300,15 +300,18 @@ func (m *StringPool) Lookup32(msg string) string {
 
 	var buffer bytes.Buffer
 
+	backslashCount := 0
+
 	for i := 0; i < len(msg); i++ {
 		if c := msg[i]; c == '\\' {
+			backslashCount++
 			buffer.WriteString(fmt.Sprintf("%c", msg[i]))
 		} else {
 			buffer.WriteString(fmt.Sprintf("%c\\000\\000\\000", msg[i]))
 		}
 	}
 
-	m.pool[l] = &DataString{len: len(msg), str: buffer.String()}
+	m.pool[l] = &DataString{len: len(msg) - backslashCount, str: buffer.String()}
 
 	return fmt.Sprintf("msg_%d", l)
 }
