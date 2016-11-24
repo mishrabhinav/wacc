@@ -325,7 +325,7 @@ type SMULLInstr struct {
 }
 
 func (m *SMULLInstr) String() string {
-	return fmt.Sprintf("\tSMULL%v %v, %v, %v %v", m.cond, m.RdLo, m.RdHi, m.Rm, m.Rs)
+	return fmt.Sprintf("\tSMULL%v %v, %v, %v, %v", m.cond, m.RdLo, m.RdHi, m.Rm, m.Rs)
 }
 
 //------------------------------------------------------------------------------
