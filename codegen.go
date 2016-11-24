@@ -680,7 +680,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 //CodeGen generates code for PairElemRHS
 func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	m.expr.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for FunctionCallRHS
