@@ -241,6 +241,7 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 // GLOBAL STRING STORAGE
 //------------------------------------------------------------------------------
 
+//DataString struct
 type DataString struct {
 	len int
 	str string
@@ -384,22 +385,22 @@ func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
 		rhs: &ImmediateOperand{n: 0}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+	insch <- &LDRInstr{LoadInstr{reg: r0, cond: condEQ,
 		value: &BasicLoadOperand{value: msg}}}
 
 	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &RegisterLoadOperand{reg: r0}}}
 
 	insch <- &BLInstr{BInstr{label: mFreeLabel}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &RegisterLoadOperand{reg: sp}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &RegisterLoadOperand{reg: r0, value: 4}}}
 
 	insch <- &BLInstr{BInstr{label: mFreeLabel}}
@@ -487,7 +488,7 @@ func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup32(mNullChar)
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &BasicLoadOperand{msg}}}
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: &BasicLoadOperand{msg}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr{dest: r0, lhs: r0, rhs: ImmediateOperand{4}}}
 
@@ -593,7 +594,7 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for PairElemLHS
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: &ConstLoadOperand{8}}}
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 }
 
@@ -613,7 +614,7 @@ func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) 
 	for index := 0; index < len(m.index); index++ {
 
 		//Retrieve content of Array Address
-		insch <- &LDRInstr{LoadInstr{dest: target, value: &RegisterLoadOperand{reg: target}}}
+		insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
 
 		m.index[index].CodeGen(alloc, indexReg, insch)
 
@@ -652,7 +653,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	//Call Malloc
 	leng := &ConstLoadOperand{len(m.elements)*4 + 4}
-	insch <- &LDRInstr{LoadInstr{dest: r0, value: leng}}
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: leng}}
 
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 
@@ -674,7 +675,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	//Mov length into position 0
 	lenInt := &ConstLoadOperand{len(m.elements)}
-	insch <- &LDRInstr{LoadInstr{dest: arrayReg, value: lenInt}}
+	insch <- &LDRInstr{LoadInstr{reg: arrayReg, value: lenInt}}
 
 	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target.String()}}}
 }
@@ -738,14 +739,14 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 //CodeGen generates code for Ident
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &RegisterLoadOperand{reg: sp, value: alloc.ResolveVar(m.ident)}
-	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
+	LoadInstruction := &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 	insch <- LoadInstruction
 }
 
 //CodeGen generates code for IntLiteral
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &ConstLoadOperand{m.value}
-	LoadInstruction := &LDRInstr{LoadInstr{dest: target, value: loadValue}}
+	LoadInstruction := &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 	insch <- LoadInstruction
 }
 
@@ -771,7 +772,7 @@ func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest:  target,
+			reg:   target,
 			value: &BasicLoadOperand{msg},
 		},
 	}
@@ -1225,13 +1226,13 @@ func PrintString(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r1,
+	insch <- &LDRInstr{LoadInstr{reg: r1,
 		value: &RegisterLoadOperand{reg: r0}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r2, lhs: r0,
 		rhs: ImmediateOperand{n: 4}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &BasicLoadOperand{value: msg}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
@@ -1253,7 +1254,7 @@ func PrintInt(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &MOVInstr{dest: r1, source: r0}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &BasicLoadOperand{value: msg}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
@@ -1281,10 +1282,10 @@ func PrintBool(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
 		rhs: &ImmediateOperand{n: 0}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condNE,
+	insch <- &LDRInstr{LoadInstr{reg: r0, cond: condNE,
 		value: &BasicLoadOperand{value: msg0}}}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0, cond: condEQ,
+	insch <- &LDRInstr{LoadInstr{reg: r0, cond: condEQ,
 		value: &BasicLoadOperand{value: msg1}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: r0, lhs: r0,
@@ -1308,7 +1309,7 @@ func PrintReference(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &MOVInstr{dest: nReg, source: r0}
 
-	insch <- &LDRInstr{LoadInstr{dest: r0,
+	insch <- &LDRInstr{LoadInstr{reg: r0,
 		value: &BasicLoadOperand{value: msg}}}
 
 	insch <- &ADDInstr{BaseBinaryInstr{
@@ -1348,7 +1349,7 @@ func CheckDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr{
-			dest: r0,
+			reg:  r0,
 			cond: condEQ,
 			value: &BasicLoadOperand{
 				value: msg,
@@ -1395,7 +1396,7 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest: r0,
+			reg:  r0,
 			cond: condEQ,
 			value: &BasicLoadOperand{
 				value: msg,
@@ -1442,7 +1443,7 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest: r0,
+			reg:  r0,
 			cond: condLT,
 			value: &BasicLoadOperand{
 				value: msg0,
@@ -1459,7 +1460,7 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest: r1,
+			reg: r1,
 			value: &RegisterLoadOperand{
 				reg: r1,
 			},
@@ -1475,7 +1476,7 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest: r0,
+			reg:  r0,
 			cond: condCS,
 			value: &BasicLoadOperand{
 				value: msg1,
@@ -1506,7 +1507,7 @@ func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 
 	insch <- &LDRInstr{
 		LoadInstr: LoadInstr{
-			dest: r0,
+			reg: r0,
 			value: &BasicLoadOperand{
 				value: msg,
 			},

@@ -348,7 +348,7 @@ func (m *RegisterLoadOperand) String() string {
 
 //LoadInstr struct
 type LoadInstr struct {
-	dest  Reg
+	reg   Reg
 	value LoadOperand
 	cond  Cond
 }
@@ -359,7 +359,7 @@ type LDRInstr struct {
 }
 
 func (m *LDRInstr) String() string {
-	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.dest, m.value)
+	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.reg, m.value)
 }
 
 //StoreOperand interface
