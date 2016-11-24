@@ -879,10 +879,33 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
-	binaryInstrMul := &MULInstr{BaseBinaryInstr{dest: target, lhs: target,
-		rhs: target2}}
+	binaryInstrMul := &SMULLInstr{
+		RdLo: target,
+		RdHi: target2,
+		Rm:   target,
+		Rs:   target2,
+	}
+
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrMul
+
+	insch <- &CMPInstr{
+		BaseComparisonInstr: BaseComparisonInstr{
+			lhs: target2,
+			rhs: &RegisterOperand{
+				reg:    target,
+				shift:  shiftASR,
+				amount: 31,
+			},
+		},
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			cond:  condNE,
+			label: mOverflowLbl,
+		},
+	}
 }
 
 //CodeGen generates code for BinaryOperatorDiv
