@@ -643,7 +643,7 @@ func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 
 //CodeGen generates code for PairLiterRHS
 func (m *PairLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	//TODO
+	m.PairLiteral.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for ArrayLiterRHS
