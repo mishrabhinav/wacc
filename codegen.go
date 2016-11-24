@@ -681,6 +681,20 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 //CodeGen generates code for PairElemRHS
 func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
+
+	//Mov + CheckNullPointer Label
+	insch <- &MOVInstr{dest: r0, source: target}
+	insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
+
+	offset := 0
+
+	if m.snd {
+		offset = 4
+	}
+
+	//Load fst or snd
+	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target, value: offset}}}
+
 }
 
 //CodeGen generates code for FunctionCallRHS
