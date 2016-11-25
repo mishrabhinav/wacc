@@ -320,18 +320,26 @@ type BICInstr struct {
 	BaseBinaryInstr
 }
 
+//Returns string representation of ANDInstr given
+//--> AND(COND) dest, lhs, rhs
 func (m *ANDInstr) String() string {
 	return fmt.Sprintf("\tAND%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+//Returns string representation of EORInstr given
+//--> EOR(COND) dest, lhs, rhs
 func (m *EORInstr) String() string {
 	return fmt.Sprintf("\tEOR%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+//Returns string representation of ORRInstr given
+//--> ORR(COND) dest, lhs, rhs
 func (m *ORRInstr) String() string {
 	return fmt.Sprintf("\tORR%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+//Returns string representation of BICInstr given
+//--> BIC(COND) dest, lhs, rhs
 func (m *BICInstr) String() string {
 	return fmt.Sprintf("\tBIC%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
@@ -341,12 +349,15 @@ func (m *BICInstr) String() string {
 //------------------------------------------------------------------------------
 
 //MOVInstr struct
+//--> MOV(COND) dest, source
 type MOVInstr struct {
 	cond   Cond
 	dest   Reg
 	source Operand2
 }
 
+//Returns string representation of MOVInstr given
+//--> MOV(COND) dest, source
 func (m *MOVInstr) String() string {
 	return fmt.Sprintf("\tMOV%v %v, %v", m.cond, m.dest, m.source)
 }
@@ -356,15 +367,19 @@ func (m *MOVInstr) String() string {
 //------------------------------------------------------------------------------
 
 //MULInstr struct
+//MUL(COND) dest, lhs, rhs
 type MULInstr struct {
 	BaseBinaryInstr
 }
 
+//Returns String representation of MULInstr given
+//MUL(COND) dest, lhs, rhs
 func (m *MULInstr) String() string {
 	return fmt.Sprintf("\tMUL%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
 //SMULLInstr struct
+// SMULL(COND) RdLo, RdHi, Rm, Rs
 type SMULLInstr struct {
 	cond Cond
 	RdLo Reg
@@ -373,6 +388,8 @@ type SMULLInstr struct {
 	Rs   Reg
 }
 
+//Returns the string representation of the SMULLInstr given
+// SMULL(COND) RdLo, RdHi, Rm, Rs
 func (m *SMULLInstr) String() string {
 	return fmt.Sprintf("\tSMULL%v %v, %v, %v, %v", m.cond, m.RdLo, m.RdHi, m.Rm, m.Rs)
 }
@@ -394,19 +411,29 @@ type LoadOperand interface {
 }
 
 //BasicLoadOperand struct
+//--> =value
+//where value is a string
 type BasicLoadOperand struct {
 	value string
 }
 
+//Returns the string representation of BasicLoadOperand given
+// --> =value
+// where value is a string
 func (m *BasicLoadOperand) String() string {
 	return fmt.Sprintf("=%s", m.value)
 }
 
 //ConstLoadOperand struct
+// --> =value
+// where value is an int
 type ConstLoadOperand struct {
 	value int
 }
 
+//Returns the string representation of ConstLoadOperand given
+// --> =value
+// where value is an int
 func (m *ConstLoadOperand) String() string {
 	return fmt.Sprintf("=%d", m.value)
 }
@@ -417,6 +444,8 @@ type RegisterLoadOperand struct {
 	reg   Reg
 }
 
+//Returns the string representation of RegisterLoadOperand given
+//--> [reg]
 func (m *RegisterLoadOperand) String() string {
 	if m.value == 0 {
 		return fmt.Sprintf("[%v]", m.reg)
@@ -436,6 +465,8 @@ type LDRInstr struct {
 	LoadInstr
 }
 
+// Returns the string representation of the LDRInstr given
+// --> LDR(COND) reg, value
 func (m *LDRInstr) String() string {
 	return fmt.Sprintf("\tLDR%v %v, %v", m.cond, m.reg, m.value)
 }
@@ -450,6 +481,8 @@ type MemoryStoreOperand struct {
 	value int
 }
 
+//Returns string representation of MemoryStoreOperand given
+// --> [sp, #value]
 func (m *MemoryStoreOperand) String() string {
 	if m.value == 0 {
 		return fmt.Sprintf("[sp]")
@@ -462,6 +495,8 @@ type RegStoreOperand struct {
 	reg Reg
 }
 
+//Returns string representation of RegStoreOperand given
+//-->[reg]
 func (m *RegStoreOperand) String() string {
 	return fmt.Sprintf("[%v]", m.reg)
 }
@@ -472,6 +507,8 @@ type RegStoreOffsetOperand struct {
 	offset int
 }
 
+// Returns string representation of RegStoreOffsetOperand given
+// --> [reg, #offset]
 func (m *RegStoreOffsetOperand) String() string {
 	return fmt.Sprintf("[%v, #%d]", m.reg, m.offset)
 }
@@ -482,6 +519,8 @@ type StoreInstr struct {
 	value StoreOperand
 }
 
+// Returns the string representation of the StoreInstr given
+// --> reg, value
 func (m *StoreInstr) String() string {
 	return fmt.Sprintf("%s, %s",
 		(m.reg).String(),
@@ -493,6 +532,8 @@ type STRInstr struct {
 	base StoreInstr
 }
 
+// Returns the string representation of the STRInstr given
+// --> STR, base
 func (m *STRInstr) String() string {
 	return fmt.Sprintf("\tSTR %s", m.base.String())
 }
@@ -502,12 +543,14 @@ func (m *STRInstr) String() string {
 //------------------------------------------------------------------------------
 
 //BaseStackInstr struct
+//-->PUSH/POP(COND) {regs}
 type BaseStackInstr struct {
 	cond Cond
 	regs []Reg
 }
 
-//RegsToString .
+//RegsToString returns the string representation
+// of a list of registers
 func RegsToString(regs []Reg) string {
 	var printedRegs string
 	if len(regs) == 1 {
@@ -522,19 +565,25 @@ func RegsToString(regs []Reg) string {
 }
 
 //PUSHInstr struct
+//--> PUSH(COND) regs
 type PUSHInstr struct {
 	BaseStackInstr
 }
 
 //POPInstr struct
+//-->POP(COND) {regs}
 type POPInstr struct {
 	BaseStackInstr
 }
 
+//Returns string representation of PUSHInstr given
+//--> PUSH(COND) regs
 func (m *PUSHInstr) String() string {
 	return fmt.Sprintf("\tPUSH %s", RegsToString(m.regs))
 }
 
+//Returns string representation of POPInstr given
+//--> POP(COND) {regs}
 func (m *POPInstr) String() string {
 	return fmt.Sprintf("\tPOP %s", RegsToString(m.regs))
 }
@@ -544,6 +593,7 @@ func (m *POPInstr) String() string {
 //------------------------------------------------------------------------------
 
 //LABELInstr struct
+//--> label:
 type LABELInstr struct {
 	ident string
 }
@@ -562,6 +612,8 @@ type LSLRegOperand struct {
 	offset int
 }
 
+// Returns the string representation of LSLRegOperand
+// --> reg, LSL #offset
 func (m *LSLRegOperand) String() string {
 	return fmt.Sprintf("%v, LSL #%d", m.reg, m.offset)
 }
@@ -571,20 +623,26 @@ func (m *LSLRegOperand) String() string {
 //------------------------------------------------------------------------------
 
 //BInstr struct
+//--> B(COND) label
 type BInstr struct {
 	label string
 	cond  Cond
 }
 
 //BLInstr struct
+//--> BL(COND) label
 type BLInstr struct {
 	BInstr
 }
 
+//Returns the string representation of BInstr given
+// --> B(COND) label
 func (m *BInstr) String() string {
 	return fmt.Sprintf("\tB%s %s", m.cond.String(), m.label)
 }
 
+//Returns the string representation of BLInstr given
+//--> BL(COND) label
 func (m *BLInstr) String() string {
 	return fmt.Sprintf("\tBL%s %s", m.cond.String(), m.label)
 }
