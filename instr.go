@@ -570,9 +570,7 @@ func (m *GlobalInstr) String() string {
 }
 
 // LTORGInstr ensures subroutines are within range of literal pools
-type LTORGInstr struct {
-	label string
-}
+type LTORGInstr struct{}
 
 func (m *LTORGInstr) String() string {
 	return "\t.ltorg"
