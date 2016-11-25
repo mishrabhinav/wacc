@@ -404,8 +404,9 @@ func (m *StringLiteral) Type() Type {
 // PairLiteral is the struct to represent a pair literal
 type PairLiteral struct {
 	TokenBase
-	fst Expression
-	snd Expression
+	weightCache int
+	fst         Expression
+	snd         Expression
 }
 
 // Type returns the Type of the expression
@@ -426,9 +427,10 @@ func (m *NullPair) Type() Type {
 // ArrayElem is the struct to represent an array element
 type ArrayElem struct {
 	TokenBase
-	ident   string
-	wtype   Type
-	indexes []Expression
+	weightCache int
+	ident       string
+	wtype       Type
+	indexes     []Expression
 }
 
 // Type returns the Type of the expression
@@ -447,7 +449,8 @@ type UnaryOperator interface {
 // operator
 type UnaryOperatorBase struct {
 	TokenBase
-	expr Expression
+	weightCache int
+	expr        Expression
 }
 
 // GetExpression returns the expression associated with UnaryOperator
@@ -522,8 +525,9 @@ type BinaryOperator interface {
 // BinaryOperatorBase represents the base of a binary operator.
 type BinaryOperatorBase struct {
 	TokenBase
-	lhs Expression
-	rhs Expression
+	weightCache int
+	lhs         Expression
+	rhs         Expression
 }
 
 // GetLHS returns the left-hand-side associated with a BinaryOperatorBase.

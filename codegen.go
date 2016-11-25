@@ -1108,13 +1108,16 @@ func (m *CharLiteral) Weight() int {
 
 //Weight returns weight of StringLiteral
 func (m *StringLiteral) Weight() int {
-	//TODO ??
-	return 2
+	return 1
 }
 
 //Weight returns weight of PairLiteral
 func (m *PairLiteral) Weight() int {
-	return maxWeight(m.fst.Weight(), m.snd.Weight()) + 1
+	if m.weightCache > 0 {
+		return m.weightCache
+	}
+	m.weightCache = maxWeight(m.fst.Weight(), m.snd.Weight()) + 1
+	return m.weightCache
 }
 
 //Weight returns weight of NullPair
@@ -1124,32 +1127,26 @@ func (m *NullPair) Weight() int {
 
 //Weight returns weight of ArrayElem
 func (m *ArrayElem) Weight() int {
-	return len(m.indexes) + 1
+	if m.weightCache > 0 {
+		return m.weightCache
+	}
+	for _, index := range m.indexes {
+		iw := index.Weight()
+		if m.weightCache > iw {
+			m.weightCache = iw
+		}
+	}
+	m.weightCache++
+	return m.weightCache
 }
 
-//Weight returns weight of UnaryOperatorNot
-func (m *UnaryOperatorNot) Weight() int {
-	return m.GetExpression().Weight()
-}
-
-//Weight returns weight of UnaryOperatorNegate
-func (m *UnaryOperatorNegate) Weight() int {
-	return m.GetExpression().Weight()
-}
-
-//Weight returns weight of UnaryOperatorLen
-func (m *UnaryOperatorLen) Weight() int {
-	return m.GetExpression().Weight()
-}
-
-//Weight returns weight of UnaryOperatorOrd
-func (m *UnaryOperatorOrd) Weight() int {
-	return m.GetExpression().Weight()
-}
-
-//Weight returns weight of UnaryOperatorChr
-func (m *UnaryOperatorChr) Weight() int {
-	return m.GetExpression().Weight()
+//Weight returns weight of all UnaryOperators
+func (m *UnaryOperatorBase) Weight() int {
+	if m.weightCache > 0 {
+		return m.weightCache
+	}
+	m.weightCache = m.expr.Weight()
+	return m.weightCache
 }
 
 func maxWeight(x, y int) int {
@@ -1166,75 +1163,15 @@ func minWeight(x, y int) int {
 	return y
 }
 
-func binaryWeight(e1, e2 Expression) int {
-	cost1 := maxWeight(e1.Weight(), e2.Weight()+1)
-	cost2 := maxWeight(e1.Weight()+1, e2.Weight())
-	return minWeight(cost1, cost2)
-}
-
-//Weight returns weight of BinaryOperatorMult
-func (m *BinaryOperatorMult) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorDiv
-func (m *BinaryOperatorDiv) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorMod
-func (m *BinaryOperatorMod) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorAdd
-func (m *BinaryOperatorAdd) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorSub
-func (m *BinaryOperatorSub) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorGreaterThan
-func (m *BinaryOperatorGreaterThan) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorGreaterEqual
-func (m *BinaryOperatorGreaterEqual) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorLessThan
-func (m *BinaryOperatorLessThan) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorLessEqual
-func (m *BinaryOperatorLessEqual) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorEqual
-func (m *BinaryOperatorEqual) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorNotEqual
-func (m *BinaryOperatorNotEqual) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorAnd
-func (m *BinaryOperatorAnd) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
-}
-
-//Weight returns weight of BinaryOperatorOr
-func (m *BinaryOperatorOr) Weight() int {
-	return binaryWeight(m.GetLHS(), m.GetRHS())
+//Weight returns weight of all BinaryOperators
+func (m *BinaryOperatorBase) Weight() int {
+	if m.weightCache > 0 {
+		return m.weightCache
+	}
+	cost1 := maxWeight(m.lhs.Weight(), m.rhs.Weight()+1)
+	cost2 := maxWeight(m.lhs.Weight()+1, m.rhs.Weight())
+	m.weightCache = minWeight(cost1, cost2)
+	return m.weightCache
 }
 
 //Weight returns weight of ExprParen
