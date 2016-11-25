@@ -1188,18 +1188,7 @@ func typeCheckArithmetic(m BinaryOperator, ts *Scope, errch chan<- error) {
 }
 
 func getTypeBinaryArithmetic(m BinaryOperator, ts *Scope) Type {
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-
-	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
-		return InvalidType{}
-	}
-
-	if (IntType{}.Match(lhs.GetType(ts))) {
-		return IntType{}
-	}
-
-	return InvalidType{}
+	return m.Type()
 }
 
 func typeCheckComparator(m BinaryOperator, ts *Scope, errch chan<- error) {
@@ -1299,18 +1288,7 @@ func typeCheckBoolean(m BinaryOperator, ts *Scope, errch chan<- error) {
 }
 
 func getTypeBinaryBoolean(m BinaryOperator, ts *Scope) Type {
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-
-	if !(lhs.GetType(ts).Match(rhs.GetType(ts))) {
-		return InvalidType{}
-	}
-
-	if (BoolType{}.Match(lhs.GetType(ts))) {
-		return BoolType{}
-	}
-
-	return InvalidType{}
+	return m.Type()
 }
 
 // TypeCheck on ExpLPar to satisfy interface. Never called.
