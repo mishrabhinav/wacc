@@ -13,7 +13,7 @@ import (
 const (
 	mPrintString          = "%.*s\\0"
 	mPrintInt             = "%d\\0"
-	mReadChar             = "%c\\0"
+	mReadChar             = " %c\\0"
 	mPrintReference       = "%p\\0"
 	mNewLine              = "\\n\\0"
 	mPutChar              = "putchar"
