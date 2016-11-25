@@ -1,0 +1,233 @@
+#!/bin/bash
+
+# Colour Codes
+RED='\033[0;31m'   # Red
+LRED='\033[1;31m'  # Light Red
+GREEN='\033[1;32m' # Green
+BROWN='\033[0;33m' # Brown
+CYAN='\033[0;36m'  # Cyan
+NC='\033[0m'       # White
+
+# Default path to example files
+DEFAULT_PATH="docs/examples"
+
+# Check if a specific path provided, if not use default
+if [ $# -eq 0 ]; then
+  EXAMPLES_PATH=$DEFAULT_PATH
+else
+  EXAMPLES_PATH=$1
+fi
+
+# Subdirectories for Valid and Invalid cases
+INVALID_SYNTAX="$EXAMPLES_PATH/invalid/syntaxErr"
+INVALID_SEMANTIC="$EXAMPLES_PATH/invalid/semanticErr"
+VALID="$EXAMPLES_PATH/valid"
+
+#-------------
+# FLAGS
+#-------------
+
+FRONTEND=true
+BACKEND=true
+
+case "$1" in
+  -v)
+    SHOWPASS=true
+   ;;
+  -nof)
+    FRONTEND=false
+   ;;
+  -nob)
+    BACKEND=false
+   ;;
+esac
+
+case "$2" in
+  -v)
+    SHOWPASS=true
+   ;;
+  -nof)
+    FRONTEND=false
+   ;;
+  -nob)
+    BACKEND=false
+   ;;
+esac
+
+case "$3" in
+  -v)
+    SHOWPASS=true
+   ;;
+  -nof)
+    FRONTEND=false
+   ;;
+  -nob)
+    BACKEND=false
+   ;;
+esac
+
+#------------------------
+# TEST FRONTEND FUNCTION
+#------------------------
+
+# Function to test the input file
+testFrontend() {
+
+  nF=0
+  #calculate total number of files
+  find $1 -name '*.wacc' > log.txt
+  TOTFILES=$(wc -l < log.txt)
+  rm log.txt
+
+  find $1 -name '*.wacc' | while read f;
+  do
+
+    #create PROGRESS BAR
+    #calculate percentage
+    nF=$(($nF+1))
+    #x=2
+    #nFP=$(( nFP / x ))
+    
+    echo -ne "($nF/$TOTFILES)\r"
+
+    OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
+
+    echo -e "File: $f " >> log.txt 2>&1
+
+    # Run compile script for the input file
+    ./compile $f >> log.txt 2>&1
+
+    # Print the result on test failure
+    if [ $? != $2 ]; then
+      RESULT="${RED}Fail${NC}"
+      OUT=$OUT" $RESULT"
+
+      echo -e"Result: $RESULT " >> log.txt 2>&1
+      echo -e $OUT
+    fi
+
+    OUT=""
+  done
+
+  rm log.txt
+}
+
+#------------------------
+# TEST BACKEND FUNCTION
+#------------------------
+
+testBackend() {
+
+# Counters
+
+  nB=0
+  FAIL=0
+  PASS=0
+  
+  #calculate total number of files
+  find $1 -name '*.wacc' > log.txt
+  TOTFILESB=$(wc -l < log.txt)
+  rm log.txt
+
+
+  find $1 -name '*.wacc' | while read fW;
+  do
+
+    #create PROGRESS BAR
+    #calculate percentage
+    nB=$(($nB+1))
+    #x=2
+    #nBP=$(( $nBi / x ))
+    
+    #print progress bar
+    echo -ne "($nB/$TOTFILESB)\r"
+
+
+    OUT="$nB:${GREEN} $PASS${RED} $FAIL${BROWN} File: ${CYAN}${fW#*$1}${NC} : "
+    IN="$(echo "$fW" | sed 's/\.wacc/.in/')"
+    if [[ $fW == *"advanced"* ]]; then
+      continue
+    fi
+    if [ -e $IN ]; then
+      INPUT=$IN
+    else 
+      INPUT="/dev/null"
+    fi
+ 
+    docs/refCompile -x $fW < $INPUT > refResult.txt
+    sed -i '0,/^[=]\+/d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i 's/0x[a-f0-9]\+/0x/g' refResult.txt
+
+    ./compile $fW
+    fW="$(basename $fW)"
+    f="$(echo $fW | sed 's/\.wacc//')"
+    fs=$f".s"
+    
+    arm-linux-gnueabi-gcc -o $f -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $fs
+    qemu-arm -L /usr/arm-linux-gnueabi/ $f < $INPUT > result.txt 
+    sed -i 's/0x[a-f0-9]\+/0x/g' result.txt
+
+    DIFF="$(diff result.txt refResult.txt)"
+    # Print the result on test failure
+    if [ -z "$DIFF" ]; then
+      RESULT="${GREEN}Pass${NC}"
+      PASS=$(($PASS+1))
+      if [ "$SHOWPASS" = true ]; then
+        echo -e "$OUT $RESULT"
+      fi
+    else
+      RESULT="${RED}Fail${NC}"
+      FAIL=$(($FAIL+1))
+      echo "-------- EXPECTED --------"
+      cat refResult.txt
+      echo "----------  GOT ----------"
+      cat result.txt
+      echo "------- DIFFERENCE -------"
+      diff result.txt refResult.txt
+      echo -e "$OUT $RESULT"
+    fi
+    rm $f
+    rm $fs
+  done
+  rm refResult.txt
+  rm result.txt
+}
+
+# Start Testing
+echo -e "${GREEN}===== WACC Compiler Testing${NC}"
+
+#----------------------------
+# Test Backend
+#----------------------------
+
+if [ "$BACKEND" = true ]; then
+  echo -e "${GREEN}===== BACKEND Testing${NC}"
+  # Test Valid Cases
+  echo -e "${LRED}----- Valid Testcases${NC}"
+  testBackend $VALID
+fi
+
+#----------------------------
+# Test Frontend
+#----------------------------
+if [ "$FRONTEND" = true ]; then
+  echo -e "${GREEN}===== FRONTEND Testing"
+  # Test Valid Cases
+  echo -e "${LRED}----- Valid Testcases${NC}"
+  testFrontend $VALID 0
+
+  # Test Syntactically Invalid Cases
+  echo -e "${LRED}----- Invalid Testcases - Syntax Error${NC}"
+  testFrontend $INVALID_SYNTAX 100
+
+  # Test Semantically Invalid Cases
+  echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
+  testFrontend $INVALID_SEMANTIC 200
+fi
+
+# Testing Complete
+echo -e "${GREEN}===== Testing Complete${NC}"
