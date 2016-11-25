@@ -832,33 +832,41 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 //------------------------------------------------------------------------------
 
 //CodeGen generates code for Ident
+// --> LDR target, [sp, #offset]
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &RegisterLoadOperand{reg: sp, value: alloc.ResolveVar(m.ident)}
 	insch <- &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 }
 
 //CodeGen generates code for IntLiteral
+// --> LDR target, =offset
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &ConstLoadOperand{m.value}
 	insch <- &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 }
 
 //CodeGen generates code for BoolLiteralTrue
+// --> MOV target, 1
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{1}}
 }
 
 //CodeGen generates code for BoolLiteralFalse
+// --> MOV target, 0
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{0}}
 }
 
 //CodeGen generates code for CharLiteral
+// --> MOV target, #char
 func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: CharOperand{m.char}}
 }
 
 //CodeGen generates code for StringLiteral
+//TODO
+//TODO
+//TODO
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup32(m.str)
 
@@ -867,6 +875,13 @@ func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 }
 
 //CodeGen generates code for PairLiteral
+// --> LDR r0, =8
+// --> BL malloc
+// --> MOV target, r0
+// --> [Codegen fst] << reg
+// --> STR reg, [target]
+// --> [Codegen snd] << reg
+// --> STR reg, [target, #4]
 func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
@@ -874,22 +889,29 @@ func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 	insch <- &MOVInstr{dest: target, source: r0}
 	elemReg := alloc.GetReg(insch)
 	m.fst.CodeGen(alloc, elemReg, insch)
-	insch <- &STRInstr{StoreInstr{
-		reg:   elemReg,
-		value: &RegStoreOperand{target}}}
+	insch <- &STRInstr{StoreInstr{reg: elemReg, value: &RegStoreOperand{target}}}
 	m.snd.CodeGen(alloc, elemReg, insch)
-	insch <- &STRInstr{StoreInstr{
-		reg:   elemReg,
+	insch <- &STRInstr{StoreInstr{reg: elemReg,
 		value: &RegStoreOffsetOperand{reg: target, offset: 4}}}
 	alloc.FreeReg(elemReg, insch)
 }
 
 //CodeGen generates code for NullPair
+// --> MOV target, r0
 func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: ImmediateOperand{0}}
 }
 
 //CodeGen generates code for ArrayElem
+// --> ADD target, sp, #offset
+// --> LDR target, [target]
+// --> [Codegen index] << reg
+// --> MOV r0, reg
+// --> MOV r1, target
+// --> BL p_check_array_bounds
+// --> ADD target, target, #4
+// --> ADD target, target, [reg, LSL 2]
+// --> LDR target, [target]
 func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	arrayHelper(m.ident, m.indexes, alloc, target, insch)
 
@@ -901,22 +923,25 @@ func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr)
 //------------------------------------------------------------------------------
 
 //CodeGen generates code for UnaryOperatorNot
+// --> EOR target, target, #1
 func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	expr := m.GetExpression()
-	expr.CodeGen(alloc, target, insch)
+	m.expr.CodeGen(alloc, target, insch)
 	insch <- &NOTInstr{BaseUnaryInstr{arg: target, dest: target}}
 }
 
 //CodeGen generates code for UnaryOperatorNegate
+// --> NEGS target, target
+// --> BL p_throw_overflow_error
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	expr := m.GetExpression()
-	expr.CodeGen(alloc, target, insch)
+	m.expr.CodeGen(alloc, target, insch)
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
 }
 
 //CodeGen generates code for UnaryOperatorLen
+// --> [CodeGen expr]
+// --> LDR target, [target]
 func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 
@@ -925,11 +950,13 @@ func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 }
 
 //CodeGen generates code for UnaryOperatorOrd
+// --> [CodeGen expr]
 func (m *UnaryOperatorOrd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for UnaryOperatorChr
+// --> [CodeGen expr]
 func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 }
