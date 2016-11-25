@@ -13,6 +13,7 @@ import (
 const (
 	mPrintString          = "%.*s\\0"
 	mPrintInt             = "%d\\0"
+	mReadChar             = "%c\\0"
 	mPrintReference       = "%p\\0"
 	mNullChar             = "\\0"
 	mNewLine              = "\\n\\0"
@@ -22,6 +23,7 @@ const (
 	mFalse                = "false\\0"
 	mFFlush               = "fflush"
 	mPrintf               = "printf"
+	mScanf                = "scanf"
 	mFreeLabel            = "free"
 	mPrintNewLineLabel    = "p_print_ln"
 	mPrintIntLabel        = "p_print_int"
@@ -31,6 +33,8 @@ const (
 	mPrintCharLabel       = "p_print_char"
 	mPrintBoolLabel       = "p_print_bool"
 	mPrintReferenceLabel  = "p_print_reference"
+	mReadIntLabel         = "p_read_int"
+	mReadCharLabel        = "p_read_char"
 	mExitLabel            = "exit"
 	mMalloc               = "malloc"
 	mThrowRuntimeErr      = "p_throw_runtime_error"
@@ -392,8 +396,41 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for ReadStatement
 func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	//TODO
+	readReg := alloc.GetReg(insch)
 
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: readReg,
+			lhs:  sp,
+			rhs: &ImmediateOperand{
+				n: 0,
+			},
+		},
+	}
+
+	insch <- &MOVInstr{
+		dest:   r0,
+		source: readReg,
+	}
+
+	switch m.target.Type().(type) {
+	case IntType:
+		insch <- &BLInstr{
+			BInstr: BInstr{
+				label: mReadIntLabel,
+			},
+		}
+	case CharType:
+		insch <- &BLInstr{
+			BInstr: BInstr{
+				label: mReadCharLabel,
+			},
+		}
+	default:
+		panic(fmt.Errorf("%v has no type information", m.target))
+	}
+
+	alloc.FreeReg(readReg, insch)
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
@@ -1483,6 +1520,102 @@ func printReference(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+func readInt(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup8(mPrintInt)
+
+	insch <- &LABELInstr{mReadIntLabel}
+
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{lr},
+		},
+	}
+
+	insch <- &MOVInstr{
+		dest:   r1,
+		source: r0,
+	}
+
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			reg: r0,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
+
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: r0,
+			lhs:  r0,
+			rhs: &ImmediateOperand{
+				n: 4,
+			},
+		},
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mScanf,
+		},
+	}
+
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
+		},
+	}
+}
+
+func readChar(alloc *RegAllocator, insch chan<- Instr) {
+	msg := alloc.stringPool.Lookup8(mReadChar)
+
+	insch <- &LABELInstr{mReadCharLabel}
+
+	insch <- &PUSHInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{lr},
+		},
+	}
+
+	insch <- &MOVInstr{
+		dest:   r1,
+		source: r0,
+	}
+
+	insch <- &LDRInstr{
+		LoadInstr: LoadInstr{
+			reg: r0,
+			value: &BasicLoadOperand{
+				value: msg,
+			},
+		},
+	}
+
+	insch <- &ADDInstr{
+		BaseBinaryInstr: BaseBinaryInstr{
+			dest: r0,
+			lhs:  r0,
+			rhs: &ImmediateOperand{
+				n: 4,
+			},
+		},
+	}
+
+	insch <- &BLInstr{
+		BInstr: BInstr{
+			label: mScanf,
+		},
+	}
+
+	insch <- &POPInstr{
+		BaseStackInstr: BaseStackInstr{
+			regs: []Reg{pc},
+		},
+	}
+}
+
 //CheckDivideByZero function
 func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
@@ -1946,6 +2079,14 @@ func (m *AST) CodeGen() <-chan Instr {
 		}
 
 		for instr := range CodeGenBuiltin(strPool, printNewLine) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, readInt) {
+			txtInstr = append(txtInstr, instr)
+		}
+
+		for instr := range CodeGenBuiltin(strPool, readChar) {
 			txtInstr = append(txtInstr, instr)
 		}
 
