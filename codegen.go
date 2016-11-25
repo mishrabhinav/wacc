@@ -298,6 +298,8 @@ func (m *StringPool) Lookup8(msg string) string {
 }
 
 // Lookup32 returns the msg label of a string literal, converted to 32 bit chars
+// This allows for all values in WACC to be treated indifferently, as chars
+// are converted to 32 bit chars
 func (m *StringPool) Lookup32(msg string) string {
 	m.Lock()
 	defer m.Unlock()
