@@ -147,6 +147,7 @@ type ImmediateOperand struct {
 	n int
 }
 
+//RegisterOperand struct
 type RegisterOperand struct {
 	reg    Reg
 	shift  Shift
@@ -316,6 +317,7 @@ func (m *MULInstr) String() string {
 	return fmt.Sprintf("\tMUL%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+//SMULLInstr struct
 type SMULLInstr struct {
 	cond Cond
 	RdLo Reg
@@ -447,31 +449,6 @@ type STRInstr struct {
 func (m *STRInstr) String() string {
 	return fmt.Sprintf("\tSTR %s", m.base.String())
 }
-
-/*
-//STRInstr struct
-type STRPreIndexInstr struct {
-	source Reg
-	PreIndex
-}
-
-//LDRInstr struct
-type LDRPreIndexInstr struct {
-	dest Reg
-	PreIndex
-}
-
-func (m *STRPreIndexInstr) String() string {
-	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]", m.source.String(),
-		m.Rn.String(), m.Rm.String())
-}
-
-func (m *LDRInstr) String() string {
-	return fmt.Sprintf("STR %s, [%s, %s, LSL #2]",
-		m.destination.String(),
-		m.source.Rn.String(),
-		m.source.Rm.String())
-} */
 
 //------------------------------------------------------------------------------
 // PUSH AND POP INSTRUCTIONS
