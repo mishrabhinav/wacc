@@ -394,15 +394,7 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	readReg := alloc.GetReg(insch)
 
-	insch <- &ADDInstr{
-		BaseBinaryInstr: BaseBinaryInstr{
-			dest: readReg,
-			lhs:  sp,
-			rhs: &ImmediateOperand{
-				n: 0,
-			},
-		},
-	}
+	m.target.CodeGen(alloc, readReg, insch)
 
 	insch <- &MOVInstr{dest: r0, source: readReg}
 
