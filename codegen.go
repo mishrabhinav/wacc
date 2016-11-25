@@ -1,5 +1,11 @@
 package main
 
+// WACC Group 34
+//
+// codegen.go: Contains functions to codegen a given AST
+//
+// The File contains functions to codegen a given AST.
+
 import (
 	"bytes"
 	"fmt"
@@ -10,13 +16,16 @@ import (
 // RUNTIME ERRORS
 //------------------------------------------------------------------------------
 
+//Constant labels:
 const (
 	mPrintString          = "%.*s\\0"
 	mPrintInt             = "%d\\0"
 	mReadChar             = " %c\\0"
 	mPrintReference       = "%p\\0"
+	mNullChar             = "\\0"
 	mNewLine              = "\\n\\0"
 	mPutChar              = "putchar"
+	mPuts                 = "puts"
 	mTrue                 = "true\\0"
 	mFalse                = "false\\0"
 	mFFlush               = "fflush"
@@ -45,7 +54,7 @@ const (
 		"\\n\\0"
 	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\\n\\0"
 	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\\n\\0"
-	mOverflowErr      = "OverflowError: the result is too small/large to " +
+	mOverflowErr      = "OverflowError: the result is too small/large to" +
 		"store in a 4-byte signed-integer.\\n\\0"
 )
 
@@ -75,7 +84,8 @@ type Reg interface {
 
 // ARMGenReg is a general purpose ARM register
 type ARMGenReg struct {
-	r int
+	r    int
+	used int
 }
 
 func (m *ARMGenReg) String() string {
@@ -125,7 +135,6 @@ var resReg = r0
 
 // RegAllocator tracks register usage
 type RegAllocator struct {
-	usage        []int
 	stringPool   *StringPool
 	fname        string
 	labelCounter int
@@ -141,7 +150,6 @@ func CreateRegAllocator() *RegAllocator {
 		regs: []*ARMGenReg{
 			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
-		usage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -149,7 +157,7 @@ func CreateRegAllocator() *RegAllocator {
 func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 	r := m.regs[0]
 
-	if m.usage[r.Reg()] > 0 {
+	if r.used > 0 {
 		insch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -158,7 +166,7 @@ func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 		m.PushStack(4)
 	}
 
-	m.usage[r.Reg()]++
+	r.used++
 
 	m.regs = append(m.regs[1:], r)
 
@@ -173,7 +181,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 
 	r := re.(*ARMGenReg)
 
-	if m.usage[r.Reg()] > 1 {
+	if r.used > 1 {
 		insch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -182,7 +190,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 		m.PopStack(4)
 	}
 
-	m.usage[r.Reg()]--
+	r.used--
 
 	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
 }
@@ -258,7 +266,7 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 // GLOBAL STRING STORAGE
 //------------------------------------------------------------------------------
 
-//DataString struct
+//DataString hold an int representing the length and a str field for the string
 type DataString struct {
 	len int
 	str string
@@ -331,11 +339,16 @@ func (m *BaseStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 // CodeGen for skip statements
+// --> [CodeGen next instruction]
 func (m *SkipStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen for block statements
+// block_%l
+// --> [CodeGen body]
+// block_end_%l
+// --> [CodeGen next instruction]
 func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	suffix := alloc.GetUniqueLabelSuffix()
 
@@ -351,6 +364,9 @@ func (m *BlockStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for DeclareAssignStatement
+// --> [CodeGen rhs] << reg
+// --> STR reg [sp, #offset]
+// --> [CodeGen next instruction]
 func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	lhs := m.ident
 	alloc.DeclareVar(lhs, insch)
@@ -369,6 +385,10 @@ func (m *DeclareAssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr
 }
 
 //CodeGen generates code for AssignStatement
+// --> [CodeGen lhs] << reg1
+// --> [CodeGen rhs] << reg2
+// --> STR reg2 [reg1]
+// --> [CodeGen next instruction]
 func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	lhs := m.target
 
@@ -390,6 +410,11 @@ func (m *AssignStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for ReadStatement
+// --> [CodeGen target] << reg
+// --> MOV r0, reg
+// --> {int}: BL p_read_int
+// --> {char}: BL p_read_char
+// --> [CodeGen next instruction]
 func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	readReg := alloc.GetReg(insch)
 
@@ -413,6 +438,12 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for FreeStatement
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> BL pi_check_null_pointer
+// --> MOV r0, reg
+// --> BL free
+// --> [CodeGen next instruction]
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
@@ -430,11 +461,18 @@ func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for ReturnStatement
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> ADD sp, sp, #offset
+// --> B %l_return
+// --> [CodeGen next instruction]
 func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
 	m.expr.CodeGen(alloc, reg, insch)
-	insch <- &MOVInstr{dest: resReg, source: reg}
+	if r0.Reg() != reg.Reg() {
+		insch <- &MOVInstr{dest: r0, source: reg}
+	}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 		rhs: ImmediateOperand{alloc.stackSize}}}
@@ -447,6 +485,10 @@ func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for ExitStatement
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> BL exit
+// --> [CodeGen next instruction]
 func (m *ExitStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
@@ -488,6 +530,11 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for PrintLnStatement
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> BL {depends on type}
+// --> BL p_print_ln
+// --> [CodeGen next instruction]
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
 
@@ -497,12 +544,27 @@ func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for PrintStatement
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> BL {depends on type}
+// --> [CodeGen next instruction]
 func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	print(m.expr, alloc, insch)
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for IfStatement
+// if_%l
+// --> [CodeGen condition] << reg
+// --> CMP reg, 0
+// --> BEQ else_%l
+// then_%l
+// --> [CodeGen trueStat]
+// --> B end_%l
+// else_%l
+// --> [CodeGen falseStat]
+// end_%l
+// --> [CodeGen next instruction]
 func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	suffix := alloc.GetUniqueLabelSuffix()
 
@@ -547,6 +609,16 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for WhileStatement
+// while_%l
+// --> B cond_%l
+// do_%l
+// --> [CodeGen body]
+// cond_%l
+// --> [CodeGen cond] << reg
+// --> CMP reg, 1
+// --> BEQ do_%l
+// end_%l
+// --> [CodeGen next instruction]
 func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	suffix := alloc.GetUniqueLabelSuffix()
 
@@ -586,6 +658,9 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 }
 
 //CodeGen generates code for PairElemLHS
+// --> [CodeGen expr] << reg
+// --> MOV r0, reg
+// --> BL p_print_ln
 func (m *PairElemLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	pairElem(m.expr, alloc, target, insch)
 
@@ -626,11 +701,21 @@ func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target R
 }
 
 //CodeGen generates code for ArrayLHS
+// --> ADD target, sp, #offset
+// --> LDR target, [target]
+// --> [Codegen index] << reg
+// --> MOV r0, reg
+// --> MOV r1, target
+// --> BL p_check_array_bounds
+// --> ADD target, target, #4
+// --> ADD target, target, [reg, LSL 2]
 func (m *ArrayLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	arrayHelper(m.ident, m.index, alloc, target, insch)
 }
 
 //CodeGen generates code for VarLHS
+// --> MOV target, sp
+// --> ADD target, target, #offset
 func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: sp}
 	rhsVal := &ImmediateOperand{alloc.ResolveVar(m.ident)}
@@ -638,11 +723,19 @@ func (m *VarLHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
 
 //CodeGen generates code for PairLiterRHS
+// --> [CodeGen PairLiteral]
 func (m *PairLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.PairLiteral.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for ArrayLiterRHS
+// --> LDR r0, =(length+1)*4
+// --> BL malloc
+// --> MOV target, r0
+// --> [Codegen elem] << reg
+// --> STR reg, [target, #offset]
+// --> LDR reg, #length
+// --> STR reg, [target]
 func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 
 	//Call Malloc
@@ -651,7 +744,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 
-	insch <- &MOVInstr{dest: target, source: resReg}
+	insch <- &MOVInstr{dest: target, source: r0}
 
 	//Array Pos Reg
 	arrayReg := alloc.GetReg(insch)
@@ -683,6 +776,9 @@ func pairElem(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Ins
 }
 
 //CodeGen generates code for PairElemRHS
+// --> MOV r0, target
+// --> BL pi_check_null_pointer
+// --> LDR target, [target, #offset]
 func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	pairElem(m.expr, alloc, target, insch)
 
@@ -697,27 +793,32 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 }
 
 //CodeGen generates code for FunctionCallRHS
+// --> [Codegen param] << reg
+// --> PUSH reg
+// --> POP paramReg
+// --> BL func
+// --> MOV target, resReg
+// --> [Restore stack]
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	// put all parameters on the stack
 	for i := len(m.args) - 1; i >= 0; i-- {
 		reg := alloc.GetReg(insch)
 		m.args[i].CodeGen(alloc, reg, insch)
-		insch <- &PUSHInstr{
-			BaseStackInstr: BaseStackInstr{
-				regs: []Reg{reg},
-			},
-		}
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
 		alloc.PushStack(4)
 		alloc.FreeReg(reg, insch)
 	}
 
+	// pop the max first 4 into parameter registers
 	for i := 0; i < 4 && i < len(m.args); i++ {
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
 
 	insch <- &BLInstr{BInstr: BInstr{label: m.ident}}
 
-	insch <- &MOVInstr{dest: target, source: resReg}
+	insch <- &MOVInstr{dest: target, source: r0}
 
+	// pop the parameters from the stack
 	if pl := len(m.args); pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 			rhs: ImmediateOperand{(pl - 4) * 4}}}
@@ -727,6 +828,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 }
 
 //CodeGen generates code for ExpressionRHS
+// --> [Codegen expr]
 func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 }
@@ -736,33 +838,41 @@ func (m *ExpressionRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 //------------------------------------------------------------------------------
 
 //CodeGen generates code for Ident
+// --> LDR target, [sp, #offset]
 func (m *Ident) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &RegisterLoadOperand{reg: sp, value: alloc.ResolveVar(m.ident)}
 	insch <- &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 }
 
 //CodeGen generates code for IntLiteral
+// --> LDR target, =offset
 func (m *IntLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	loadValue := &ConstLoadOperand{m.value}
 	insch <- &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 }
 
 //CodeGen generates code for BoolLiteralTrue
+// --> MOV target, 1
 func (m *BoolLiteralTrue) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{1}}
 }
 
 //CodeGen generates code for BoolLiteralFalse
+// --> MOV target, 0
 func (m *BoolLiteralFalse) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{0}}
 }
 
 //CodeGen generates code for CharLiteral
+// --> MOV target, #char
 func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: CharOperand{m.char}}
 }
 
 //CodeGen generates code for StringLiteral
+//TODO
+//TODO
+//TODO
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup32(m.str)
 
@@ -771,29 +881,43 @@ func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 }
 
 //CodeGen generates code for PairLiteral
+// --> LDR r0, =8
+// --> BL malloc
+// --> MOV target, r0
+// --> [Codegen fst] << reg
+// --> STR reg, [target]
+// --> [Codegen snd] << reg
+// --> STR reg, [target, #4]
 func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 	//target cointains address of newpair
-	insch <- &MOVInstr{dest: target, source: resReg}
+	insch <- &MOVInstr{dest: target, source: r0}
 	elemReg := alloc.GetReg(insch)
 	m.fst.CodeGen(alloc, elemReg, insch)
-	insch <- &STRInstr{StoreInstr{
-		reg:   elemReg,
-		value: &RegStoreOperand{target}}}
+	insch <- &STRInstr{StoreInstr{reg: elemReg, value: &RegStoreOperand{target}}}
 	m.snd.CodeGen(alloc, elemReg, insch)
-	insch <- &STRInstr{StoreInstr{
-		reg:   elemReg,
+	insch <- &STRInstr{StoreInstr{reg: elemReg,
 		value: &RegStoreOffsetOperand{reg: target, offset: 4}}}
 	alloc.FreeReg(elemReg, insch)
 }
 
 //CodeGen generates code for NullPair
+// --> MOV target, r0
 func (m *NullPair) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: target, source: ImmediateOperand{0}}
 }
 
 //CodeGen generates code for ArrayElem
+// --> ADD target, sp, #offset
+// --> LDR target, [target]
+// --> [Codegen index] << reg
+// --> MOV r0, reg
+// --> MOV r1, target
+// --> BL p_check_array_bounds
+// --> ADD target, target, #4
+// --> ADD target, target, [reg, LSL 2]
+// --> LDR target, [target]
 func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	arrayHelper(m.ident, m.indexes, alloc, target, insch)
 
@@ -805,22 +929,25 @@ func (m *ArrayElem) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr)
 //------------------------------------------------------------------------------
 
 //CodeGen generates code for UnaryOperatorNot
+// --> EOR target, target, #1
 func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	expr := m.GetExpression()
-	expr.CodeGen(alloc, target, insch)
+	m.expr.CodeGen(alloc, target, insch)
 	insch <- &NOTInstr{BaseUnaryInstr{arg: target, dest: target}}
 }
 
 //CodeGen generates code for UnaryOperatorNegate
+// --> NEGS target, target
+// --> BL p_throw_overflow_error
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	expr := m.GetExpression()
-	expr.CodeGen(alloc, target, insch)
+	m.expr.CodeGen(alloc, target, insch)
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
 }
 
 //CodeGen generates code for UnaryOperatorLen
+// --> [CodeGen expr]
+// --> LDR target, [target]
 func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 
@@ -829,11 +956,13 @@ func (m *UnaryOperatorLen) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 }
 
 //CodeGen generates code for UnaryOperatorOrd
+// --> [CodeGen expr]
 func (m *UnaryOperatorOrd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 }
 
 //CodeGen generates code for UnaryOperatorChr
+// --> [CodeGen expr]
 func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 }
@@ -893,7 +1022,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
 	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
 	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idiv"}}
-	insch <- &MOVInstr{dest: target, source: resReg}
+	insch <- &MOVInstr{dest: target, source: r0}
 	alloc.FreeReg(target2, insch)
 
 }
@@ -1554,7 +1683,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		switch m.returnType.(type) {
 		case InvalidType:
-			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
+			ch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
 		}
 
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
