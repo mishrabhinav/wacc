@@ -1945,6 +1945,8 @@ func (m *AST) CodeGen() <-chan Instr {
 			}
 		}
 
+		// generate code for builtin functions
+		// prints, reads, runtime errors
 		for instr := range codeGenBuiltin(strPool, printInt) {
 			txtInstr = append(txtInstr, instr)
 		}
