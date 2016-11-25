@@ -11,17 +11,10 @@ NC='\033[0m'       # White
 # Default path to example files
 DEFAULT_PATH="docs/examples"
 
-# Check if a specific path provided, if not use default
-if [ $# -eq 0 ]; then
-  EXAMPLES_PATH=$DEFAULT_PATH
-else
-  EXAMPLES_PATH=$1
-fi
-
 # Subdirectories for Valid and Invalid cases
-INVALID_SYNTAX="$EXAMPLES_PATH/invalid/syntaxErr"
-INVALID_SEMANTIC="$EXAMPLES_PATH/invalid/semanticErr"
-VALID="$EXAMPLES_PATH/valid"
+INVALID_SYNTAX="$DEFAULT_PATH/invalid/syntaxErr"
+INVALID_SEMANTIC="$DEFAULT_PATH/invalid/semanticErr"
+VALID="$DEFAULT_PATH/valid"
 
 #-------------
 # FLAGS
@@ -89,6 +82,8 @@ testFrontend() {
     #nFP=$(( nFP / x ))
     
     echo -ne "($nF/$TOTFILES)\r"
+    
+    fs="$(echo $f | sed 's/\.wacc/.s/')"
 
     OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
 
@@ -105,7 +100,10 @@ testFrontend() {
       echo -e"Result: $RESULT " >> log.txt 2>&1
       echo -e $OUT
     fi
-
+    if [ "$1" == "$VALID" ]; then
+      fs=$(basename $fs)
+      rm $fs
+    fi
     OUT=""
   done
 
