@@ -794,9 +794,12 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 }
 
 //CodeGen generates code for FunctionCallRHS
-//TODO
-//TODO
-//TODO
+// [CodeGen param] << reg
+// PUSH reg
+// POP r0,r1,r2,r3
+// BL f
+// MOV target, r0
+// POP [params]
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	for i := len(m.args) - 1; i >= 0; i-- {
 		reg := alloc.GetReg(insch)
