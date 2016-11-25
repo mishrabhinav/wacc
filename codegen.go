@@ -45,7 +45,7 @@ const (
 		"\\n\\0"
 	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\\n\\0"
 	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\\n\\0"
-	mOverflowErr      = "OverflowError: the result is too small/large to" +
+	mOverflowErr      = "OverflowError: the result is too small/large to " +
 		"store in a 4-byte signed-integer.\\n\\0"
 )
 
