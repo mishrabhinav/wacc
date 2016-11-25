@@ -1822,16 +1822,19 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		alloc.StartScope(ch)
 
+		// save previous pc for returning
 		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{lr}}}
 
 		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 
+		// save callee saved registers
 		ch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
 			},
 		}
 
+		// put the first four params on the stack
 		pl := len(m.params)
 		switch {
 		case pl >= 4:
@@ -1847,6 +1850,8 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r0}}}
 		}
 
+		// set the addresses of the arguments relative to sp on the
+		// stack
 		for i := 0; i < 4 && i < len(m.params); i++ {
 			p := m.params[i]
 			alloc.stack[0][p.name] = i * -4
@@ -1859,10 +1864,13 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		alloc.StartScope(ch)
 
+		// codegen the function body
 		m.body.CodeGen(alloc, ch)
 
 		alloc.CleanupScope(ch)
 
+		// if the function has no return type then zero r0 before
+		// returning
 		switch m.returnType.(type) {
 		case InvalidType:
 			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
@@ -1870,6 +1878,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
 
+		// restore the stack from pushing first four parameters
 		if pl := len(m.params); pl > 0 {
 			ppregs := pl * 4
 			if ppregs > 16 {
@@ -1879,6 +1888,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 				rhs: ImmediateOperand{ppregs}}}
 		}
 
+		// restore callee saved registers
 		ch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r4, r5, r6, r7, r8, r9, r10, r11},
@@ -1887,8 +1897,10 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 
+		// return
 		ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
 
+		// ensures literal pools for LDR are in range
 		ch <- &LTORGInstr{}
 
 		close(ch)
@@ -1904,6 +1916,7 @@ func (m *AST) CodeGen() <-chan Instr {
 
 	strPool := &StringPool{}
 
+	// start codegen for all functions concurrently
 	for _, f := range m.functions {
 		charr = append(charr, f.CodeGen(strPool))
 	}
@@ -1917,6 +1930,8 @@ func (m *AST) CodeGen() <-chan Instr {
 	go func() {
 		ch <- &DataSegInstr{}
 
+		// buffer all the text instructions so the global stringpool
+		// is filled
 		var txtInstr []Instr
 		txtInstr = append(txtInstr, &TextSegInstr{})
 		txtInstr = append(txtInstr, &GlobalInstr{"main"})
@@ -1979,6 +1994,7 @@ func (m *AST) CodeGen() <-chan Instr {
 			txtInstr = append(txtInstr, instr)
 		}
 
+		// output the strings used in the WACC program
 		for i := 0; i < len(strPool.pool); i++ {
 			v := strPool.pool[i]
 			ch <- &LABELInstr{fmt.Sprintf("msg_%d", i)}
@@ -1986,6 +2002,7 @@ func (m *AST) CodeGen() <-chan Instr {
 			ch <- &DataASCIIInstr{v.str}
 		}
 
+		// output the instructions
 		for _, tin := range txtInstr {
 			ch <- tin
 		}
