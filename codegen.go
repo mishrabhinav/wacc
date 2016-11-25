@@ -436,38 +436,17 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 //CodeGen generates code for FreeStatement
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
-	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
+	reg := alloc.GetReg(insch)
 
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{lr}}}
+	m.expr.CodeGen(alloc, reg, insch)
 
-	insch <- &CMPInstr{BaseComparisonInstr{lhs: r0,
-		rhs: &ImmediateOperand{n: 0}}}
+	insch <- &MOVInstr{dest: r0, source: reg}
 
-	insch <- &LDRInstr{LoadInstr{reg: r0, cond: condEQ,
-		value: &BasicLoadOperand{value: msg}}}
+	insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
 
-	insch <- &BLInstr{BInstr{cond: condEQ, label: mThrowRuntimeErr}}
-
-	insch <- &PUSHInstr{BaseStackInstr{regs: []Reg{r0}}}
-
-	insch <- &LDRInstr{LoadInstr{reg: r0,
-		value: &RegisterLoadOperand{reg: r0}}}
+	insch <- &MOVInstr{dest: r0, source: reg}
 
 	insch <- &BLInstr{BInstr{label: mFreeLabel}}
-
-	insch <- &LDRInstr{LoadInstr{reg: r0,
-		value: &RegisterLoadOperand{reg: sp}}}
-
-	insch <- &LDRInstr{LoadInstr{reg: r0,
-		value: &RegisterLoadOperand{reg: r0, value: 4}}}
-
-	insch <- &BLInstr{BInstr{label: mFreeLabel}}
-
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{r0}}}
-
-	insch <- &BLInstr{BInstr{label: mFreeLabel}}
-
-	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 
 	m.BaseStatement.CodeGen(alloc, insch)
 }
