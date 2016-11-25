@@ -237,8 +237,8 @@ func (m *RegAllocator) StartScope(insch chan<- Instr) {
 
 // CleanupScope starts a new scope with new variable mappings possible
 func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
-	sl := len(m.stack[0])
-	for o := sl * 4; o > 0; o -= 255 {
+	sl := len(m.stack[0]) * 4
+	for o := sl; o > 0; o -= 255 {
 		od := o
 		if od > 255 {
 			od = 255
