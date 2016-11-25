@@ -300,6 +300,8 @@ func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 			t,
 		)
 	}
+
+	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 // TypeCheck checks whether the statement has any type mismatches in expressions
@@ -424,6 +426,10 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 
 	switch t := m.expr.GetType(ts).(type) {
 	case PairType:
+		if !m.snd {
+			m.wtype = t.first
+		}
+		m.wtype = t.second
 	default:
 		errch <- CreateTypeMismatchError(
 			m.Token(),
@@ -474,6 +480,8 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 			)
 		}
 	}
+
+	m.wtype = t
 }
 
 // GetType returns the deduced type of the left hand side assignment target
@@ -502,12 +510,14 @@ func (m *ArrayLHS) GetType(ts *Scope) Type {
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
-	switch ts.Lookup(m.ident).(type) {
+	switch t := ts.Lookup(m.ident).(type) {
 	case InvalidType:
 		errch <- CreateUndeclaredVariableError(
 			m.Token(),
 			m.ident,
 		)
+	default:
+		m.wtype = t
 	}
 }
 
@@ -701,6 +711,8 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 			m.ident,
 		)
 	}
+
+	m.wtype = identT
 }
 
 // GetType returns the deduced type of the expression.
@@ -806,6 +818,7 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 
 		switch arrayT := array.(type) {
 		case ArrayType:
+			array = arrayT.base
 		default:
 			errch <- CreateTypeMismatchError(
 				m.Token(),
@@ -814,6 +827,8 @@ func (m *ArrayElem) TypeCheck(ts *Scope, errch chan<- error) {
 			)
 		}
 	}
+
+	m.wtype = array
 }
 
 // GetType returns the deduced type of the expression.

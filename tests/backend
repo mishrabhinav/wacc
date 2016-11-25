@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Colour Codes
+RED='\033[0;31m'   # Red
+LRED='\033[1;31m'  # Light Red
+GREEN='\033[1;32m' # Green
+BROWN='\033[0;33m' # Brown
+CYAN='\033[0;36m'  # Cyan
+NC='\033[0m'       # White
+
+# Default path to example files
+DEFAULT_PATH="docs/examples"
+
+n=0
+PASS=0
+FAIL=0
+
+# Check if a specific path provided, if not use default
+if [ $# -eq 0 ]; then
+  EXAMPLES_PATH=$DEFAULT_PATH
+else
+  EXAMPLES_PATH=$1
+fi
+
+VALID="$EXAMPLES_PATH/valid"
+
+testResult() {
+  find $1 -name '*.wacc' | while read f;
+  do
+    OUT="$n: ${GREEN}$PASS ${RED}$FAIL ${BROWN}File: ${CYAN}${f#*$1}${NC} : "
+    n=$((n+1))
+
+    # Get refCompile result
+    if [[ $f == *"IO"* ]]; then
+      echo "IO FILE"
+      INPUT="$(echo $f | sed 's/\.wacc/.in/')"
+	    else
+      INPUT="/dev/null"
+    fi
+    # Run compile script for the input file
+    ./compile $f
+    #if [ $? != $0 ]; then
+    #  echo -e "${RED}Couldn't create assembly${NC}"
+    #  RESULT="${RED}Fail${NC}"
+    #  rm $fs
+    #  continue
+    #fi
+    docs/refCompile $f -x < $INPUT > refResult.txt
+    sed -i '0,/^[=]\+/d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+    sed -i '$ d' refResult.txt
+
+    f="$(basename $f)"
+    f="$(echo $f | sed 's/\.wacc//')"
+    fs=$f".s"
+    #get executable
+    arm-linux-gnueabi-gcc -o $f -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $fs
+    #run executable
+    qemu-arm -L /usr/arm-linux-gnueabi/ $f > result.txt
+    DIFF="$(diff result.txt refResult.txt)"
+    # Check there are no differences between the files
+      if [ -z "$DIFF" ]; then
+      #if there aren't differences the test passes
+      RESULT="${GREEN}Pass${NC}"
+      PASS=$(($PASS+1))
+    else
+      #if there are differences the test fails
+      RESULT="${RED}Fail${NC}"
+      FAIL=$(($FAIL+1))
+      # print expected result
+      echo " ------ EXPECTED ------"
+      cat refResult.txt
+      # print difference
+      echo "------ DIFFERENCE ------"
+      diff result.txt refResult.txt
+    fi
+    rm $f
+    rm $fs
+    echo -e "$OUT $RESULT"
+  done
+  rm refResult.txt
+  rm result.txt
+  exit
+}
+
+# Start Testing
+echo -e "${GREEN}===== WACC Compiler Testing${NC}"
+
+# Test Valid Cases
+echo -e "${LRED}----- Valid Testcases${NC}"
+testResult $VALID
+
+# Testing Complete
+echo -e "${GREEN}===== Testing Complete${NC}"

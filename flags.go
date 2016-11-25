@@ -10,15 +10,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+	"strings"
 )
 
 // Flags structure contains all the flag values and the filename
 type Flags struct {
-	filename     string
-	printPEGTree bool
-	printPretty  bool
-	printAST     bool
-	verbose      bool
+	filename      string
+	assemblyfile  string
+	printPEGTree  bool
+	printPretty   bool
+	printAST      bool
+	verbose       bool
+	printAssembly bool
 }
 
 // Parse defines all the flags and then parses the command line args
@@ -33,8 +37,17 @@ func (f *Flags) Parse() {
 		"Print AST for the supplied file")
 	flag.BoolVar(&f.verbose, "verbose", false,
 		"Print different stages during compilation")
+	flag.BoolVar(&f.printAssembly, "assembly", false,
+		"Print assembly instructions to STD Output")
 
 	flag.Parse()
+
+	f.assemblyfile = filepath.Base(
+		strings.TrimSuffix(
+			f.filename,
+			filepath.Ext(f.filename),
+		) + ".s",
+	)
 }
 
 // Start prints compiling message when verbose flag is set

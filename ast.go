@@ -50,9 +50,12 @@ type ArrayType struct {
 type Expression interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
+	Type() Type
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
+	Weight() int
 }
 
 // Statement is the interface for WACC statements
@@ -64,6 +67,7 @@ type Statement interface {
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, chan<- Instr)
 }
 
 // TokenBase is the base structure that contains the token reference
@@ -121,29 +125,49 @@ type DeclareAssignStatement struct {
 type LHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
+	Type() Type
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
 }
 
 // PairElemLHS is the struct for a pair on the lhs of an assignment
 type PairElemLHS struct {
 	TokenBase
-	snd  bool
-	expr Expression
+	wtype Type
+	snd   bool
+	expr  Expression
+}
+
+// Type returns the Type of the LHS
+func (m *PairElemLHS) Type() Type {
+	return m.wtype
 }
 
 // ArrayLHS is the struct for an array on the lhs of an assignment
 type ArrayLHS struct {
 	TokenBase
+	wtype Type
 	ident string
 	index []Expression
+}
+
+// Type returns the Type of the LHS
+func (m *ArrayLHS) Type() Type {
+	return m.wtype
 }
 
 // VarLHS is the struct for a variable on the lhs of an assignment
 type VarLHS struct {
 	TokenBase
+	wtype Type
 	ident string
+}
+
+// Type returns the Type of the LHS
+func (m *VarLHS) Type() Type {
+	return m.wtype
 }
 
 // RHS is the interface for the right hand side of an assignment
@@ -153,6 +177,7 @@ type RHS interface {
 	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
+	CodeGen(*RegAllocator, Reg, chan<- Instr)
 }
 
 // PairLiterRHS is the struct for pair literals on the rhs of an assignment
@@ -314,7 +339,13 @@ func parseArrayElem(node *node32) (Expression, error) {
 // Ident is the struct to represent an identifier
 type Ident struct {
 	TokenBase
+	wtype Type
 	ident string
+}
+
+// Type returns the Type of the expression
+func (m *Ident) Type() Type {
+	return m.wtype
 }
 
 // IntLiteral is the struct to represent an integer literal
@@ -323,14 +354,29 @@ type IntLiteral struct {
 	value int
 }
 
+// Type returns the Type of the expression
+func (m *IntLiteral) Type() Type {
+	return IntType{}
+}
+
 // BoolLiteralTrue is the struct to represent a true boolean literal
 type BoolLiteralTrue struct {
 	TokenBase
 }
 
+// Type returns the Type of the expression
+func (m *BoolLiteralTrue) Type() Type {
+	return BoolType{}
+}
+
 // BoolLiteralFalse is the struct to represent a false boolean literal
 type BoolLiteralFalse struct {
 	TokenBase
+}
+
+// Type returns the Type of the expression
+func (m *BoolLiteralFalse) Type() Type {
+	return BoolType{}
 }
 
 // CharLiteral is the struct to represent a character literal
@@ -339,10 +385,20 @@ type CharLiteral struct {
 	char string
 }
 
+// Type returns the Type of the expression
+func (m *CharLiteral) Type() Type {
+	return CharType{}
+}
+
 // StringLiteral is the struct to represent a string literal
 type StringLiteral struct {
 	TokenBase
 	str string
+}
+
+// Type returns the Type of the expression
+func (m *StringLiteral) Type() Type {
+	return ArrayType{CharType{}}
 }
 
 // PairLiteral is the struct to represent a pair literal
@@ -352,16 +408,32 @@ type PairLiteral struct {
 	snd Expression
 }
 
+// Type returns the Type of the expression
+func (m *PairLiteral) Type() Type {
+	return PairType{first: m.fst.Type(), second: m.snd.Type()}
+}
+
 // NullPair is the struct to represent a null pair
 type NullPair struct {
 	TokenBase
+}
+
+// Type returns the Type of the expression
+func (m *NullPair) Type() Type {
+	return PairType{first: UnknownType{}, second: UnknownType{}}
 }
 
 // ArrayElem is the struct to represent an array element
 type ArrayElem struct {
 	TokenBase
 	ident   string
+	wtype   Type
 	indexes []Expression
+}
+
+// Type returns the Type of the expression
+func (m *ArrayElem) Type() Type {
+	return m.wtype
 }
 
 // UnaryOperator is the struct to represent the unary operators
@@ -393,9 +465,19 @@ type UnaryOperatorNot struct {
 	UnaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *UnaryOperatorNot) Type() Type {
+	return BoolType{}
+}
+
 // UnaryOperatorNegate represents '-'
 type UnaryOperatorNegate struct {
 	UnaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *UnaryOperatorNegate) Type() Type {
+	return IntType{}
 }
 
 // UnaryOperatorLen represents 'len'
@@ -403,14 +485,29 @@ type UnaryOperatorLen struct {
 	UnaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *UnaryOperatorLen) Type() Type {
+	return IntType{}
+}
+
 // UnaryOperatorOrd represents 'ord'
 type UnaryOperatorOrd struct {
 	UnaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *UnaryOperatorOrd) Type() Type {
+	return IntType{}
+}
+
 // UnaryOperatorChr represents 'chr'
 type UnaryOperatorChr struct {
 	UnaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *UnaryOperatorChr) Type() Type {
+	return CharType{}
 }
 
 // BinaryOperator represents a generic binaryOperator which might be an expr.
@@ -454,9 +551,19 @@ type BinaryOperatorMult struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorMult) Type() Type {
+	return IntType{}
+}
+
 // BinaryOperatorDiv represents '/'
 type BinaryOperatorDiv struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorDiv) Type() Type {
+	return IntType{}
 }
 
 // BinaryOperatorMod represents '%'
@@ -464,9 +571,19 @@ type BinaryOperatorMod struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorMod) Type() Type {
+	return IntType{}
+}
+
 // BinaryOperatorAdd represents '+'
 type BinaryOperatorAdd struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorAdd) Type() Type {
+	return IntType{}
 }
 
 // BinaryOperatorSub represents '-'
@@ -474,9 +591,19 @@ type BinaryOperatorSub struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorSub) Type() Type {
+	return IntType{}
+}
+
 // BinaryOperatorGreaterThan represents '>'
 type BinaryOperatorGreaterThan struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorGreaterThan) Type() Type {
+	return BoolType{}
 }
 
 // BinaryOperatorGreaterEqual represents '>='
@@ -484,9 +611,19 @@ type BinaryOperatorGreaterEqual struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorGreaterEqual) Type() Type {
+	return BoolType{}
+}
+
 // BinaryOperatorLessThan represents '<'
 type BinaryOperatorLessThan struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorLessThan) Type() Type {
+	return BoolType{}
 }
 
 // BinaryOperatorLessEqual represents '<='
@@ -494,9 +631,19 @@ type BinaryOperatorLessEqual struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorLessEqual) Type() Type {
+	return BoolType{}
+}
+
 // BinaryOperatorEqual represents '=='
 type BinaryOperatorEqual struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorEqual) Type() Type {
+	return BoolType{}
 }
 
 // BinaryOperatorNotEqual represents '!='
@@ -504,9 +651,19 @@ type BinaryOperatorNotEqual struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorNotEqual) Type() Type {
+	return BoolType{}
+}
+
 // BinaryOperatorAnd represents '&&'
 type BinaryOperatorAnd struct {
 	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorAnd) Type() Type {
+	return BoolType{}
 }
 
 // BinaryOperatorOr represents '||'
@@ -514,9 +671,19 @@ type BinaryOperatorOr struct {
 	BinaryOperatorBase
 }
 
+// Type returns the Type of the expression
+func (m *BinaryOperatorOr) Type() Type {
+	return BoolType{}
+}
+
 // ExprParen represents '()'
 type ExprParen struct {
 	TokenBase
+}
+
+// Type returns the Type of the expression
+func (m *ExprParen) Type() Type {
+	return InvalidType{}
 }
 
 // exprStream given an expression node sends the all the nodes after it to
