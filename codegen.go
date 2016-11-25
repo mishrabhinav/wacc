@@ -974,8 +974,8 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
+	var rhsResult Reg
 	lhsResult := target
-	rhsResult := target2
 	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
@@ -1002,8 +1002,8 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
+	var rhsResult Reg
 	lhsResult := target
-	rhsResult := target2
 	if lhs.Weight() > rhs.Weight() {
 		lhs.CodeGen(alloc, target, insch)
 		target2 = alloc.GetReg(insch)
@@ -1889,7 +1889,7 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	}
 }
 
-func CodeGenBuiltin(strPool *StringPool, f func(*RegAllocator, chan<- Instr)) <-chan Instr {
+func codeGenBuiltin(strPool *StringPool, f func(*RegAllocator, chan<- Instr)) <-chan Instr {
 	ch := make(chan Instr)
 
 	alloc := CreateRegAllocator()
@@ -2058,55 +2058,55 @@ func (m *AST) CodeGen() <-chan Instr {
 			}
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printInt) {
+		for instr := range codeGenBuiltin(strPool, printInt) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printChar) {
+		for instr := range codeGenBuiltin(strPool, printChar) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printBool) {
+		for instr := range codeGenBuiltin(strPool, printBool) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printString) {
+		for instr := range codeGenBuiltin(strPool, printString) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printReference) {
+		for instr := range codeGenBuiltin(strPool, printReference) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, printNewLine) {
+		for instr := range codeGenBuiltin(strPool, printNewLine) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, readInt) {
+		for instr := range codeGenBuiltin(strPool, readInt) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, readChar) {
+		for instr := range codeGenBuiltin(strPool, readChar) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, checkDivideByZero) {
+		for instr := range codeGenBuiltin(strPool, checkDivideByZero) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, checkNullPointer) {
+		for instr := range codeGenBuiltin(strPool, checkNullPointer) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, checkArrayBounds) {
+		for instr := range codeGenBuiltin(strPool, checkArrayBounds) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, checkOverflowUnderflow) {
+		for instr := range codeGenBuiltin(strPool, checkOverflowUnderflow) {
 			txtInstr = append(txtInstr, instr)
 		}
 
-		for instr := range CodeGenBuiltin(strPool, throwRuntimeError) {
+		for instr := range codeGenBuiltin(strPool, throwRuntimeError) {
 			txtInstr = append(txtInstr, instr)
 		}
 
