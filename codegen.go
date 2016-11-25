@@ -793,10 +793,14 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 }
 
 //CodeGen generates code for FunctionCallRHS
-//TODO
-//TODO
-//TODO
+// --> [Codegen param] << reg
+// --> PUSH reg
+// --> POP paramReg
+// --> BL func
+// --> MOV target, resReg
+// --> [Restore stack]
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+	// put all parameters on the stack
 	for i := len(m.args) - 1; i >= 0; i-- {
 		reg := alloc.GetReg(insch)
 		m.args[i].CodeGen(alloc, reg, insch)
@@ -805,6 +809,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		alloc.FreeReg(reg, insch)
 	}
 
+	// pop the max first 4 into parameter registers
 	for i := 0; i < 4 && i < len(m.args); i++ {
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
@@ -813,6 +818,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 
 	insch <- &MOVInstr{dest: target, source: r0}
 
+	// pop the parameters from the stack
 	if pl := len(m.args); pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 			rhs: ImmediateOperand{(pl - 4) * 4}}}
