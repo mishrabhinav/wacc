@@ -26,7 +26,7 @@ install: $(BINARY)
 	go install
 
 test: $(BINARY)
-	tests/frontend
+	tests/test
 
 clean:
 	go clean
