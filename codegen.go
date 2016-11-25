@@ -844,6 +844,14 @@ func (m *UnaryOperatorChr) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 //CodeGen generates code for BinaryOperatorMult
 // If LHS.Weight > RHS.Weight LHS is executed first
 // otherwise RHS is executed first
+//CodeGen generates code for BinaryOperatorMult
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> SMULL target, target2, target, target2
+// --> CMP target2, target, ASR #31
+// --> BLNE p_throw_overflow_error
 func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -870,6 +878,16 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 }
 
 //CodeGen generates code for BinaryOperatorDiv
+//CodeGen generates code for BinaryOperatorDiv
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> MOV r0, lhsResult
+// --> MOV r1, rhsResult
+// --> BL p_check_divide_by_zero
+// --> BL __aeabi_idiv
+// --> MOV target, r0
 func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -898,6 +916,16 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 }
 
 //CodeGen generates code for BinaryOperatorMod
+//CodeGen generates code for BinaryOperatorMod
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> MOV r0, lhsResult
+// --> MOV r1, rhsResult
+// --> BL p_check_divide_by_zero
+// --> BL __aeabi_idivmod
+// --> MOV target, r1
 func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -925,6 +953,14 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 }
 
 //CodeGen generates code for BinaryOperatorAdd
+//CodeGen generates code for BinaryOperatorAdd
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> ADD target, target2, target
+// --> MOV r1, rhsResult
+// --> BLVS p_throw_overflow_error
 func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -952,6 +988,13 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 }
 
 //CodeGen generates code for BinaryOperatorSub
+//CodeGen generates code for BinaryOperatorSub
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> SUB target, target, target2
+// --> BLVS p_throw_overflow_errorcode
 func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -976,6 +1019,14 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
 }
 
+//CodeGenComparators is a helper function for CodeGen over Comparator instructions
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> CMP target2, target
+// --> MOV(COND) target, 1
+// --> MOV(NOT-COND) target, 0
 func codeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch chan<- Instr, condCode int) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -1003,36 +1054,48 @@ func codeGenComparators(m BinaryOperator, alloc *RegAllocator, target Reg, insch
 }
 
 //CodeGen generates code for BinaryOperatorGreaterThan
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorGreaterThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condGT)
 }
 
 //CodeGen generates code for BinaryOperatorGreaterEqual
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorGreaterEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condGE)
 }
 
 //CodeGen generates code for BinaryOperatorLessThan
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorLessThan) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condLT)
 }
 
 //CodeGen generates code for BinaryOperatorLessEqual
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorLessEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condLE)
 }
 
 //CodeGen generates code for BinaryOperatorEqual
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condEQ)
 }
 
 //CodeGen generates code for BinaryOperatorNotEqual
+//Calls codeGenComparators helper function
 func (m *BinaryOperatorNotEqual) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	codeGenComparators(m, alloc, target, insch, condNE)
 }
 
 //CodeGen generates code for BinaryOperatorAnd
+//CodeGen generates code for BinaryOperatorAnd
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> AND target, target2, target
 func (m *BinaryOperatorAnd) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
@@ -1053,6 +1116,13 @@ func (m *BinaryOperatorAnd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 }
 
 //CodeGen generates code for BinaryOperatorOr
+//CodeGen generates code for BinaryOperatorOr
+//CodeGen generates code for BinaryOperatorAnd
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> ORR target, target2, target
 func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()

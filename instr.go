@@ -51,6 +51,8 @@ const (
 	condVS = 9
 )
 
+// Returns String representation Cond given,
+// uses map
 func (m Cond) String() string {
 	value, exists := condMap[int(m)]
 	if !exists {
@@ -60,6 +62,8 @@ func (m Cond) String() string {
 	return value
 }
 
+// Returns String representation of opposite of Cond,
+// uses map
 func (m Cond) getOpposite() Cond {
 	value, exists := oppCondMap[int(m)]
 	if !exists {
@@ -85,6 +89,8 @@ const (
 	shiftROR = 4
 )
 
+// Returns strinf representation of Shift value given
+// uses map
 func (m Shift) String() string {
 	value, exists := shiftMap[int(m)]
 	if !exists {
@@ -99,6 +105,7 @@ func (m Shift) String() string {
 //------------------------------------------------------------------------------
 
 //BaseUnaryInstr struct
+// --> (UNARYINSTRUCTION)(COND) dest, arg
 type BaseUnaryInstr struct {
 	cond Cond
 	arg  Reg
@@ -106,19 +113,25 @@ type BaseUnaryInstr struct {
 }
 
 //NEGInstr struct
+// --> NEGS dest, arg
 type NEGInstr struct {
 	BaseUnaryInstr
 }
 
 //NOTInstr struct
+// --> EOR dest, arg
 type NOTInstr struct {
 	BaseUnaryInstr
 }
 
+// Returns string representation of NEGString struct
+// --> NEG dest, arg
 func (m *NEGInstr) String() string {
 	return fmt.Sprintf("\tNEGS %v, %v", m.dest, m.arg)
 }
 
+// Returns string representation of NEGString struct
+// --> EOR dest, arg
 func (m *NOTInstr) String() string {
 	return fmt.Sprintf("\tEOR %v, %v, #1", m.dest, m.arg)
 }
@@ -130,6 +143,7 @@ func (m *NOTInstr) String() string {
 // lhs is destination REG
 
 //BaseBinaryInstr struct
+// (BINARYINSTR)(COND) dest, lhs, rhs
 type BaseBinaryInstr struct {
 	cond Cond
 	dest Reg
@@ -148,6 +162,7 @@ type ImmediateOperand struct {
 }
 
 //RegisterOperand struct
+//-->reg, shift, #amount
 type RegisterOperand struct {
 	reg    Reg
 	shift  Shift
@@ -160,24 +175,31 @@ type CharOperand struct {
 }
 
 //ADDInstr struct
+//--> ADD(COND) dest, lhs, rhs
 type ADDInstr struct {
 	BaseBinaryInstr
 }
 
 //SUBInstr struct
+//-->SUB(COND) dest, lhs, rhs
 type SUBInstr struct {
 	BaseBinaryInstr
 }
 
 //RSBInstr struct
+//-->RSB(COND) dest, lhs, rhs
 type RSBInstr struct {
 	BaseBinaryInstr
 }
 
+// Returns String representation of ImmediateOperand
+//--> #n
 func (m ImmediateOperand) String() string {
 	return fmt.Sprintf("#%d", m.n)
 }
 
+// Returns String representation of RegisterOperand
+// --> reg, shift, #amount
 func (m RegisterOperand) String() string {
 	if m.shift > 0 {
 		return fmt.Sprintf("%v, %v #%d", m.reg, m.shift, m.amount)
@@ -186,18 +208,26 @@ func (m RegisterOperand) String() string {
 	return fmt.Sprintf("%v", m.reg)
 }
 
+// Returns the String representation of CharOperand
+//--> #char
 func (m CharOperand) String() string {
 	return fmt.Sprintf("#'%s'", m.char)
 }
 
+// Returns the String representation of the ADD Instruction
+//--> ADD(COND) dest, lhs, rhs
 func (m *ADDInstr) String() string {
 	return fmt.Sprintf("\tADDS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+// Returns the String representation of the SUB Instruction
+//--> SUB(COND) dest, lhs, rhs
 func (m *SUBInstr) String() string {
 	return fmt.Sprintf("\tSUBS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
 
+// Returns the String representation of the RSB Instruction
+//--> RSB(COND) dest, lhs, rhs
 func (m *RSBInstr) String() string {
 	return fmt.Sprintf("\tRSBS%v %v, %v, %v", m.cond, m.dest, m.lhs, m.rhs)
 }
@@ -207,6 +237,7 @@ func (m *RSBInstr) String() string {
 //------------------------------------------------------------------------------
 
 //BaseComparisonInstr struct
+// -->CMP(COND) lhs, rhs
 type BaseComparisonInstr struct {
 	cond Cond
 	lhs  Reg
@@ -214,37 +245,49 @@ type BaseComparisonInstr struct {
 }
 
 //CMPInstr struct
+//-->CMP(COND) lhs, rhs
 type CMPInstr struct {
 	BaseComparisonInstr
 }
 
 //CMNInstr struct
+//-->CMN(COND) lhs, rhs
 type CMNInstr struct {
 	BaseComparisonInstr
 }
 
 //TSTInstr struct
+//-->TST(COND) lhs, rhs
 type TSTInstr struct {
 	BaseComparisonInstr
 }
 
 //TEQInstr struct
+//-->TEQ(COND) lhs, rhs
 type TEQInstr struct {
 	BaseComparisonInstr
 }
 
+//Returns String representation of CMPInstr given
+//-->CMP(COND) lhs, rhs
 func (m *CMPInstr) String() string {
 	return fmt.Sprintf("\tCMP%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
+//Returns String representation of CMPInstr given
+//-->CMP(COND) lhs, rhs
 func (m *CMNInstr) String() string {
 	return fmt.Sprintf("\tCMN%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
+//Returns String representation of CMPInstr given
+//-->CMP(COND) lhs, rhs
 func (m *TSTInstr) String() string {
 	return fmt.Sprintf("\tTST%v %v, %s", m.cond, m.lhs, m.rhs)
 }
 
+//Returns String representation of CMPInstr given
+//-->CMP(COND) lhs, rhs
 func (m *TEQInstr) String() string {
 	return fmt.Sprintf("\tTEQ%v %v, %s", m.cond, m.lhs, m.rhs)
 }
@@ -254,21 +297,25 @@ func (m *TEQInstr) String() string {
 //------------------------------------------------------------------------------
 
 //ANDInstr struct
+//--> AND(COND) dest, lhs, rhs
 type ANDInstr struct {
 	BaseBinaryInstr
 }
 
 //EORInstr struct
+//--> EOR(COND) dest, lhs, rhs
 type EORInstr struct {
 	BaseBinaryInstr
 }
 
 //ORRInstr struct
+//--> OOR(COND) dest, lhs, rhs
 type ORRInstr struct {
 	BaseBinaryInstr
 }
 
 //BICInstr struct
+//--> BIC(COND) dest, lhs, rhs
 type BICInstr struct {
 	BaseBinaryInstr
 }
