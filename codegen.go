@@ -863,9 +863,7 @@ func (m *CharLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 }
 
 //CodeGen generates code for StringLiteral
-//TODO
-//TODO
-//TODO
+// --> LDR target, =msg_x
 func (m *StringLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup32(m.str)
 
@@ -1300,8 +1298,7 @@ func (m *CharLiteral) Weight() int {
 
 //Weight returns weight of StringLiteral
 func (m *StringLiteral) Weight() int {
-	//TODO ??
-	return 2
+	return 1
 }
 
 //Weight returns weight of PairLiteral
