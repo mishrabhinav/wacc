@@ -1439,6 +1439,15 @@ func (m *ExprParen) Weight() int {
 // ASSEMBLY UTIL FUNCTIONS
 //------------------------------------------------------------------------------
 
+//printNewLine generates code to print a New Line
+// p_print_ln:
+// --> 	PUSH {lr}
+// -->	LDR r0, =msg_4
+// -->	ADDS r0, r0, #4
+// -->	BL printf
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	POP {pc}
 func printNewLine(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNewLine)
 
@@ -1459,6 +1468,25 @@ func printNewLine(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//printString generates code to print a given string
+// p_print_string:
+// -->	PUSH {lr}
+// -->	PUSH {r4, r5}
+// -->	LDR r4, [r0]
+// -->	ADDS r5, r0, #4
+// p_print_string_loop:
+// -->	TEQ r4, #0
+// -->	BEQ p_print_string_return
+// -->	LDR r0, [r5]
+// -->	BL putchar
+// -->	SUBS r4, r4, #1
+// -->	ADDS r5, r5, #4
+// -->	B p_print_string_loop
+// p_print_string_return:
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	POP {r4, r5}
+// -->	POP {pc}
 func printString(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &LABELInstr{mPrintStringLabel}
 
@@ -1500,6 +1528,16 @@ func printString(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//printIntgenerates code to print a given int
+// p_print_int:
+// -->	PUSH {lr}
+// -->	MOV r1, r0
+// -->	LDR r0, =msg_0
+// -->	ADDS r0, r0, #4
+// -->	BL printf
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	POP {pc}
 func printInt(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintInt)
 
@@ -1524,6 +1562,11 @@ func printInt(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//printChar code to print a given char
+// p_print_char:
+// -->	PUSH {lr}
+// -->	BL putchar
+// -->	POP {pc}
 func printChar(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &LABELInstr{mPrintCharLabel}
 
@@ -1534,6 +1577,17 @@ func printChar(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//printBool code to print a given bool
+// p_print_bool:
+// -->	PUSH {lr}
+// -->	CMP r0, #0
+// -->	LDRNE r0, =msg_1
+// -->	LDREQ r0, =msg_2
+// -->	ADDS r0, r0, #4
+// -->	BL printf
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	POP {pc}
 func printBool(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mTrue)
 	msg1 := alloc.stringPool.Lookup8(mFalse)
@@ -1563,6 +1617,16 @@ func printBool(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//printReference code to print a given reference
+// p_print_reference:
+// -->	PUSH {lr}
+// -->	MOV r1, r0
+// -->	LDR r0, =msg_3
+// -->	ADDS r0, r0, #4
+// -->	BL printf
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	POP {pc}
 func printReference(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintReference)
 
@@ -1587,6 +1651,14 @@ func printReference(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//readInt code to read a given int
+// p_read_int:
+// -->	PUSH {lr}
+// -->	MOV r1, r0
+// -->	LDR r0, =msg_5
+// -->	ADDS r0, r0, #4
+// -->	BL scanf
+// -->	POP {pc}
 func readInt(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintInt)
 
@@ -1608,6 +1680,14 @@ func readInt(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//readChar code to read a given char
+// p_read_char:
+// -->	PUSH {lr}
+// -->	MOV r1, r0
+// -->	LDR r0, =msg_6
+// -->	ADDS r0, r0, #4
+// -->	BL scanf
+// -->	POP {pc}
 func readChar(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mReadChar)
 
@@ -1628,7 +1708,13 @@ func readChar(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
 }
 
-//CheckDivideByZero function
+//checkDivideByZero code to check if a divide by zero occurs
+// p_check_divide_by_zero:
+// -->	PUSH {lr}
+// -->	CMP r1, #0
+// -->	LDREQ r0, =msg_7
+// -->	BLEQ p_throw_runtime_error
+// -->	POP {pc}
 func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
 
@@ -1648,6 +1734,13 @@ func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 
 }
 
+//checkNullPointer code to check if it is a null pointer
+// pi_check_null_pointer:
+// -->	PUSH {lr}
+// -->	CMP r0, #0
+// -->	LDREQ r0, =msg_8
+// -->	BLEQ p_throw_runtime_error
+// -->	POP {pc}
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
 
@@ -1666,6 +1759,17 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//checkArrayBounds code to check if an Array Elem is in bounds
+// p_check_array_bounds:
+// -->	PUSH {lr}
+// -->	CMP r0, #0
+// -->	LDRLT r0, =msg_9
+// -->	BLLT p_throw_runtime_error
+// -->	LDR r1, [r1]
+// -->	CMP r0, r1
+// -->	LDRCS r0, =msg_10
+// -->	BLCS p_throw_runtime_error
+// -->	POP {pc}
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
@@ -1695,6 +1799,10 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
 }
 
+//checkOverflowUnderflow code to check if operation is in under/overflow
+// p_throw_overflow_error:
+// -->	LDR r0, =msg_11
+// -->	BL p_throw_runtime_error
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mOverflowErr)
 
@@ -1707,6 +1815,17 @@ func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BLInstr{BInstr: BInstr{label: mThrowRuntimeErr}}
 }
 
+//throwRuntimeError throws a runtime error
+// p_throw_runtime_error:
+// -->	LDR r1, [r0]
+// -->	ADDS r2, r0, #4
+// -->	LDR r0, =msg_12
+// -->	ADDS r0, r0, #4
+// -->	BL printf
+// -->	MOV r0, #0
+// -->	BL fflush
+// -->	MOV r0, #-1
+// -->	BL exit
 func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mPrintString)
 
