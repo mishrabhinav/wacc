@@ -75,8 +75,7 @@ type Reg interface {
 
 // ARMGenReg is a general purpose ARM register
 type ARMGenReg struct {
-	r    int
-	used int
+	r int
 }
 
 func (m *ARMGenReg) String() string {
@@ -126,6 +125,7 @@ var resReg = r0
 
 // RegAllocator tracks register usage
 type RegAllocator struct {
+	usage        []int
 	stringPool   *StringPool
 	fname        string
 	labelCounter int
@@ -141,6 +141,7 @@ func CreateRegAllocator() *RegAllocator {
 		regs: []*ARMGenReg{
 			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
+		usage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -148,7 +149,7 @@ func CreateRegAllocator() *RegAllocator {
 func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 	r := m.regs[0]
 
-	if r.used > 0 {
+	if m.usage[r.Reg()] > 0 {
 		insch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -157,7 +158,7 @@ func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 		m.PushStack(4)
 	}
 
-	r.used++
+	m.usage[r.Reg()]++
 
 	m.regs = append(m.regs[1:], r)
 
@@ -172,7 +173,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 
 	r := re.(*ARMGenReg)
 
-	if r.used > 1 {
+	if m.usage[r.Reg()] > 1 {
 		insch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -181,7 +182,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 		m.PopStack(4)
 	}
 
-	r.used--
+	m.usage[r.Reg()]--
 
 	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
 }
