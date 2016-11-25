@@ -54,7 +54,7 @@ const (
 		"\\n\\0"
 	mArrayNegIndexErr = "ArrayIndexOutOfBoundsError: negative index\\n\\0"
 	mArrayLrgIndexErr = "ArrayIndexOutOfBoundsError: index too large\\n\\0"
-	mOverflowErr      = "OverflowError: the result is too small/large to" +
+	mOverflowErr      = "OverflowError: the result is too small/large to " +
 		"store in a 4-byte signed-integer.\\n\\0"
 )
 
@@ -84,8 +84,7 @@ type Reg interface {
 
 // ARMGenReg is a general purpose ARM register
 type ARMGenReg struct {
-	r    int
-	used int
+	r int
 }
 
 func (m *ARMGenReg) String() string {
@@ -135,6 +134,7 @@ var resReg = r0
 
 // RegAllocator tracks register usage
 type RegAllocator struct {
+	usage        []int
 	stringPool   *StringPool
 	fname        string
 	labelCounter int
@@ -150,6 +150,7 @@ func CreateRegAllocator() *RegAllocator {
 		regs: []*ARMGenReg{
 			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
+		usage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -157,7 +158,7 @@ func CreateRegAllocator() *RegAllocator {
 func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 	r := m.regs[0]
 
-	if r.used > 0 {
+	if m.usage[r.Reg()] > 0 {
 		insch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -166,7 +167,7 @@ func (m *RegAllocator) GetReg(insch chan<- Instr) Reg {
 		m.PushStack(4)
 	}
 
-	r.used++
+	m.usage[r.Reg()]++
 
 	m.regs = append(m.regs[1:], r)
 
@@ -181,7 +182,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 
 	r := re.(*ARMGenReg)
 
-	if r.used > 1 {
+	if m.usage[r.Reg()] > 1 {
 		insch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -190,7 +191,7 @@ func (m *RegAllocator) FreeReg(re Reg, insch chan<- Instr) {
 		m.PopStack(4)
 	}
 
-	r.used--
+	m.usage[r.Reg()]--
 
 	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
 }
@@ -470,9 +471,7 @@ func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
 	m.expr.CodeGen(alloc, reg, insch)
-	if r0.Reg() != reg.Reg() {
-		insch <- &MOVInstr{dest: r0, source: reg}
-	}
+	insch <- &MOVInstr{dest: resReg, source: reg}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 		rhs: ImmediateOperand{alloc.stackSize}}}
@@ -744,7 +743,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 
 	//Array Pos Reg
 	arrayReg := alloc.GetReg(insch)
@@ -793,14 +792,10 @@ func (m *PairElemRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 }
 
 //CodeGen generates code for FunctionCallRHS
-// --> [Codegen param] << reg
-// --> PUSH reg
-// --> POP paramReg
-// --> BL func
-// --> MOV target, resReg
-// --> [Restore stack]
+//TODO
+//TODO
+//TODO
 func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
-	// put all parameters on the stack
 	for i := len(m.args) - 1; i >= 0; i-- {
 		reg := alloc.GetReg(insch)
 		m.args[i].CodeGen(alloc, reg, insch)
@@ -809,16 +804,14 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		alloc.FreeReg(reg, insch)
 	}
 
-	// pop the max first 4 into parameter registers
 	for i := 0; i < 4 && i < len(m.args); i++ {
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
 
 	insch <- &BLInstr{BInstr: BInstr{label: m.ident}}
 
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 
-	// pop the parameters from the stack
 	if pl := len(m.args); pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 			rhs: ImmediateOperand{(pl - 4) * 4}}}
@@ -892,7 +885,7 @@ func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 	//target cointains address of newpair
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 	elemReg := alloc.GetReg(insch)
 	m.fst.CodeGen(alloc, elemReg, insch)
 	insch <- &STRInstr{StoreInstr{reg: elemReg, value: &RegStoreOperand{target}}}
@@ -1040,7 +1033,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
 	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
 	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idiv"}}
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 	alloc.FreeReg(target2, insch)
 
 }
@@ -1307,16 +1300,13 @@ func (m *CharLiteral) Weight() int {
 
 //Weight returns weight of StringLiteral
 func (m *StringLiteral) Weight() int {
-	return 1
+	//TODO ??
+	return 2
 }
 
 //Weight returns weight of PairLiteral
 func (m *PairLiteral) Weight() int {
-	if m.weightCache > 0 {
-		return m.weightCache
-	}
-	m.weightCache = maxWeight(m.fst.Weight(), m.snd.Weight()) + 1
-	return m.weightCache
+	return maxWeight(m.fst.Weight(), m.snd.Weight()) + 1
 }
 
 //Weight returns weight of NullPair
@@ -1326,26 +1316,32 @@ func (m *NullPair) Weight() int {
 
 //Weight returns weight of ArrayElem
 func (m *ArrayElem) Weight() int {
-	if m.weightCache > 0 {
-		return m.weightCache
-	}
-	for _, index := range m.indexes {
-		iw := index.Weight()
-		if m.weightCache > iw {
-			m.weightCache = iw
-		}
-	}
-	m.weightCache++
-	return m.weightCache
+	return len(m.indexes) + 1
 }
 
-//Weight returns weight of all UnaryOperators
-func (m *UnaryOperatorBase) Weight() int {
-	if m.weightCache > 0 {
-		return m.weightCache
-	}
-	m.weightCache = m.expr.Weight()
-	return m.weightCache
+//Weight returns weight of UnaryOperatorNot
+func (m *UnaryOperatorNot) Weight() int {
+	return m.GetExpression().Weight()
+}
+
+//Weight returns weight of UnaryOperatorNegate
+func (m *UnaryOperatorNegate) Weight() int {
+	return m.GetExpression().Weight()
+}
+
+//Weight returns weight of UnaryOperatorLen
+func (m *UnaryOperatorLen) Weight() int {
+	return m.GetExpression().Weight()
+}
+
+//Weight returns weight of UnaryOperatorOrd
+func (m *UnaryOperatorOrd) Weight() int {
+	return m.GetExpression().Weight()
+}
+
+//Weight returns weight of UnaryOperatorChr
+func (m *UnaryOperatorChr) Weight() int {
+	return m.GetExpression().Weight()
 }
 
 func maxWeight(x, y int) int {
@@ -1362,15 +1358,75 @@ func minWeight(x, y int) int {
 	return y
 }
 
-//Weight returns weight of all BinaryOperators
-func (m *BinaryOperatorBase) Weight() int {
-	if m.weightCache > 0 {
-		return m.weightCache
-	}
-	cost1 := maxWeight(m.lhs.Weight(), m.rhs.Weight()+1)
-	cost2 := maxWeight(m.lhs.Weight()+1, m.rhs.Weight())
-	m.weightCache = minWeight(cost1, cost2)
-	return m.weightCache
+func binaryWeight(e1, e2 Expression) int {
+	cost1 := maxWeight(e1.Weight(), e2.Weight()+1)
+	cost2 := maxWeight(e1.Weight()+1, e2.Weight())
+	return minWeight(cost1, cost2)
+}
+
+//Weight returns weight of BinaryOperatorMult
+func (m *BinaryOperatorMult) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorDiv
+func (m *BinaryOperatorDiv) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorMod
+func (m *BinaryOperatorMod) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorAdd
+func (m *BinaryOperatorAdd) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorSub
+func (m *BinaryOperatorSub) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorGreaterThan
+func (m *BinaryOperatorGreaterThan) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorGreaterEqual
+func (m *BinaryOperatorGreaterEqual) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorLessThan
+func (m *BinaryOperatorLessThan) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorLessEqual
+func (m *BinaryOperatorLessEqual) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorEqual
+func (m *BinaryOperatorEqual) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorNotEqual
+func (m *BinaryOperatorNotEqual) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorAnd
+func (m *BinaryOperatorAnd) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
+}
+
+//Weight returns weight of BinaryOperatorOr
+func (m *BinaryOperatorOr) Weight() int {
+	return binaryWeight(m.GetLHS(), m.GetRHS())
 }
 
 //Weight returns weight of ExprParen
@@ -1753,7 +1809,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		switch m.returnType.(type) {
 		case InvalidType:
-			ch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
 		}
 
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
