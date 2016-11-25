@@ -433,9 +433,7 @@ func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
 	m.expr.CodeGen(alloc, reg, insch)
-	if r0.Reg() != reg.Reg() {
-		insch <- &MOVInstr{dest: r0, source: reg}
-	}
+	insch <- &MOVInstr{dest: resReg, source: reg}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 		rhs: ImmediateOperand{alloc.stackSize}}}
@@ -652,7 +650,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 
 	//Array Pos Reg
 	arrayReg := alloc.GetReg(insch)
@@ -717,7 +715,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 
 	insch <- &BLInstr{BInstr: BInstr{label: m.ident}}
 
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 
 	if pl := len(m.args); pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
@@ -776,7 +774,7 @@ func (m *PairLiteral) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Inst
 	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 	//target cointains address of newpair
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 	elemReg := alloc.GetReg(insch)
 	m.fst.CodeGen(alloc, elemReg, insch)
 	insch <- &STRInstr{StoreInstr{
@@ -894,7 +892,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
 	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
 	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idiv"}}
-	insch <- &MOVInstr{dest: target, source: r0}
+	insch <- &MOVInstr{dest: target, source: resReg}
 	alloc.FreeReg(target2, insch)
 
 }
@@ -1618,7 +1616,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 
 		switch m.returnType.(type) {
 		case InvalidType:
-			ch <- &MOVInstr{dest: r0, source: ImmediateOperand{0}}
+			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
 		}
 
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
