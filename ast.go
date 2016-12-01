@@ -8,6 +8,7 @@ package main
 // Functions to parse the WACC syntax tree into the AST
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -20,22 +21,53 @@ type Type interface {
 	aststring(indent string) string
 	Match(Type) bool
 	String() string
+	MangleSymbol() string
 }
 
 // InvalidType is a WACC type for invalid constructs
 type InvalidType struct{}
 
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m InvalidType) MangleSymbol() string {
+	panic(fmt.Errorf("Trying to mangle invalid type"))
+}
+
 // UnknownType is a WACC type for cases where the type is not known
 type UnknownType struct{}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m UnknownType) MangleSymbol() string {
+	return "unknown"
+}
 
 // IntType is the WACC type for integers
 type IntType struct{}
 
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m IntType) MangleSymbol() string {
+	return m.String()
+}
+
 // BoolType is the WACC type for booleans
 type BoolType struct{}
 
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m BoolType) MangleSymbol() string {
+	return m.String()
+}
+
 // CharType is the WACC type for characters
 type CharType struct{}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m CharType) MangleSymbol() string {
+	return m.String()
+}
 
 // PairType is the WACC type for pairs
 type PairType struct {
@@ -43,9 +75,28 @@ type PairType struct {
 	second Type
 }
 
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m PairType) MangleSymbol() string {
+	return fmt.Sprintf(
+		"p_f_%s_s_%s_e",
+		m.first.MangleSymbol(),
+		m.second.MangleSymbol(),
+	)
+}
+
 // ArrayType is the WACC type for arrays
 type ArrayType struct {
 	base Type
+}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m ArrayType) MangleSymbol() string {
+	return fmt.Sprintf(
+		"a_%s_e",
+		m.base.MangleSymbol(),
+	)
 }
 
 // Expression is the interface for WACC expressions
@@ -234,9 +285,10 @@ func (m *PairElemRHS) Type() Type {
 // FunctionCallRHS is the struct for function calls on the rhs of an assignment
 type FunctionCallRHS struct {
 	TokenBase
-	ident string
-	args  []Expression
-	wtype Type
+	ident        string
+	mangledIdent string
+	args         []Expression
+	wtype        Type
 }
 
 // Type returns the deduced type of the right hand side assignment source.
@@ -327,6 +379,26 @@ type FunctionDef struct {
 	returnType Type
 	params     []*FunctionParam
 	body       Statement
+}
+
+// Symbol returns the mangled symbol of the function to distinguish overloaded
+// variants
+func (m *FunctionDef) Symbol() string {
+	var buffer bytes.Buffer
+
+	buffer.WriteString(m.ident)
+
+	if len(m.params) > 0 {
+		buffer.WriteString("__ol_")
+	}
+
+	for _, param := range m.params {
+		buffer.WriteString(
+			fmt.Sprintf("_%s", param.wtype.MangleSymbol()),
+		)
+	}
+
+	return buffer.String()
 }
 
 // AST is the main struct that represents the abstract syntax tree

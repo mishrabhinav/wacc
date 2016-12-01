@@ -852,7 +852,7 @@ func (m *FunctionCallRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- 
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
 
-	insch <- &BLInstr{BInstr: BInstr{label: m.ident}}
+	insch <- &BLInstr{BInstr: BInstr{label: m.mangledIdent}}
 
 	insch <- &MOVInstr{dest: target, source: resReg}
 
@@ -1881,9 +1881,9 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		alloc := CreateRegAllocator()
 		alloc.stringPool = strPool
 		alloc.builtInFuncs = builtInFuncs
-		alloc.fname = m.ident
+		alloc.fname = m.Symbol()
 
-		ch <- &LABELInstr{m.ident}
+		ch <- &LABELInstr{m.Symbol()}
 
 		alloc.StartScope(ch)
 
@@ -1941,7 +1941,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
 		}
 
-		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.ident)}
+		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.Symbol())}
 
 		// restore the stack from pushing first four parameters
 		if pl := len(m.params); pl > 0 {
