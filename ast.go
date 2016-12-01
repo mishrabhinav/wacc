@@ -10,8 +10,33 @@ package main
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 )
+
+// PriorityMap is a map from interface to integers. It holds all the priority
+// value of all the Unary/Binary Operators
+var PriorityMap = map[interface{}]int{
+	UnaryOperatorNot{}:           2,
+	UnaryOperatorNegate{}:        2,
+	UnaryOperatorLen{}:           2,
+	UnaryOperatorOrd{}:           2,
+	UnaryOperatorChr{}:           2,
+	BinaryOperatorMult{}:         3,
+	BinaryOperatorDiv{}:          3,
+	BinaryOperatorMod{}:          3,
+	BinaryOperatorAdd{}:          4,
+	BinaryOperatorSub{}:          4,
+	BinaryOperatorGreaterThan{}:  6,
+	BinaryOperatorGreaterEqual{}: 6,
+	BinaryOperatorLessThan{}:     6,
+	BinaryOperatorLessEqual{}:    6,
+	BinaryOperatorEqual{}:        7,
+	BinaryOperatorNotEqual{}:     7,
+	BinaryOperatorAnd{}:          11,
+	BinaryOperatorOr{}:           12,
+	ExprParen{}:                  13,
+}
 
 // Type is an interface for WACC type
 type Type interface {
@@ -778,48 +803,16 @@ func parseExpr(node *node32) (Expression, error) {
 	// values taken from the operator precedence of C
 	// special case parenthesis,  otherwise a high value
 	prio := func(exp Expression) int {
-		switch exp.(type) {
-		case *UnaryOperatorNot:
-			return 2
-		case *UnaryOperatorNegate:
-			return 2
-		case *UnaryOperatorLen:
-			return 2
-		case *UnaryOperatorOrd:
-			return 2
-		case *UnaryOperatorChr:
-			return 2
-		case *BinaryOperatorMult:
-			return 3
-		case *BinaryOperatorDiv:
-			return 3
-		case *BinaryOperatorMod:
-			return 3
-		case *BinaryOperatorAdd:
-			return 4
-		case *BinaryOperatorSub:
-			return 4
-		case *BinaryOperatorGreaterThan:
-			return 6
-		case *BinaryOperatorGreaterEqual:
-			return 6
-		case *BinaryOperatorLessThan:
-			return 6
-		case *BinaryOperatorLessEqual:
-			return 6
-		case *BinaryOperatorEqual:
-			return 7
-		case *BinaryOperatorNotEqual:
-			return 7
-		case *BinaryOperatorAnd:
-			return 11
-		case *BinaryOperatorOr:
-			return 12
-		case *ExprParen:
-			return 13
-		default:
+		typ := reflect.TypeOf(exp).Elem()
+		expr := reflect.New(typ).Elem().Interface()
+
+		value, exists := PriorityMap[expr]
+		if !exists {
 			return 42
+			fmt.Println(42)
 		}
+
+		return value
 	}
 
 	// returns whether the operator is right associative
