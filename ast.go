@@ -738,33 +738,6 @@ var PriorityMap = map[interface{}]int{
 	ExprParen{}:                  13,
 }
 
-// PEGOperatorMap is nested map of outer operator rules to inner operator rule
-// and the inner operator rule maps to an Expression instance
-var PEGOperatorMap = map[pegRule]map[pegRule]Expression{
-	ruleUNARYOPER: {
-		ruleBANG:  &UnaryOperatorNot{},
-		ruleMINUS: &UnaryOperatorNegate{},
-		ruleLEN:   &UnaryOperatorLen{},
-		ruleORD:   &UnaryOperatorOrd{},
-		ruleCHR:   &UnaryOperatorChr{},
-	},
-	ruleBINARYOPER: {
-		ruleSTAR:    &BinaryOperatorMult{},
-		ruleDIV:     &BinaryOperatorDiv{},
-		ruleMOD:     &BinaryOperatorMod{},
-		rulePLUS:    &BinaryOperatorAdd{},
-		ruleMINUS:   &BinaryOperatorSub{},
-		ruleGT:      &BinaryOperatorGreaterThan{},
-		ruleGE:      &BinaryOperatorGreaterEqual{},
-		ruleLT:      &BinaryOperatorLessThan{},
-		ruleLE:      &BinaryOperatorLessEqual{},
-		ruleEQUEQU:  &BinaryOperatorEqual{},
-		ruleBANGEQU: &BinaryOperatorNotEqual{},
-		ruleANDAND:  &BinaryOperatorAnd{},
-		ruleOROR:    &BinaryOperatorOr{},
-	},
-}
-
 // parseExpr parses an expression and builds an expression tree that respects
 // the operator precedence
 // the function uses the shunting yard algorithm to achieve this
@@ -857,6 +830,32 @@ func parseExpr(node *node32) (Expression, error) {
 
 	// given a peg rule return the operator with the expressions set
 	ruleToOp := func(outer, inner pegRule) Expression {
+
+		var PEGOperatorMap = map[pegRule]map[pegRule]Expression{
+			ruleUNARYOPER: {
+				ruleBANG:  &UnaryOperatorNot{},
+				ruleMINUS: &UnaryOperatorNegate{},
+				ruleLEN:   &UnaryOperatorLen{},
+				ruleORD:   &UnaryOperatorOrd{},
+				ruleCHR:   &UnaryOperatorChr{},
+			},
+			ruleBINARYOPER: {
+				ruleSTAR:    &BinaryOperatorMult{},
+				ruleDIV:     &BinaryOperatorDiv{},
+				ruleMOD:     &BinaryOperatorMod{},
+				rulePLUS:    &BinaryOperatorAdd{},
+				ruleMINUS:   &BinaryOperatorSub{},
+				ruleGT:      &BinaryOperatorGreaterThan{},
+				ruleGE:      &BinaryOperatorGreaterEqual{},
+				ruleLT:      &BinaryOperatorLessThan{},
+				ruleLE:      &BinaryOperatorLessEqual{},
+				ruleEQUEQU:  &BinaryOperatorEqual{},
+				ruleBANGEQU: &BinaryOperatorNotEqual{},
+				ruleANDAND:  &BinaryOperatorAnd{},
+				ruleOROR:    &BinaryOperatorOr{},
+			},
+		}
+
 		value, exists := PEGOperatorMap[outer][inner]
 		if !exists {
 			return nil
