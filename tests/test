@@ -201,17 +201,6 @@ testBackend() {
 echo -e "${GREEN}===== WACC Compiler Testing${NC}"
 
 #----------------------------
-# Test Backend
-#----------------------------
-
-if [ "$BACKEND" = true ]; then
-  echo -e "${GREEN}===== BACKEND Testing${NC}"
-  # Test Valid Cases
-  echo -e "${LRED}----- Valid Testcases${NC}"
-  testBackend $VALID
-fi
-
-#----------------------------
 # Test Frontend
 #----------------------------
 if [ "$FRONTEND" = true ]; then
@@ -227,6 +216,17 @@ if [ "$FRONTEND" = true ]; then
   # Test Semantically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
   testFrontend $INVALID_SEMANTIC 200
+fi
+
+#----------------------------
+# Test Backend
+#----------------------------
+
+if [ "$BACKEND" = true ]; then
+  echo -e "${GREEN}===== BACKEND Testing${NC}"
+  # Test Valid Cases
+  echo -e "${LRED}----- Valid Testcases${NC}"
+  testBackend $VALID
 fi
 
 # Testing Complete
