@@ -151,48 +151,50 @@ testBackend() {
     else
       INPUT="/dev/null"
     fi
- 
-    docs/refCompile -x $fW < $INPUT > refResult.txt
-    sed -i '0,/^[=]\+/d' refResult.txt
-    sed -i '$ d' refResult.txt
-    sed -i '$ d' refResult.txt
-    sed -i '$ d' refResult.txt
-    sed -i '$ d' refResult.txt
-    sed -i 's/0x[a-f0-9]\+/0x/g' refResult.txt
 
     ./compile $fW
-    fW="$(basename $fW)"
-    f="$(echo $fW | sed 's/\.wacc//')"
+    f="$(basename $fW)"
+    f="${f%.wacc}"
     fs=$f".s"
 
     arm-linux-gnueabi-gcc -o $f -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $fs
     qemu-arm -L /usr/arm-linux-gnueabi/ $f < $INPUT > result.txt
+    LOCALEXIT=$?
+    REFEXIT=$(cat ${fW%.wacc}.refexit)
     sed -i 's/0x[a-f0-9]\+/0x/g' result.txt
 
-    DIFF="$(diff result.txt refResult.txt)"
+    DIFF="$(diff result.txt ${fW%.wacc}.refout)"
     # Print the result on test failure
-    if [ -z "$DIFF" ]; then
+    if [ "$LOCALEXIT" -ne "$REFEXIT" ]; then
+      RESULT="${RED}Fail${NC}"
+      FAIL=$(($FAIL+1))
+      echo "-------- EXPECTED --------"
+      echo "Exit code ${REFEXIT}"
+      echo "----------  GOT ----------"
+      echo "Exit code ${LOCALEXIT}"
+      echo -e "$OUT $RESULT"
+    elif [ -n "$DIFF" ]; then
+      RESULT="${RED}Fail${NC}"
+      FAIL=$(($FAIL+1))
+      echo "-------- EXPECTED --------"
+      cat ${fW%.wacc}.refout
+      echo "----------  GOT ----------"
+      cat result.txt
+      echo "------- DIFFERENCE -------"
+      diff result.txt ${fW%.wacc}.refout
+      echo -e "$OUT $RESULT"
+    else
       RESULT="${GREEN}Pass${NC}"
       PASS=$(($PASS+1))
       if [ "$SHOWPASS" = true ]; then
         echo -e "$OUT $RESULT"
       fi
-    else
-      RESULT="${RED}Fail${NC}"
-      FAIL=$(($FAIL+1))
-      echo "-------- EXPECTED --------"
-      cat refResult.txt
-      echo "----------  GOT ----------"
-      cat result.txt
-      echo "------- DIFFERENCE -------"
-      diff result.txt refResult.txt
-      echo -e "$OUT $RESULT"
     fi
     rm $f
     rm $fs
   done
-  rm refResult.txt
   rm result.txt
+  rm *.core
 }
 
 # Start Testing

@@ -1,0 +1,3 @@
+This program calculates the nth fibonacci number recursively.
+Please enter n (should not be too large): The input n is 30
+The nth fibonacci number is 832040

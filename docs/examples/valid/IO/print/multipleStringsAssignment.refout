@@ -1,0 +1,7 @@
+s1 is Hi
+s2 is Hi
+They are not the same.
+Now modify s1[0] = 'h'
+s1 is hi
+s2 is Hi
+They are not the same.

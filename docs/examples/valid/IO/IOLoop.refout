@@ -1,0 +1,18 @@
+Please input an integer: echo input: 1
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
+Please input an integer: echo input: 2
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
+Please input an integer: echo input: 3
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
+Please input an integer: echo input: 4
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
+Please input an integer: echo input: 5
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
+Please input an integer: echo input: 142
+Do you want to continue entering input?
+(enter Y for 'yes' and N for 'no')
