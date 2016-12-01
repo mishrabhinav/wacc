@@ -80,9 +80,9 @@ testFrontend() {
     nF=$(($nF+1))
     #x=2
     #nFP=$(( nFP / x ))
-    
+
     echo -ne "($nF/$TOTFILES)\r"
-    
+
     fs="$(echo $f | sed 's/\.wacc/.s/')"
 
     OUT=$OUT"${BROWN}File: ${CYAN}${f#*$1}${NC} : "
@@ -121,7 +121,7 @@ testBackend() {
   nB=0
   FAIL=0
   PASS=0
-  
+
   #calculate total number of files
   find $1 -name '*.wacc' > log.txt
   TOTFILESB=$(wc -l < log.txt)
@@ -136,7 +136,7 @@ testBackend() {
     nB=$(($nB+1))
     #x=2
     #nBP=$(( $nBi / x ))
-    
+
     #print progress bar
     echo -ne "($nB/$TOTFILESB)\r"
 
@@ -148,7 +148,7 @@ testBackend() {
     fi
     if [ -e $IN ]; then
       INPUT=$IN
-    else 
+    else
       INPUT="/dev/null"
     fi
  
@@ -164,9 +164,9 @@ testBackend() {
     fW="$(basename $fW)"
     f="$(echo $fW | sed 's/\.wacc//')"
     fs=$f".s"
-    
+
     arm-linux-gnueabi-gcc -o $f -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $fs
-    qemu-arm -L /usr/arm-linux-gnueabi/ $f < $INPUT > result.txt 
+    qemu-arm -L /usr/arm-linux-gnueabi/ $f < $INPUT > result.txt
     sed -i 's/0x[a-f0-9]\+/0x/g' result.txt
 
     DIFF="$(diff result.txt refResult.txt)"
