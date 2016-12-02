@@ -84,6 +84,7 @@ testFrontend() {
 
       echo -e"Result: $RESULT " >> log.txt 2>&1
       echo -e $OUT
+      RETURN=1
     fi
     if [ "$1" == "$VALID" ]; then
       fs=$(basename $fs)
@@ -93,6 +94,7 @@ testFrontend() {
   done < <(find $1 -name '*.wacc')
 
   rm log.txt
+  return $RETURN
 }
 
 #------------------------
@@ -156,6 +158,7 @@ testBackend() {
       echo "----------  GOT ----------"
       echo "Exit code ${LOCALEXIT}"
       echo -e "$OUT $RESULT"
+      RETURN=1
     elif [ -n "$DIFF" ]; then
       RESULT="${RED}Fail${NC}"
       FAIL=$(($FAIL+1))
@@ -166,6 +169,7 @@ testBackend() {
       echo "------- DIFFERENCE -------"
       diff result.txt ${fW%.wacc}.refout
       echo -e "$OUT $RESULT"
+      RETURN=1
     else
       RESULT="${GREEN}Pass${NC}"
       PASS=$(($PASS+1))
@@ -178,7 +182,10 @@ testBackend() {
   done < <(find $1 -name '*.wacc')
   rm result.txt
   rm *.core
+  return $RETURN
 }
+
+EXITCODE=0
 
 # Start Testing
 echo -e "${GREEN}===== WACC Compiler Testing${NC}"
@@ -190,15 +197,21 @@ if [ "$FRONTEND" = true ]; then
   echo -e "${GREEN}===== FRONTEND Testing"
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
-  testFrontend $VALID 0
+  if ! testFrontend $VALID 0; then
+    EXITCODE=1
+  fi
 
   # Test Syntactically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Syntax Error${NC}"
-  testFrontend $INVALID_SYNTAX 100
+  if ! testFrontend $INVALID_SYNTAX 100; then
+    EXITCODE=1
+  fi
 
   # Test Semantically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
-  testFrontend $INVALID_SEMANTIC 200
+  if ! testFrontend $INVALID_SEMANTIC 200; then
+    EXITCODE=1
+  fi
 fi
 
 #----------------------------
@@ -209,8 +222,11 @@ if [ "$BACKEND" = true ]; then
   echo -e "${GREEN}===== BACKEND Testing${NC}"
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
-  testBackend $VALID
+  if ! testBackend $VALID; then
+    EXITCODE=1
+  fi
 fi
 
 # Testing Complete
 echo -e "${GREEN}===== Testing Complete${NC}"
+exit $EXITCODE
