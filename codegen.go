@@ -476,6 +476,7 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 	alloc.fsPool.Add(mNullReferenceLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	m.expr.CodeGen(alloc, reg, insch)
 
@@ -713,6 +714,7 @@ func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target R
 	indexReg := alloc.GetReg(insch)
 	for index := 0; index < len(exprs); index++ {
 		alloc.fsPool.Add(mArrayBoundLbl)
+		alloc.fsPool.Add(mThrowRuntimeErr)
 
 		//Retrieve content of Array Address
 		insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
@@ -806,6 +808,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 func pairElem(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
 	alloc.fsPool.Add(mNullReferenceLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	//Mov + CheckNullPointer Label
 	insch <- &MOVInstr{dest: r0, source: target}
@@ -973,6 +976,7 @@ func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
 	alloc.fsPool.Add(mOverflowLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 
@@ -1033,6 +1037,7 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 		Rs: target2}
 
 	alloc.fsPool.Add(mOverflowLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrMul
@@ -1074,6 +1079,7 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	}
 
 	alloc.fsPool.Add(mDivideByZeroLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
@@ -1115,6 +1121,7 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	}
 
 	alloc.fsPool.Add(mDivideByZeroLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
@@ -1148,6 +1155,7 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	}
 
 	alloc.fsPool.Add(mOverflowLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{dest: target, lhs: target2,
 		rhs: target}}
@@ -1190,6 +1198,7 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 	}
 
 	alloc.fsPool.Add(mOverflowLbl)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrSub
@@ -1708,7 +1717,6 @@ func readChar(alloc *RegAllocator, insch chan<- Instr) {
 // -->	POP {pc}
 func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
-	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mDivideByZeroLbl}
 
@@ -1735,7 +1743,6 @@ func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 // -->	POP {pc}
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
-	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mNullReferenceLbl}
 
@@ -1766,7 +1773,6 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
-	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mArrayBoundLbl}
 
@@ -1799,7 +1805,6 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 // -->	BL p_throw_runtime_error
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mOverflowErr)
-	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mOverflowLbl}
 
