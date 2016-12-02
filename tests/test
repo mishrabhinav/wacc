@@ -23,41 +23,23 @@ VALID="$DEFAULT_PATH/valid"
 FRONTEND=true
 BACKEND=true
 
-case "$1" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+while [[ $# -gt 0 ]]; do
+  key="$1"
 
-case "$2" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+  case $key in
+      -nof|--no-frontend)
+      FRONTEND=false
+      ;;
+      -nob|--no-backend)
+      BACKEND=false
+      ;;
+      *)
+              # unknown option
+      ;;
+  esac
 
-case "$3" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+  shift # past argument or value
+done
 
 #------------------------
 # TEST FRONTEND FUNCTION
