@@ -1844,11 +1844,12 @@ func throwRuntimeError(alloc *RegAllocator, insch chan<- Instr) {
 // GENERAL CODEGEN UTILITY
 //------------------------------------------------------------------------------
 
-func codeGenBuiltin(strPool *StringPool, f func(*RegAllocator, chan<- Instr)) <-chan Instr {
+func codeGenBuiltin(strPool *StringPool, fsPool *FSPool, f func(*RegAllocator, chan<- Instr)) <-chan Instr {
 	ch := make(chan Instr)
 
 	alloc := CreateRegAllocator()
 	alloc.stringPool = strPool
+	alloc.fsPool = fsPool
 
 	go func() {
 		f(alloc, ch)
@@ -2013,7 +2014,7 @@ func (m *AST) CodeGen() <-chan Instr {
 		// prints, reads, runtime errors
 		for function, print := range fsPool.pool {
 			if print {
-				for instr := range codeGenBuiltin(strPool, FSMap[function]) {
+				for instr := range codeGenBuiltin(strPool, fsPool, FSMap[function]) {
 					txtInstr = append(txtInstr, instr)
 				}
 			}
