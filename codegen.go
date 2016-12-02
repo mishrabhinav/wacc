@@ -136,6 +136,7 @@ var resReg = r0
 type RegAllocator struct {
 	usage        []int
 	stringPool   *StringPool
+	fsPool       *FSPool
 	fname        string
 	labelCounter int
 	regs         []*ARMGenReg
@@ -261,6 +262,26 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 	}
 	m.PopStack(sl)
 	m.stack = m.stack[1:]
+}
+
+//-----------------------------------------------------------------------------
+// GLOBAL SUPPORT FUNCTIONS
+//-----------------------------------------------------------------------------
+
+type FSPool struct {
+	sync.RWMutex
+	pool map[string]bool
+}
+
+func (m *FSPool) Add(function string) {
+	m.Lock()
+	defer m.Unlock()
+
+	if m.pool == nil {
+		m.pool = make(map[string]bool)
+	}
+
+	m.pool[function] = true
 }
 
 //------------------------------------------------------------------------------
@@ -427,10 +448,12 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	switch m.target.Type().(type) {
 	case IntType:
+		alloc.fsPool.Add(mReadIntLabel)
 		insch <- &BLInstr{
 			BInstr: BInstr{label: mReadIntLabel},
 		}
 	case CharType:
+		alloc.fsPool.Add(mReadCharLabel)
 		insch <- &BLInstr{BInstr: BInstr{label: mReadCharLabel}}
 	default:
 		panic(fmt.Errorf("%v has no type information", m.target))
@@ -511,18 +534,24 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 	alloc.FreeReg(r, insch)
 	switch t := m.Type().(type) {
 	case IntType:
+		alloc.fsPool.Add(mPrintIntLabel)
 		insch <- &BLInstr{BInstr: BInstr{label: mPrintIntLabel}}
 	case BoolType:
+		alloc.fsPool.Add(mPrintBoolLabel)
 		insch <- &BLInstr{BInstr: BInstr{label: mPrintBoolLabel}}
 	case CharType:
+		alloc.fsPool.Add(mPrintCharLabel)
 		insch <- &BLInstr{BInstr: BInstr{label: mPrintCharLabel}}
 	case PairType:
+		alloc.fsPool.Add(mPrintReferenceLabel)
 		insch <- &BLInstr{BInstr: BInstr{label: mPrintReferenceLabel}}
 	case ArrayType:
 		switch t.base.(type) {
 		case CharType:
+			alloc.fsPool.Add(mPrintStringLabel)
 			insch <- &BLInstr{BInstr: BInstr{label: mPrintStringLabel}}
 		default:
+			alloc.fsPool.Add(mPrintReferenceLabel)
 			insch <- &BLInstr{BInstr: BInstr{label: mPrintReferenceLabel}}
 		}
 	default:
@@ -994,6 +1023,8 @@ func (m *BinaryOperatorMult) CodeGen(alloc *RegAllocator, target Reg, insch chan
 	binaryInstrMul := &SMULLInstr{RdLo: target, RdHi: target2, Rm: target,
 		Rs: target2}
 
+	alloc.fsPool.Add(mOverflowLbl)
+
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrMul
 
@@ -1032,6 +1063,9 @@ func (m *BinaryOperatorDiv) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhsResult = target2
 		rhsResult = target
 	}
+
+	alloc.fsPool.Add(mDivideByZeroLbl)
+
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
 	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
@@ -1070,6 +1104,9 @@ func (m *BinaryOperatorMod) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		lhsResult = target2
 		rhsResult = target
 	}
+
+	alloc.fsPool.Add(mDivideByZeroLbl)
+
 	insch <- &MOVInstr{dest: r0, source: lhsResult}
 	insch <- &MOVInstr{dest: r1, source: rhsResult}
 	insch <- &BLInstr{BInstr: BInstr{label: mDivideByZeroLbl}}
@@ -1100,6 +1137,9 @@ func (m *BinaryOperatorAdd) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		target2 = alloc.GetReg(insch)
 		lhs.CodeGen(alloc, target2, insch)
 	}
+
+	alloc.fsPool.Add(mOverflowLbl)
+
 	binaryInstrAdd := &ADDInstr{BaseBinaryInstr{dest: target, lhs: target2,
 		rhs: target}}
 	alloc.FreeReg(target2, insch)
@@ -1139,6 +1179,9 @@ func (m *BinaryOperatorSub) CodeGen(alloc *RegAllocator, target Reg, insch chan<
 		binaryInstrSub = &SUBInstr{BaseBinaryInstr{dest: target,
 			lhs: target2, rhs: target}}
 	}
+
+	alloc.fsPool.Add(mOverflowLbl)
+
 	alloc.FreeReg(target2, insch)
 	insch <- binaryInstrSub
 
@@ -1371,7 +1414,6 @@ func (m *BinaryOperatorBase) Weight() int {
 
 //Weight returns weight of ExprParen
 func (m *ExprParen) Weight() int {
-	//TODO
 	return -1
 }
 
@@ -1657,6 +1699,7 @@ func readChar(alloc *RegAllocator, insch chan<- Instr) {
 // -->	POP {pc}
 func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mDivideByZeroErr)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mDivideByZeroLbl}
 
@@ -1683,6 +1726,7 @@ func checkDivideByZero(alloc *RegAllocator, insch chan<- Instr) {
 // -->	POP {pc}
 func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mNullReferenceErr)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mNullReferenceLbl}
 
@@ -1713,6 +1757,7 @@ func checkNullPointer(alloc *RegAllocator, insch chan<- Instr) {
 func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 	msg0 := alloc.stringPool.Lookup8(mArrayNegIndexErr)
 	msg1 := alloc.stringPool.Lookup8(mArrayLrgIndexErr)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mArrayBoundLbl}
 
@@ -1745,6 +1790,7 @@ func checkArrayBounds(alloc *RegAllocator, insch chan<- Instr) {
 // -->	BL p_throw_runtime_error
 func checkOverflowUnderflow(alloc *RegAllocator, insch chan<- Instr) {
 	msg := alloc.stringPool.Lookup8(mOverflowErr)
+	alloc.fsPool.Add(mThrowRuntimeErr)
 
 	insch <- &LABELInstr{ident: mOverflowLbl}
 
@@ -1813,12 +1859,13 @@ func codeGenBuiltin(strPool *StringPool, f func(*RegAllocator, chan<- Instr)) <-
 }
 
 // CodeGen generates instructions for functions
-func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
+func (m *FunctionDef) CodeGen(strPool *StringPool, fsPool *FSPool) <-chan Instr {
 	ch := make(chan Instr)
 
 	go func() {
 		alloc := CreateRegAllocator()
 		alloc.stringPool = strPool
+		alloc.fsPool = fsPool
 		alloc.fname = m.ident
 
 		ch <- &LABELInstr{m.ident}
@@ -1912,23 +1959,40 @@ func (m *FunctionDef) CodeGen(strPool *StringPool) <-chan Instr {
 	return ch
 }
 
+var FSMap = map[string]func(*RegAllocator, chan<- Instr){
+	mPrintIntLabel:       printInt,
+	mPrintCharLabel:      printChar,
+	mPrintBoolLabel:      printBool,
+	mPrintStringLabel:    printString,
+	mPrintReferenceLabel: printReference,
+	mPrintNewLineLabel:   printNewLine,
+	mReadIntLabel:        readInt,
+	mReadCharLabel:       readChar,
+	mDivideByZeroLbl:     checkDivideByZero,
+	mNullReferenceLbl:    checkNullPointer,
+	mArrayBoundLbl:       checkArrayBounds,
+	mOverflowLbl:         checkOverflowUnderflow,
+	mThrowRuntimeErr:     throwRuntimeError,
+}
+
 // CodeGen generates instructions for the whole program
 func (m *AST) CodeGen() <-chan Instr {
 	ch := make(chan Instr)
 	var charr []<-chan Instr
 
 	strPool := &StringPool{}
+	fsPool := &FSPool{}
 
 	// start codegen for all functions concurrently
 	for _, f := range m.functions {
-		charr = append(charr, f.CodeGen(strPool))
+		charr = append(charr, f.CodeGen(strPool, fsPool))
 	}
 	mainF := &FunctionDef{
 		ident:      "main",
 		returnType: InvalidType{},
 		body:       m.main,
 	}
-	charr = append(charr, mainF.CodeGen(strPool))
+	charr = append(charr, mainF.CodeGen(strPool, fsPool))
 
 	go func() {
 		ch <- &DataSegInstr{}
@@ -1947,56 +2011,12 @@ func (m *AST) CodeGen() <-chan Instr {
 
 		// generate code for builtin functions
 		// prints, reads, runtime errors
-		for instr := range codeGenBuiltin(strPool, printInt) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, printChar) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, printBool) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, printString) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, printReference) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, printNewLine) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, readInt) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, readChar) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, checkDivideByZero) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, checkNullPointer) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, checkArrayBounds) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, checkOverflowUnderflow) {
-			txtInstr = append(txtInstr, instr)
-		}
-
-		for instr := range codeGenBuiltin(strPool, throwRuntimeError) {
-			txtInstr = append(txtInstr, instr)
+		for function, print := range fsPool.pool {
+			if print {
+				for instr := range codeGenBuiltin(strPool, FSMap[function]) {
+					txtInstr = append(txtInstr, instr)
+				}
+			}
 		}
 
 		// output the strings used in the WACC program
