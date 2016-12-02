@@ -22,6 +22,7 @@ VALID="$DEFAULT_PATH/valid"
 
 FRONTEND=true
 BACKEND=true
+PROGRESS=false
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -32,6 +33,9 @@ while [[ $# -gt 0 ]]; do
       ;;
       -nob|--no-backend)
       BACKEND=false
+      ;;
+      -p|--progress)
+      PROGRESS=true
       ;;
       *)
               # unknown option
@@ -63,7 +67,9 @@ testFrontend() {
     #x=2
     #nFP=$(( nFP / x ))
 
-    echo -ne "($nF/$TOTFILES)\r"
+    if [ "$PROGRESS" = true ]; then
+      echo -ne "($nF/$TOTFILES)\r"
+    fi
 
     fs="$(echo $f | sed 's/\.wacc/.s/')"
 
@@ -119,8 +125,10 @@ testBackend() {
     #x=2
     #nBP=$(( $nBi / x ))
 
-    #print progress bar
-    echo -ne "($nB/$TOTFILESB)\r"
+    if [ "$PROGRESS" = true ]; then
+      #print progress bar
+      echo -ne "($nB/$TOTFILESB)\r"
+    fi
 
 
     OUT="$nB:${GREEN} $PASS${RED} $FAIL${BROWN} File: ${CYAN}${fW#*$1}${NC} : "
