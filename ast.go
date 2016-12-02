@@ -53,7 +53,6 @@ type Expression interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Type() Type
-	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
