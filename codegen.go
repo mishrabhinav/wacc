@@ -268,11 +268,14 @@ func (m *RegAllocator) CleanupScope(insch chan<- Instr) {
 // GLOBAL SUPPORT FUNCTIONS
 //-----------------------------------------------------------------------------
 
+// FSPool (Function Support Pool) holds the support function required in the
+// in the file being compiled
 type FSPool struct {
 	sync.RWMutex
 	pool map[string]bool
 }
 
+// Add will add the requested function in the assembly code
 func (m *FSPool) Add(function string) {
 	m.Lock()
 	defer m.Unlock()
@@ -566,6 +569,7 @@ func print(m Expression, alloc *RegAllocator, insch chan<- Instr) {
 // --> BL p_print_ln
 // --> [CodeGen next instruction]
 func (m *PrintLnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	alloc.fsPool.Add(mPrintNewLineLabel)
 	print(m.expr, alloc, insch)
 
 	insch <- &BLInstr{BInstr{label: mPrintNewLineLabel}}
@@ -1960,6 +1964,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, fsPool *FSPool) <-chan Instr 
 	return ch
 }
 
+// FSMap is a map from the function labels to instruction generating functions
 var FSMap = map[string]func(*RegAllocator, chan<- Instr){
 	mPrintIntLabel:       printInt,
 	mPrintCharLabel:      printChar,
