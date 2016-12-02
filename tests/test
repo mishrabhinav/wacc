@@ -88,12 +88,12 @@ testFrontend() {
     fi
     if [ "$1" == "$VALID" ]; then
       fs=$(basename $fs)
-      rm $fs
+      rm -f $fs
     fi
     OUT=""
   done < <(find $1 -name '*.wacc')
 
-  rm log.txt
+  rm -f log.txt
   return $RETURN
 }
 
@@ -177,11 +177,11 @@ testBackend() {
         echo -e "$OUT $RESULT"
       fi
     fi
-    rm $f
-    rm $fs
+    rm -f $f
+    rm -f $fs
   done < <(find $1 -name '*.wacc')
-  rm result.txt
-  rm *.core
+  rm -f result.txt
+  rm -f *.core
   return $RETURN
 }
 
