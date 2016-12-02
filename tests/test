@@ -198,19 +198,19 @@ if [ "$FRONTEND" = true ]; then
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
   if ! testFrontend $VALID 0; then
-    EXITCODE=1
+    EXITCODE=$((EXITCODE + 1))
   fi
 
   # Test Syntactically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Syntax Error${NC}"
   if ! testFrontend $INVALID_SYNTAX 100; then
-    EXITCODE=1
+    EXITCODE=$((EXITCODE + 2))
   fi
 
   # Test Semantically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
   if ! testFrontend $INVALID_SEMANTIC 200; then
-    EXITCODE=1
+    EXITCODE=$((EXITCODE + 4))
   fi
 fi
 
@@ -223,7 +223,7 @@ if [ "$BACKEND" = true ]; then
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
   if ! testBackend $VALID; then
-    EXITCODE=1
+    EXITCODE=$((EXITCODE + 8))
   fi
 fi
 
