@@ -46,7 +46,7 @@ const (
 	mMalloc               = "malloc"
 	mThrowRuntimeErr      = "p_throw_runtime_error"
 	mDivideByZeroLbl      = "p_check_divide_by_zero"
-	mNullReferenceLbl     = "pi_check_null_pointer"
+	mNullReferenceLbl     = "p_check_null_pointer"
 	mOverflowLbl          = "p_throw_overflow_error"
 	mArrayBoundLbl        = "p_check_array_bounds"
 	mDivideByZeroErr      = "DivideByZeroError: divide or modulo by zero\\n\\0"
@@ -475,6 +475,7 @@ func (m *ReadStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 // --> [CodeGen next instruction]
 func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
+	alloc.fsPool.Add(mNullReferenceLbl)
 
 	m.expr.CodeGen(alloc, reg, insch)
 
@@ -711,6 +712,7 @@ func arrayHelper(ident string, exprs []Expression, alloc *RegAllocator, target R
 	//Place index in new Register
 	indexReg := alloc.GetReg(insch)
 	for index := 0; index < len(exprs); index++ {
+		alloc.fsPool.Add(mArrayBoundLbl)
 
 		//Retrieve content of Array Address
 		insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target}}}
@@ -803,6 +805,7 @@ func (m *ArrayLiterRHS) CodeGen(alloc *RegAllocator, target Reg, insch chan<- In
 
 func pairElem(expr Expression, alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	expr.CodeGen(alloc, target, insch)
+	alloc.fsPool.Add(mNullReferenceLbl)
 
 	//Mov + CheckNullPointer Label
 	insch <- &MOVInstr{dest: r0, source: target}
@@ -969,6 +972,8 @@ func (m *UnaryOperatorNot) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 // --> BL p_throw_overflow_error
 func (m *UnaryOperatorNegate) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(alloc, target, insch)
+	alloc.fsPool.Add(mOverflowLbl)
+
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
