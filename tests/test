@@ -22,42 +22,28 @@ VALID="$DEFAULT_PATH/valid"
 
 FRONTEND=true
 BACKEND=true
+PROGRESS=false
 
-case "$1" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+while [[ $# -gt 0 ]]; do
+  key="$1"
 
-case "$2" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+  case $key in
+      -nof|--no-frontend)
+      FRONTEND=false
+      ;;
+      -nob|--no-backend)
+      BACKEND=false
+      ;;
+      -p|--progress)
+      PROGRESS=true
+      ;;
+      *)
+              # unknown option
+      ;;
+  esac
 
-case "$3" in
-  -v)
-    SHOWPASS=true
-   ;;
-  -nof)
-    FRONTEND=false
-   ;;
-  -nob)
-    BACKEND=false
-   ;;
-esac
+  shift # past argument or value
+done
 
 #------------------------
 # TEST FRONTEND FUNCTION
@@ -68,12 +54,9 @@ testFrontend() {
 
   nF=0
   #calculate total number of files
-  find $1 -name '*.wacc' > log.txt
-  TOTFILES=$(wc -l < log.txt)
-  rm log.txt
+  TOTFILES=$(find $1 -name '*.wacc' | wc -l)
 
-  find $1 -name '*.wacc' | while read f;
-  do
+  while read f; do
 
     #create PROGRESS BAR
     #calculate percentage
@@ -81,7 +64,9 @@ testFrontend() {
     #x=2
     #nFP=$(( nFP / x ))
 
-    echo -ne "($nF/$TOTFILES)\r"
+    if [ "$PROGRESS" = true ]; then
+      echo -ne "($nF/$TOTFILES)\r"
+    fi
 
     fs="$(echo $f | sed 's/\.wacc/.s/')"
 
@@ -99,15 +84,17 @@ testFrontend() {
 
       echo -e"Result: $RESULT " >> log.txt 2>&1
       echo -e $OUT
+      RETURN=1
     fi
     if [ "$1" == "$VALID" ]; then
       fs=$(basename $fs)
-      rm $fs
+      rm -f $fs
     fi
     OUT=""
-  done
+  done < <(find $1 -name '*.wacc')
 
-  rm log.txt
+  rm -f log.txt
+  return $RETURN
 }
 
 #------------------------
@@ -123,13 +110,9 @@ testBackend() {
   PASS=0
 
   #calculate total number of files
-  find $1 -name '*.wacc' > log.txt
-  TOTFILESB=$(wc -l < log.txt)
-  rm log.txt
+  TOTFILESB=$(find $1 -name '*.wacc' | wc -l)
 
-
-  find $1 -name '*.wacc' | while read fW;
-  do
+  while read fW; do
 
     #create PROGRESS BAR
     #calculate percentage
@@ -137,8 +120,10 @@ testBackend() {
     #x=2
     #nBP=$(( $nBi / x ))
 
-    #print progress bar
-    echo -ne "($nB/$TOTFILESB)\r"
+    if [ "$PROGRESS" = true ]; then
+      #print progress bar
+      echo -ne "($nB/$TOTFILESB)\r"
+    fi
 
 
     OUT="$nB:${GREEN} $PASS${RED} $FAIL${BROWN} File: ${CYAN}${fW#*$1}${NC} : "
@@ -173,6 +158,7 @@ testBackend() {
       echo "----------  GOT ----------"
       echo "Exit code ${LOCALEXIT}"
       echo -e "$OUT $RESULT"
+      RETURN=1
     elif [ -n "$DIFF" ]; then
       RESULT="${RED}Fail${NC}"
       FAIL=$(($FAIL+1))
@@ -183,6 +169,7 @@ testBackend() {
       echo "------- DIFFERENCE -------"
       diff result.txt ${fW%.wacc}.refout
       echo -e "$OUT $RESULT"
+      RETURN=1
     else
       RESULT="${GREEN}Pass${NC}"
       PASS=$(($PASS+1))
@@ -190,12 +177,15 @@ testBackend() {
         echo -e "$OUT $RESULT"
       fi
     fi
-    rm $f
-    rm $fs
-  done
-  rm result.txt
-  rm *.core
+    rm -f $f
+    rm -f $fs
+  done < <(find $1 -name '*.wacc')
+  rm -f result.txt
+  rm -f *.core
+  return $RETURN
 }
+
+EXITCODE=0
 
 # Start Testing
 echo -e "${GREEN}===== WACC Compiler Testing${NC}"
@@ -207,15 +197,21 @@ if [ "$FRONTEND" = true ]; then
   echo -e "${GREEN}===== FRONTEND Testing"
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
-  testFrontend $VALID 0
+  if ! testFrontend $VALID 0; then
+    EXITCODE=$((EXITCODE + 1))
+  fi
 
   # Test Syntactically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Syntax Error${NC}"
-  testFrontend $INVALID_SYNTAX 100
+  if ! testFrontend $INVALID_SYNTAX 100; then
+    EXITCODE=$((EXITCODE + 2))
+  fi
 
   # Test Semantically Invalid Cases
   echo -e "${LRED}----- Invalid Testcases - Semantic Error${NC}"
-  testFrontend $INVALID_SEMANTIC 200
+  if ! testFrontend $INVALID_SEMANTIC 200; then
+    EXITCODE=$((EXITCODE + 4))
+  fi
 fi
 
 #----------------------------
@@ -226,8 +222,11 @@ if [ "$BACKEND" = true ]; then
   echo -e "${GREEN}===== BACKEND Testing${NC}"
   # Test Valid Cases
   echo -e "${LRED}----- Valid Testcases${NC}"
-  testBackend $VALID
+  if ! testBackend $VALID; then
+    EXITCODE=$((EXITCODE + 8))
+  fi
 fi
 
 # Testing Complete
 echo -e "${GREEN}===== Testing Complete${NC}"
+exit $EXITCODE

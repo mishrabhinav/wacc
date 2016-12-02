@@ -1,0 +1,21 @@
+stages:
+  - build
+  - test
+
+before_script:
+  - curl http://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz 2>/dev/null > go1.7.4.linux-amd64.tar.gz
+  - tar -xf go1.7.4.linux-amd64.tar.gz
+  - mv go /usr/local
+  - export PATH=$PATH:/usr/local/go/bin
+  - export GOPATH=$HOME/gopath
+
+build:
+  stage: build
+  script:
+    - make
+
+test:
+  stage: test
+  script:
+    - make
+    - ./tests/test
