@@ -54,12 +54,9 @@ testFrontend() {
 
   nF=0
   #calculate total number of files
-  find $1 -name '*.wacc' > log.txt
-  TOTFILES=$(wc -l < log.txt)
-  rm log.txt
+  TOTFILES=$(find $1 -name '*.wacc' | wc -l)
 
-  find $1 -name '*.wacc' | while read f;
-  do
+  while read f; do
 
     #create PROGRESS BAR
     #calculate percentage
@@ -93,7 +90,7 @@ testFrontend() {
       rm $fs
     fi
     OUT=""
-  done
+  done < <(find $1 -name '*.wacc')
 
   rm log.txt
 }
@@ -111,13 +108,9 @@ testBackend() {
   PASS=0
 
   #calculate total number of files
-  find $1 -name '*.wacc' > log.txt
-  TOTFILESB=$(wc -l < log.txt)
-  rm log.txt
+  TOTFILESB=$(find $1 -name '*.wacc' | wc -l)
 
-
-  find $1 -name '*.wacc' | while read fW;
-  do
+  while read fW; do
 
     #create PROGRESS BAR
     #calculate percentage
@@ -182,7 +175,7 @@ testBackend() {
     fi
     rm $f
     rm $fs
-  done
+  done < <(find $1 -name '*.wacc')
   rm result.txt
   rm *.core
 }
