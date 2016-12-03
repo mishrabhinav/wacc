@@ -10,6 +10,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 )
 
@@ -713,6 +714,30 @@ func exprStream(node *node32) <-chan *node32 {
 	return out
 }
 
+// PriorityMap is a map from interface to integers. It holds all
+// the priority value of all the Unary/Binary Operators
+var PriorityMap = map[interface{}]int{
+	UnaryOperatorNot{}:           2,
+	UnaryOperatorNegate{}:        2,
+	UnaryOperatorLen{}:           2,
+	UnaryOperatorOrd{}:           2,
+	UnaryOperatorChr{}:           2,
+	BinaryOperatorMult{}:         3,
+	BinaryOperatorDiv{}:          3,
+	BinaryOperatorMod{}:          3,
+	BinaryOperatorAdd{}:          4,
+	BinaryOperatorSub{}:          4,
+	BinaryOperatorGreaterThan{}:  6,
+	BinaryOperatorGreaterEqual{}: 6,
+	BinaryOperatorLessThan{}:     6,
+	BinaryOperatorLessEqual{}:    6,
+	BinaryOperatorEqual{}:        7,
+	BinaryOperatorNotEqual{}:     7,
+	BinaryOperatorAnd{}:          11,
+	BinaryOperatorOr{}:           12,
+	ExprParen{}:                  13,
+}
+
 // parseExpr parses an expression and builds an expression tree that respects
 // the operator precedence
 // the function uses the shunting yard algorithm to achieve this
@@ -778,62 +803,25 @@ func parseExpr(node *node32) (Expression, error) {
 	// values taken from the operator precedence of C
 	// special case parenthesis,  otherwise a high value
 	prio := func(exp Expression) int {
-		switch exp.(type) {
-		case *UnaryOperatorNot:
-			return 2
-		case *UnaryOperatorNegate:
-			return 2
-		case *UnaryOperatorLen:
-			return 2
-		case *UnaryOperatorOrd:
-			return 2
-		case *UnaryOperatorChr:
-			return 2
-		case *BinaryOperatorMult:
-			return 3
-		case *BinaryOperatorDiv:
-			return 3
-		case *BinaryOperatorMod:
-			return 3
-		case *BinaryOperatorAdd:
-			return 4
-		case *BinaryOperatorSub:
-			return 4
-		case *BinaryOperatorGreaterThan:
-			return 6
-		case *BinaryOperatorGreaterEqual:
-			return 6
-		case *BinaryOperatorLessThan:
-			return 6
-		case *BinaryOperatorLessEqual:
-			return 6
-		case *BinaryOperatorEqual:
-			return 7
-		case *BinaryOperatorNotEqual:
-			return 7
-		case *BinaryOperatorAnd:
-			return 11
-		case *BinaryOperatorOr:
-			return 12
-		case *ExprParen:
-			return 13
-		default:
+		typ := reflect.TypeOf(exp).Elem()
+		expr := reflect.New(typ).Elem().Interface()
+
+		value, exists := PriorityMap[expr]
+		if !exists {
 			return 42
 		}
+
+		return value
 	}
 
 	// returns whether the operator is right associative
 	rightAssoc := func(exp Expression) bool {
 		switch exp.(type) {
-		case *UnaryOperatorNot:
-			return true
-		case *UnaryOperatorNegate:
-			return true
-		case *UnaryOperatorLen:
-			return true
-		case *UnaryOperatorOrd:
-			return true
-		case *UnaryOperatorChr:
+		case *UnaryOperatorNot,
+			*UnaryOperatorNegate,
+			*UnaryOperatorLen,
+			*UnaryOperatorOrd,
+			*UnaryOperatorChr:
 			return true
 		default:
 			return false
@@ -842,52 +830,38 @@ func parseExpr(node *node32) (Expression, error) {
 
 	// given a peg rule return the operator with the expressions set
 	ruleToOp := func(outer, inner pegRule) Expression {
-		switch outer {
-		case ruleUNARYOPER:
-			switch inner {
-			case ruleBANG:
-				return &UnaryOperatorNot{}
-			case ruleMINUS:
-				return &UnaryOperatorNegate{}
-			case ruleLEN:
-				return &UnaryOperatorLen{}
-			case ruleORD:
-				return &UnaryOperatorOrd{}
-			case ruleCHR:
-				return &UnaryOperatorChr{}
-			}
-		case ruleBINARYOPER:
-			switch inner {
-			case ruleSTAR:
-				return &BinaryOperatorMult{}
-			case ruleDIV:
-				return &BinaryOperatorDiv{}
-			case ruleMOD:
-				return &BinaryOperatorMod{}
-			case rulePLUS:
-				return &BinaryOperatorAdd{}
-			case ruleMINUS:
-				return &BinaryOperatorSub{}
-			case ruleGT:
-				return &BinaryOperatorGreaterThan{}
-			case ruleGE:
-				return &BinaryOperatorGreaterEqual{}
-			case ruleLT:
-				return &BinaryOperatorLessThan{}
-			case ruleLE:
-				return &BinaryOperatorLessEqual{}
-			case ruleEQUEQU:
-				return &BinaryOperatorEqual{}
-			case ruleBANGEQU:
-				return &BinaryOperatorNotEqual{}
-			case ruleANDAND:
-				return &BinaryOperatorAnd{}
-			case ruleOROR:
-				return &BinaryOperatorOr{}
-			}
+
+		var PEGOperatorMap = map[pegRule]map[pegRule]Expression{
+			ruleUNARYOPER: {
+				ruleBANG:  &UnaryOperatorNot{},
+				ruleMINUS: &UnaryOperatorNegate{},
+				ruleLEN:   &UnaryOperatorLen{},
+				ruleORD:   &UnaryOperatorOrd{},
+				ruleCHR:   &UnaryOperatorChr{},
+			},
+			ruleBINARYOPER: {
+				ruleSTAR:    &BinaryOperatorMult{},
+				ruleDIV:     &BinaryOperatorDiv{},
+				ruleMOD:     &BinaryOperatorMod{},
+				rulePLUS:    &BinaryOperatorAdd{},
+				ruleMINUS:   &BinaryOperatorSub{},
+				ruleGT:      &BinaryOperatorGreaterThan{},
+				ruleGE:      &BinaryOperatorGreaterEqual{},
+				ruleLT:      &BinaryOperatorLessThan{},
+				ruleLE:      &BinaryOperatorLessEqual{},
+				ruleEQUEQU:  &BinaryOperatorEqual{},
+				ruleBANGEQU: &BinaryOperatorNotEqual{},
+				ruleANDAND:  &BinaryOperatorAnd{},
+				ruleOROR:    &BinaryOperatorOr{},
+			},
 		}
 
-		return nil
+		value, exists := PEGOperatorMap[outer][inner]
+		if !exists {
+			return nil
+		}
+
+		return value
 	}
 
 	// process the nodes in order
