@@ -1,0 +1,6 @@
+begin
+  int sub(int a, int b) is
+    return a - b
+  end
+  skip
+end
