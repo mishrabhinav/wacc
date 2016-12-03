@@ -25,7 +25,6 @@ func main() {
 
 	// Open the input wacc file and read the code
 	file, err := os.Open(flags.filename)
-	addFileToInclude(flags.filename)
 
 	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
