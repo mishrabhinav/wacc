@@ -1386,7 +1386,9 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 // parseInclude parses all the WACC files included in current file
 func parseInclude(node *node32) *Include {
 	include := &Include{}
-	include.file = nextNode(node, ruleSTRLITER).match
+
+	strNode := nextNode(node, ruleSTRLITER)
+	include.file = nextNode(strNode.up, ruleSTR).match
 
 	return include
 }
