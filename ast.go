@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"sync"
@@ -1437,7 +1438,8 @@ func parseWACC(node *node32) (*AST, error) {
 // IncludeFilesMap holds the included files
 type IncludeFilesMap struct {
 	sync.RWMutex
-	files map[string]bool
+	files    map[string]bool
+	baseFile string
 }
 
 // Include will add the files to the map
@@ -1453,6 +1455,8 @@ func (m *IncludeFilesMap) Include(file string) {
 }
 
 func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
+	dir := filepath.Dir(includeFilesMap.baseFile)
+
 	for _, include := range ast.includes {
 		_, included := includeFilesMap.files[include.file]
 		if included {
@@ -1462,8 +1466,9 @@ func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
 		}
 
 		includeFilesMap.Include(include.file)
+		absoluteFile := fmt.Sprintf("%v/%v", dir, include.file)
 
-		inclFile, inclErr := os.Open(include.file)
+		inclFile, inclErr := os.Open(absoluteFile)
 
 		buffer, inclErr := ioutil.ReadAll(inclFile)
 		if inclErr != nil {
@@ -1521,6 +1526,7 @@ func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
 func ParseAST(wacc *WACC) (ast *AST, err error) {
 	includeFilesMap := &IncludeFilesMap{}
 	includeFilesMap.Include(wacc.File)
+	includeFilesMap.baseFile = wacc.File
 
 	ast, err = nil, errors.New("expected ruleWACC")
 	node := wacc.AST()
