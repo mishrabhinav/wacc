@@ -47,6 +47,11 @@ type ArrayType struct {
 	base Type
 }
 
+// Include is the WACC type for file inclusions
+type Include struct {
+	file string
+}
+
 // Expression is the interface for WACC expressions
 type Expression interface {
 	aststring(indent string) string
@@ -291,6 +296,7 @@ type FunctionDef struct {
 type AST struct {
 	main      Statement
 	functions []*FunctionDef
+	includes  []*Include
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
@@ -1377,6 +1383,14 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	return function, nil
 }
 
+// parseInclude parses all the WACC files included in current file
+func parseInclude(node *node32) *Include {
+	include := &Include{}
+	include.file = nextNode(node, ruleSTRLITER).match
+
+	return include
+}
+
 // parse the main WACC block that contains all function definitions and the main
 // body
 func parseWACC(node *node32) (*AST, error) {
@@ -1387,6 +1401,9 @@ func parseWACC(node *node32) (*AST, error) {
 		case ruleBEGIN:
 		case ruleEND:
 		case ruleSPACE:
+		case ruleINCL:
+			i := parseInclude(node.up)
+			ast.includes = append(ast.includes, i)
 		case ruleFUNC:
 			f, err := parseFunction(node.up)
 			ast.functions = append(ast.functions, f)

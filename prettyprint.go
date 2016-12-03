@@ -95,6 +95,12 @@ func (a ArrayType) String() string {
 	return fmt.Sprintf("%v[]", a.base)
 }
 
+// Prints the file includes. Format:
+//   "include <filename.wacc>"
+func (incl *Include) String() string {
+	return fmt.Sprintf("include %v", incl.file)
+}
+
 // Prints identifier Types. Format:
 //   "[ident]"
 // Recurses on ident.
@@ -543,6 +549,10 @@ func (ast *AST) String() string {
 	var tree string
 
 	tree = fmt.Sprintf("begin")
+
+	for _, include := range ast.includes {
+		tree = fmt.Sprintf("%v\n  %v\n", tree, include)
+	}
 
 	for _, function := range ast.functions {
 		tree = fmt.Sprintf("%v\n%v\n", tree,
