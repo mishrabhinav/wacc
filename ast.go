@@ -1455,7 +1455,6 @@ func (m *IncludeFilesMap) Include(file string) {
 }
 
 func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
-	fmt.Println(includeFilesMap.baseFile)
 	dir := filepath.Dir(includeFilesMap.baseFile)
 
 	for _, include := range ast.includes {
