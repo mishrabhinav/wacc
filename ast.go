@@ -1455,18 +1455,20 @@ func (m *IncludeFilesMap) Include(file string) {
 }
 
 func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
+	fmt.Println(includeFilesMap.baseFile)
 	dir := filepath.Dir(includeFilesMap.baseFile)
 
 	for _, include := range ast.includes {
-		_, included := includeFilesMap.files[include.file]
+		absoluteFile := fmt.Sprintf("%v/%v", dir, include.file)
+
+		_, included := includeFilesMap.files[absoluteFile]
 		if included {
 			fmt.Println("Warning:", include.file,
 				"already included")
 			continue
 		}
 
-		includeFilesMap.Include(include.file)
-		absoluteFile := fmt.Sprintf("%v/%v", dir, include.file)
+		includeFilesMap.Include(absoluteFile)
 
 		inclFile, inclErr := os.Open(absoluteFile)
 
@@ -1479,7 +1481,7 @@ func appendIncludedFiles(ast *AST, includeFilesMap *IncludeFilesMap) {
 
 		// Initialise the Lexer and Parser
 		waccIncl := &WACC{Buffer: string(buffer),
-			File: include.file}
+			File: absoluteFile}
 		waccIncl.Init()
 
 		// Parse the supplied code and check for errors
