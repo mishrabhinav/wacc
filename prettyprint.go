@@ -98,7 +98,7 @@ func (a ArrayType) String() string {
 // Prints the file includes. Format:
 //   "include <filename.wacc>"
 func (incl *Include) String() string {
-	return fmt.Sprintf("include %v", incl.file)
+	return fmt.Sprintf("include \"%v\"", incl.file)
 }
 
 // Prints identifier Types. Format:
