@@ -17,9 +17,9 @@ import (
 	"path/filepath"
 )
 
-// initalSyntaxAnalysis checks the syntax of the input file and exits if there
+// parseInput checks the syntax of the input file and exits if there
 // are any errors
-func initialSyntaxAnalysis(filename string) *WACC {
+func parseInput(filename string) *WACC {
 	// Open the input wacc file and read the code
 	file, err := os.Open(filename)
 
@@ -122,7 +122,7 @@ func main() {
 	ifm.Include(flags.filename)
 
 	// Initial syntax analysis by the lexer/parser library
-	wacc := initialSyntaxAnalysis(flags.filename)
+	wacc := parseInput(flags.filename)
 
 	// Generate AST from the WACC struct produced by the peg library
 	ast := generateASTFromWACC(wacc, ifm)
