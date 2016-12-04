@@ -1,0 +1,10 @@
+begin
+  include "add.wacc"
+  include "addThree.wacc"
+
+  int x = call addThree(1, 2, 3) ;
+  println x ;
+
+  int y = call add(1,2) ;
+  println y
+end

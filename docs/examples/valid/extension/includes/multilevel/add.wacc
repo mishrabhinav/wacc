@@ -1,0 +1,9 @@
+begin
+  include "sub.wacc"
+
+  int add(int a, int b) is
+    int y = call sub(a, b) ;
+    return y + a
+  end
+  skip
+end

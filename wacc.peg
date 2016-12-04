@@ -6,7 +6,9 @@ type WACC Peg {}
 # WACC Language Rules
 #-------------------------------------------------------------------------------
 
-WACC		<- SPACE BEGIN FUNC* STAT END EOT
+WACC		<- SPACE BEGIN INCL* FUNC* STAT END EOT
+
+INCL		<- INCLUDE STRLITER SPACE
 
 FUNC		<- TYPE IDENT LPAR PARAMLIST? RPAR IS STAT END
 
@@ -144,6 +146,7 @@ FREE		<- 'free'	!IDCHAR SPACE
 FST		<- 'fst'	!IDCHAR SPACE
 IF		<- 'if'		!IDCHAR SPACE
 IS		<- 'is'		!IDCHAR SPACE
+INCLUDE		<- 'include'	!IDCHAR SPACE
 INT		<- 'int'	!IDCHAR SPACE
 LEN		<- 'len'	!IDCHAR SPACE
 NEWPAIR		<- 'newpair'	!IDCHAR SPACE
@@ -177,6 +180,7 @@ KEYWORD		<- ('begin'
 		/ 'fst'
 		/ 'if'
 		/ 'is'
+		/ 'include'
 		/ 'int'
 		/ 'len'
 		/ 'newpair'

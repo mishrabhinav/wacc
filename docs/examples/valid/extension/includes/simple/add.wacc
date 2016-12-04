@@ -1,0 +1,6 @@
+begin
+  int add(int a, int b) is
+    return a + b
+  end
+  skip
+end

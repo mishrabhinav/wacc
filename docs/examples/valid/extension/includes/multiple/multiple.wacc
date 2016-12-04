@@ -1,0 +1,9 @@
+begin
+  include "add.wacc"
+  include "sub.wacc"
+
+  int x = call add(2, 3) ;
+  println x ;
+  int y = call sub(3,2) ;
+  println y
+end

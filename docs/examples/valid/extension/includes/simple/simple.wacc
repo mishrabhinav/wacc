@@ -1,0 +1,6 @@
+begin
+  include "add.wacc"
+
+  int x = call add(2, 3) ;
+  println x
+end
