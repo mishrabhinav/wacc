@@ -51,8 +51,10 @@ func main() {
 		wacc.PrintSyntaxTree()
 	}
 
+	ifm := setupIncludeFileMap(wacc.File)
+
 	// Parse the library generated tree and return the sanitized AST
-	ast, err := ParseAST(wacc)
+	ast, err := ParseAST(wacc, ifm)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(100)
