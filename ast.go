@@ -10,8 +10,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1466,33 +1464,9 @@ func appendIncludedFiles(ast *AST, ifm *IncludeFiles) {
 
 		ifm.Include(absoluteFile)
 
-		inclFile, inclErr := os.Open(absoluteFile)
+		waccIncl := initialSyntaxAnalysis(absoluteFile)
 
-		buffer, inclErr := ioutil.ReadAll(inclFile)
-		if inclErr != nil {
-			fmt.Println("Error: Included file",
-				include.file, "couldn't be opened")
-			os.Exit(1)
-		}
-
-		// Initialise the Lexer and Parser
-		waccIncl := &WACC{Buffer: string(buffer), File: absoluteFile}
-		waccIncl.Init()
-
-		// Parse the supplied code and check for errors
-		inclErr = waccIncl.Parse()
-		if inclErr != nil {
-			log.Print(inclErr)
-			os.Exit(100)
-		}
-
-		// Parse the library generated tree and return the
-		// sanitized AST
-		astIncl, inclErr := ParseAST(waccIncl, ifm)
-		if inclErr != nil {
-			fmt.Println(inclErr.Error())
-			os.Exit(100)
-		}
+		astIncl := generateASTFromWACC(waccIncl, ifm)
 
 		ast.functions = append(ast.functions,
 			astIncl.functions...)
