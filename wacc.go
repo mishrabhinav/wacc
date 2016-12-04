@@ -16,20 +16,19 @@ import (
 	"os"
 )
 
-func syntaxAnalysis(flags *Flags) *AST {
+// initalSyntaxAnalysis checks the syntax of the input file and exits if there
+// are any errors
+func initialSyntaxAnalysis(filename string) *WACC {
 	// Open the input wacc file and read the code
-	file, err := os.Open(flags.filename)
+	file, err := os.Open(filename)
 
 	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Prints compiler stage, if verbose flag is supplied
-	flags.Start()
-
 	// Initialise the Lexer and Parser
-	wacc := &WACC{Buffer: string(buffer), File: flags.filename}
+	wacc := &WACC{Buffer: string(buffer), File: filename}
 	wacc.Init()
 
 	// Parse the supplied code and check for errors
@@ -39,23 +38,18 @@ func syntaxAnalysis(flags *Flags) *AST {
 		os.Exit(100)
 	}
 
-	// Prints the PEG Tree structure, if peg flag is supplied
-	if flags.printPEGTree {
-		fmt.Println("-- Printing PEG Tree")
-		wacc.PrintSyntaxTree()
-	}
+	return wacc
+}
 
-	ifm := setupIncludeFileMap(wacc.File)
-
+// generateASTFromWACC takes the wacc file and the included files and generates
+// the AST
+func generateASTFromWACC(wacc *WACC, ifm *IncludeFiles) *AST {
 	// Parse the library generated tree and return the sanitized AST
 	ast, err := ParseAST(wacc, ifm)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(100)
 	}
-
-	// Prints the AST in pretty format, if appropriate flag supplied
-	flags.PrintPrettyAST(ast)
 
 	// Look for further syntax errors, which were missed by the grammar
 	if retErrs := ast.CheckFunctionCodePaths(); len(retErrs) > 0 {
@@ -68,6 +62,8 @@ func syntaxAnalysis(flags *Flags) *AST {
 	return ast
 }
 
+// semanticAnalysis checks the semantics of the imput file and exits if there
+// any errors
 func semanticAnalysis(ast *AST) {
 	// Check the semantics of the syntactically correct program
 	if typeErrs := ast.TypeCheck(); len(typeErrs) > 0 {
@@ -78,6 +74,8 @@ func semanticAnalysis(ast *AST) {
 	}
 }
 
+// codeGeneration generates the assembly code for the input file and puts it in
+// a `.s` file
 func codeGeneration(ast *AST, flags *Flags) {
 	// Initialise Code Generation
 	armFile := bufio.NewWriter(os.Stdout)
@@ -112,7 +110,22 @@ func main() {
 	var flags = &Flags{}
 	flags.Parse()
 
-	ast := syntaxAnalysis(flags)
+	// Prints compiler stage, if verbose flag is supplied
+	flags.Start()
+
+	ifm := setupIncludeFiles(flags.filename)
+	wacc := initialSyntaxAnalysis(flags.filename)
+
+	ast := generateASTFromWACC(wacc, ifm)
+
+	// Prints the PEG Tree structure, if peg flag is supplied
+	if flags.printPEGTree {
+		fmt.Println("-- Printing PEG Tree")
+		wacc.PrintSyntaxTree()
+	}
+
+	// Prints the AST in pretty format, if appropriate flag supplied
+	flags.PrintPrettyAST(ast)
 
 	semanticAnalysis(ast)
 
