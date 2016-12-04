@@ -97,8 +97,8 @@ func (a ArrayType) String() string {
 
 // Prints the file includes. Format:
 //   "include <filename.wacc>"
-func (incl *Include) String() string {
-	return fmt.Sprintf("include \"%v\"", incl.file)
+func includeString(file string) string {
+	return fmt.Sprintf("include \"%v\"", file)
 }
 
 // Prints identifier Types. Format:
@@ -551,7 +551,7 @@ func (ast *AST) String() string {
 	tree = fmt.Sprintf("begin")
 
 	for _, include := range ast.includes {
-		tree = fmt.Sprintf("%v\n  %v\n", tree, include)
+		tree = fmt.Sprintf("%v\n  %v\n", tree, includeString(include))
 	}
 
 	for _, function := range ast.functions {
