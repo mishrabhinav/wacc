@@ -10,7 +10,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"sync"
@@ -47,11 +46,6 @@ type PairType struct {
 // ArrayType is the WACC type for arrays
 type ArrayType struct {
 	base Type
-}
-
-// Include is the WACC type for file inclusions
-type Include struct {
-	file string
 }
 
 // Expression is the interface for WACC expressions
@@ -298,7 +292,7 @@ type FunctionDef struct {
 type AST struct {
 	main      Statement
 	functions []*FunctionDef
-	includes  []*Include
+	includes  []string
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
@@ -1386,18 +1380,16 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 }
 
 // parseInclude parses all the WACC files included in current file
-func parseInclude(node *node32) *Include {
-	include := &Include{}
-
+func parseInclude(node *node32) string {
 	strNode := nextNode(node, ruleSTRLITER)
-	include.file = nextNode(strNode.up, ruleSTR).match
+	file := nextNode(strNode.up, ruleSTR).match
 
-	return include
+	return file
 }
 
 // parse the main WACC block that contains all function definitions and the main
 // body
-func parseWACC(node *node32) (*AST, error) {
+func parseWACC(node *node32, ifm *IncludeFiles) (*AST, error) {
 	ast := &AST{}
 
 	for node := range nodeRange(node) {
@@ -1429,6 +1421,8 @@ func parseWACC(node *node32) (*AST, error) {
 		}
 	}
 
+	appendIncludedFiles(ast, ifm)
+
 	return ast, nil
 }
 
@@ -1456,7 +1450,7 @@ func (m *IncludeFiles) Include(file string) {
 func appendIncludedFiles(ast *AST, ifm *IncludeFiles) {
 	for _, include := range ast.includes {
 		absoluteFile := fmt.Sprintf("%v/%v", ifm.dir,
-			include.file)
+			include)
 
 		_, included := ifm.files[absoluteFile]
 		if included {
@@ -1465,7 +1459,7 @@ func appendIncludedFiles(ast *AST, ifm *IncludeFiles) {
 
 		ifm.Include(absoluteFile)
 
-		waccIncl := initialSyntaxAnalysis(absoluteFile)
+		waccIncl := parseInput(absoluteFile)
 		astIncl := generateASTFromWACC(waccIncl, ifm)
 
 		ast.functions = append(ast.functions,
@@ -1481,15 +1475,8 @@ func ParseAST(wacc *WACC, ifm *IncludeFiles) (ast *AST, err error) {
 	ast, err = nil, errors.New("expected ruleWACC")
 	node := wacc.AST()
 
-	switch node.pegRule {
-	case ruleWACC:
-		ast, err = parseWACC(node.up)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(100)
-		}
-
-		appendIncludedFiles(ast, ifm)
+	if node.pegRule == ruleWACC {
+		ast, err = parseWACC(node.up, ifm)
 	}
 
 	return
