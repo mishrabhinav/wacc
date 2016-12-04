@@ -195,13 +195,13 @@ func (m *AST) TypeCheck() []error {
 		for _, f := range m.functions {
 			fscope := global.Child()
 			for _, arg := range f.params {
-				pt := fscope.Declare(arg.name, arg.waccType)
+				pt := fscope.Declare(arg.name, arg.wtype)
 				if pt != nil {
 					errch <- CreateVariableRedeclarationError(
 						arg.Token(),
 						arg.name,
 						pt,
-						arg.waccType,
+						arg.wtype,
 					)
 				}
 			}
@@ -237,20 +237,20 @@ func (m *BlockStatement) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the statement has any type mismatches in expressions
 // and assignments. The check is propagated recursively
 func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
-	if pt := ts.Declare(m.ident, m.waccType); pt != nil {
+	if pt := ts.Declare(m.ident, m.wtype); pt != nil {
 		errch <- CreateVariableRedeclarationError(
 			m.Token(),
 			m.ident,
 			pt,
-			m.waccType,
+			m.wtype,
 		)
 	}
 
 	m.rhs.TypeCheck(ts, errch)
-	if rhsT := m.rhs.Type(); !m.waccType.Match(rhsT) {
+	if rhsT := m.rhs.Type(); !m.wtype.Match(rhsT) {
 		errch <- CreateTypeMismatchError(
 			m.rhs.Token(),
-			m.waccType,
+			m.wtype,
 			rhsT,
 		)
 	}
@@ -562,7 +562,7 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	for i := 0; i < len(fun.params) && i < len(m.args); i++ {
-		paramT := fun.params[i].waccType
+		paramT := fun.params[i].wtype
 		argT := m.args[i].Type()
 		if !paramT.Match(argT) {
 			errch <- CreateTypeMismatchError(

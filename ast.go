@@ -117,9 +117,9 @@ type BlockStatement struct {
 // side expression to it
 type DeclareAssignStatement struct {
 	BaseStatement
-	waccType Type
-	ident    string
-	rhs      RHS
+	wtype Type
+	ident string
+	rhs   RHS
 }
 
 // LHS is the interface for the left hand side of an assignment
@@ -316,8 +316,8 @@ type WhileStatement struct {
 // FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
-	name     string
-	waccType Type
+	name  string
+	wtype Type
 }
 
 // FunctionDef is the struct for a function definition
@@ -1185,15 +1185,15 @@ func parsePairType(node *node32) (Type, error) {
 // parseType parse a type definition
 func parseType(node *node32) (Type, error) {
 	var err error
-	var waccType Type
+	var wtype Type
 
 	switch node.pegRule {
 	case ruleBASETYPE:
-		if waccType, err = parseBaseType(node.up); err != nil {
+		if wtype, err = parseBaseType(node.up); err != nil {
 			return nil, err
 		}
 	case rulePAIRTYPE:
-		if waccType, err = parsePairType(node.up); err != nil {
+		if wtype, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
 	case rulePAIR: // pair inside a pair, that misses type information
@@ -1201,10 +1201,10 @@ func parseType(node *node32) (Type, error) {
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {
-		waccType = ArrayType{base: waccType}
+		wtype = ArrayType{base: wtype}
 	}
 
-	return waccType, nil
+	return wtype, nil
 }
 
 // parseStatement parses a statement by checking which rule they start with
@@ -1229,7 +1229,7 @@ func parseStatement(node *node32) (Statement, error) {
 		decl := new(DeclareAssignStatement)
 
 		typeNode := nextNode(node, ruleTYPE)
-		if decl.waccType, err = parseType(typeNode.up); err != nil {
+		if decl.wtype, err = parseType(typeNode.up); err != nil {
 			return nil, err
 		}
 
@@ -1373,7 +1373,7 @@ func parseParam(node *node32) (*FunctionParam, error) {
 
 	param.SetToken(&node.token32)
 
-	param.waccType, err = parseType(nextNode(node, ruleTYPE).up)
+	param.wtype, err = parseType(nextNode(node, ruleTYPE).up)
 	if err != nil {
 		return nil, err
 	}

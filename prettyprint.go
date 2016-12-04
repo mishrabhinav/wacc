@@ -395,7 +395,7 @@ func (stmt *BlockStatement) istring(level int) string {
 //   "[type] [ident]=[rhs]"
 // Recurses on type, ident and rhs.
 func (stmt *DeclareAssignStatement) istring(level int) string {
-	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.waccType,
+	return fmt.Sprintf("%v%v %v = %v", getIndentation(level), stmt.wtype,
 		stmt.ident, stmt.rhs)
 }
 
@@ -502,7 +502,7 @@ func (stmt *WhileStatement) istring(level int) string {
 //   "[type] [name]"
 // Recurses on type and name.
 func (fp *FunctionParam) String() string {
-	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
+	return fmt.Sprintf("%v %v", fp.wtype, fp.name)
 }
 
 // Prints a function definition. Format:
