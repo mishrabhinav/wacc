@@ -1461,8 +1461,6 @@ func appendIncludedFiles(ast *AST, ifm *IncludeFilesMap) {
 
 		_, included := ifm.files[absoluteFile]
 		if included {
-			fmt.Println("Warning:", include.file,
-				"already included")
 			continue
 		}
 
