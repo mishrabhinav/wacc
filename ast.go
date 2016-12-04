@@ -53,7 +53,6 @@ type Expression interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Type() Type
-	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
@@ -118,9 +117,9 @@ type BlockStatement struct {
 // side expression to it
 type DeclareAssignStatement struct {
 	BaseStatement
-	waccType Type
-	ident    string
-	rhs      RHS
+	wtype Type
+	ident string
+	rhs   RHS
 }
 
 // LHS is the interface for the left hand side of an assignment
@@ -128,7 +127,6 @@ type LHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Type() Type
-	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
@@ -176,7 +174,7 @@ func (m *VarLHS) Type() Type {
 type RHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
-	GetType(*Scope) Type
+	Type() Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
@@ -188,10 +186,29 @@ type PairLiterRHS struct {
 	PairLiteral
 }
 
+// Type returns the deduced type of the right hand side assignment source.
+func (m *PairLiterRHS) Type() Type {
+	fstT := m.fst.Type()
+	sndT := m.snd.Type()
+
+	return PairType{first: fstT, second: sndT}
+}
+
 // ArrayLiterRHS is the struct for array literals on the rhs of an assignment
 type ArrayLiterRHS struct {
 	TokenBase
 	elements []Expression
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *ArrayLiterRHS) Type() Type {
+	if len(m.elements) == 0 {
+		return ArrayType{base: UnknownType{}}
+	}
+
+	t := m.elements[0].Type()
+
+	return ArrayType{t}
 }
 
 // PairElemRHS is the struct for pair elements on the rhs of an assignment
@@ -201,17 +218,41 @@ type PairElemRHS struct {
 	expr Expression
 }
 
+// Type returns the deduced type of the right hand side assignment source.
+func (m *PairElemRHS) Type() Type {
+	switch t := m.expr.Type().(type) {
+	case PairType:
+		if !m.snd {
+			return t.first
+		}
+		return t.second
+	default:
+		return InvalidType{}
+	}
+}
+
 // FunctionCallRHS is the struct for function calls on the rhs of an assignment
 type FunctionCallRHS struct {
 	TokenBase
 	ident string
 	args  []Expression
+	wtype Type
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *FunctionCallRHS) Type() Type {
+	return m.wtype
 }
 
 // ExpressionRHS is the struct for expressions on the rhs of an assignment
 type ExpressionRHS struct {
 	TokenBase
 	expr Expression
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *ExpressionRHS) Type() Type {
+	return m.expr.Type()
 }
 
 // AssignStatement is the struct for an assignment statement
@@ -275,8 +316,8 @@ type WhileStatement struct {
 // FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
-	name     string
-	waccType Type
+	name  string
+	wtype Type
 }
 
 // FunctionDef is the struct for a function definition
@@ -1144,15 +1185,15 @@ func parsePairType(node *node32) (Type, error) {
 // parseType parse a type definition
 func parseType(node *node32) (Type, error) {
 	var err error
-	var waccType Type
+	var wtype Type
 
 	switch node.pegRule {
 	case ruleBASETYPE:
-		if waccType, err = parseBaseType(node.up); err != nil {
+		if wtype, err = parseBaseType(node.up); err != nil {
 			return nil, err
 		}
 	case rulePAIRTYPE:
-		if waccType, err = parsePairType(node.up); err != nil {
+		if wtype, err = parsePairType(node.up); err != nil {
 			return nil, err
 		}
 	case rulePAIR: // pair inside a pair, that misses type information
@@ -1160,10 +1201,10 @@ func parseType(node *node32) (Type, error) {
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {
-		waccType = ArrayType{base: waccType}
+		wtype = ArrayType{base: wtype}
 	}
 
-	return waccType, nil
+	return wtype, nil
 }
 
 // parseStatement parses a statement by checking which rule they start with
@@ -1188,7 +1229,7 @@ func parseStatement(node *node32) (Statement, error) {
 		decl := new(DeclareAssignStatement)
 
 		typeNode := nextNode(node, ruleTYPE)
-		if decl.waccType, err = parseType(typeNode.up); err != nil {
+		if decl.wtype, err = parseType(typeNode.up); err != nil {
 			return nil, err
 		}
 
@@ -1332,7 +1373,7 @@ func parseParam(node *node32) (*FunctionParam, error) {
 
 	param.SetToken(&node.token32)
 
-	param.waccType, err = parseType(nextNode(node, ruleTYPE).up)
+	param.wtype, err = parseType(nextNode(node, ruleTYPE).up)
 	if err != nil {
 		return nil, err
 	}

@@ -123,7 +123,7 @@ func (stmt DeclareAssignStatement) aststring(indent string) string {
 	return fmt.Sprintf(
 		"%v%v%v%v",
 		declareStats,
-		stmt.waccType.aststring(innerIndent),
+		stmt.wtype.aststring(innerIndent),
 		lhsIndent,
 		rhsIndent,
 	)
@@ -345,7 +345,7 @@ func (stmt WhileStatement) aststring(indent string) string {
 
 // Prints FunctionParameters in function declaration.
 func (fp FunctionParam) aststring(indent string) string {
-	return fmt.Sprintf("%v %v", fp.waccType, fp.name)
+	return fmt.Sprintf("%v %v", fp.wtype, fp.name)
 }
 
 // Prints a FunctionDefinition. Format:
