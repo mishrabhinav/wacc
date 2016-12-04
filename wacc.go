@@ -16,13 +16,7 @@ import (
 	"os"
 )
 
-// main is the starting point of the compiler
-func main() {
-
-	// Parse all the supplied arguments
-	var flags Flags
-	flags.Parse()
-
+func syntaxAnalysis(flags *Flags) *AST {
 	// Open the input wacc file and read the code
 	file, err := os.Open(flags.filename)
 
@@ -71,6 +65,10 @@ func main() {
 		os.Exit(100)
 	}
 
+	return ast
+}
+
+func semanticAnalysis(ast *AST) {
 	// Check the semantics of the syntactically correct program
 	if typeErrs := ast.TypeCheck(); len(typeErrs) > 0 {
 		for _, err := range typeErrs {
@@ -78,7 +76,9 @@ func main() {
 		}
 		os.Exit(200)
 	}
+}
 
+func codeGeneration(ast *AST, flags *Flags) {
 	// Initialise Code Generation
 	armFile := bufio.NewWriter(os.Stdout)
 
@@ -103,6 +103,20 @@ func main() {
 
 	// Flush the buffered writer
 	armFile.Flush()
+}
+
+// main is the starting point of the compiler
+func main() {
+
+	// Parse all the supplied arguments
+	var flags = &Flags{}
+	flags.Parse()
+
+	ast := syntaxAnalysis(flags)
+
+	semanticAnalysis(ast)
+
+	codeGeneration(ast, flags)
 
 	// Prints compiler stage, if verbose flag is supplied
 	flags.Finish()
