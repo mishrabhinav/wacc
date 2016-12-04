@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // initalSyntaxAnalysis checks the syntax of the input file and exits if there
@@ -113,9 +114,17 @@ func main() {
 	// Prints compiler stage, if verbose flag is supplied
 	flags.Start()
 
-	ifm := setupIncludeFiles(flags.filename)
+	// Get the directory of the base file
+	dir := filepath.Dir(flags.filename)
+
+	// Create a new instace of the IncludeFiles struct
+	ifm := &IncludeFiles{dir: dir}
+	ifm.Include(flags.filename)
+
+	// Initial syntax analysis by the lexer/parser library
 	wacc := initialSyntaxAnalysis(flags.filename)
 
+	// Generate AST from the WACC struct produced by the peg library
 	ast := generateASTFromWACC(wacc, ifm)
 
 	// Prints the PEG Tree structure, if peg flag is supplied
@@ -127,8 +136,10 @@ func main() {
 	// Prints the AST in pretty format, if appropriate flag supplied
 	flags.PrintPrettyAST(ast)
 
+	// Perform semantic analysis on the AST
 	semanticAnalysis(ast)
 
+	// Generate assembly code for the input wacc file
 	codeGeneration(ast, flags)
 
 	// Prints compiler stage, if verbose flag is supplied
