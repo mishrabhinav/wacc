@@ -5,11 +5,9 @@ package main
 // typecheck.go: functions and auxiliary structures for typechecking
 //
 // Scope: structure for storing the functions, variables and their corresponging
-//   types for use in the TypeCheck and GetType
+//   types for use in the TypeCheck
 // TypeCheck: recursively checks for type mismatches in AST, statements, and
 //   expressions
-// GetType: walks the expression tree to deduce the type of a particular
-//   expression
 
 // Scope stores the available variables, functions, and expected return type
 // during lexical analysis
@@ -249,7 +247,7 @@ func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	m.rhs.TypeCheck(ts, errch)
-	if rhsT := m.rhs.GetType(ts); !m.waccType.Match(rhsT) {
+	if rhsT := m.rhs.Type(); !m.waccType.Match(rhsT) {
 		errch <- CreateTypeMismatchError(
 			m.rhs.Token(),
 			m.waccType,
@@ -266,8 +264,8 @@ func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.target.TypeCheck(ts, errch)
 	m.rhs.TypeCheck(ts, errch)
 
-	lhsT := m.target.GetType(ts)
-	rhsT := m.rhs.GetType(ts)
+	lhsT := m.target.Type()
+	rhsT := m.rhs.Type()
 
 	if !lhsT.Match(rhsT) {
 		errch <- CreateTypeMismatchError(
@@ -285,7 +283,7 @@ func (m *AssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 func (m *ReadStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.target.TypeCheck(ts, errch)
 
-	switch t := m.target.GetType(ts).(type) {
+	switch t := m.target.Type().(type) {
 	case IntType:
 	case CharType:
 	default:
@@ -428,28 +426,16 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	case PairType:
 		if !m.snd {
 			m.wtype = t.first
+		} else {
+			m.wtype = t.second
 		}
-		m.wtype = t.second
 	default:
 		errch <- CreateTypeMismatchError(
 			m.Token(),
 			PairType{},
 			t,
 		)
-	}
-}
-
-// GetType returns the deduced type of the left hand side assignment target
-// InvalidType is returned in case of mismatch
-func (m *PairElemLHS) GetType(ts *Scope) Type {
-	switch t := m.expr.Type().(type) {
-	case PairType:
-		if !m.snd {
-			return t.first
-		}
-		return t.second
-	default:
-		return InvalidType{}
+		m.wtype = InvalidType{}
 	}
 }
 
@@ -484,47 +470,20 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.wtype = t
 }
 
-// GetType returns the deduced type of the left hand side assignment target
-// InvalidType is returned in case of mismatch
-func (m *ArrayLHS) GetType(ts *Scope) Type {
-	t := ts.Lookup(m.ident)
-
-	for _, i := range m.index {
-		switch i.Type().(type) {
-		case IntType:
-		default:
-			return InvalidType{}
-		}
-
-		switch arr := t.(type) {
-		case ArrayType:
-			t = arr.base
-		default:
-			return InvalidType{}
-		}
-	}
-
-	return t
-}
-
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
-	switch t := ts.Lookup(m.ident).(type) {
+	t := ts.Lookup(m.ident)
+
+	switch t.(type) {
 	case InvalidType:
 		errch <- CreateUndeclaredVariableError(
 			m.Token(),
 			m.ident,
 		)
-	default:
-		m.wtype = t
 	}
-}
 
-// GetType returns the deduced type of the left hand side assignment target.
-// InvalidType is returned in case of mismatch.
-func (m *VarLHS) GetType(ts *Scope) Type {
-	return ts.Lookup(m.ident)
+	m.wtype = t
 }
 
 // TypeCheck checks whether the right hand side is valid and assignable
@@ -532,25 +491,6 @@ func (m *VarLHS) GetType(ts *Scope) Type {
 func (m *PairLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.fst.TypeCheck(ts, errch)
 	m.snd.TypeCheck(ts, errch)
-}
-
-// GetType returns the deduced type of the right hand side assignment source.
-// InvalidType is returned in case of mismatch.
-func (m *PairLiterRHS) GetType(ts *Scope) Type {
-	fstT := m.fst.Type()
-	sndT := m.snd.Type()
-
-	switch fstT.(type) {
-	case InvalidType:
-		return InvalidType{}
-	}
-
-	switch sndT.(type) {
-	case InvalidType:
-		return InvalidType{}
-	}
-
-	return PairType{first: fstT, second: sndT}
 }
 
 // TypeCheck checks whether the right hand side is valid and assignable
@@ -567,20 +507,6 @@ func (m *PairElemRHS) TypeCheck(ts *Scope, errch chan<- error) {
 			PairType{},
 			pairT,
 		)
-	}
-}
-
-// GetType returns the deduced type of the right hand side assignment source.
-// InvalidType is returned in case of mismatch.
-func (m *PairElemRHS) GetType(ts *Scope) Type {
-	switch t := m.expr.Type().(type) {
-	case PairType:
-		if !m.snd {
-			return t.first
-		}
-		return t.second
-	default:
-		return InvalidType{}
 	}
 }
 
@@ -608,24 +534,6 @@ func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
-// GetType returns the deduced type of the right hand side assignment source.
-// InvalidType is returned in case of mismatch.
-func (m *ArrayLiterRHS) GetType(ts *Scope) Type {
-	if len(m.elements) == 0 {
-		return ArrayType{base: UnknownType{}}
-	}
-
-	t := m.elements[0].Type()
-
-	for _, elem := range m.elements {
-		if !t.Match(elem.Type()) {
-			return InvalidType{}
-		}
-	}
-
-	return ArrayType{t}
-}
-
 // TypeCheck checks whether the right hand side is valid and assignable
 // The check is propagated recursively.
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
@@ -637,6 +545,8 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 			m.ident,
 		)
 	}
+
+	m.wtype = fun.returnType
 
 	if len(fun.params) != len(m.args) {
 		errch <- CreateFunctionCallWrongArityError(
@@ -664,40 +574,10 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 }
 
-// GetType returns the deduced type of the right hand side assignment source.
-// InvalidType is returned in case of mismatch.
-func (m *FunctionCallRHS) GetType(ts *Scope) Type {
-	fun := ts.LookupFunction(m.ident)
-
-	if fun == nil {
-		return InvalidType{}
-	}
-
-	if len(fun.params) != len(m.args) {
-		return InvalidType{}
-	}
-
-	for i := 0; i < len(fun.params) && i < len(m.args); i++ {
-		paramT := fun.params[i].waccType
-		argT := m.args[i].Type()
-		if !paramT.Match(argT) {
-			return InvalidType{}
-		}
-	}
-
-	return fun.returnType
-}
-
 // TypeCheck checks whether the right hand side is valid and assignable
 // The check is propagated recursively.
 func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
-}
-
-// GetType returns the deduced type of the right hand side assignment source.
-// InvalidType is returned in case of mismatch.
-func (m *ExpressionRHS) GetType(ts *Scope) Type {
-	return m.expr.Type()
 }
 
 // TypeCheck checks expression whether all operators get the type they can

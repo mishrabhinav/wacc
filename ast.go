@@ -127,7 +127,6 @@ type LHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
 	Type() Type
-	GetType(*Scope) Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
@@ -175,7 +174,7 @@ func (m *VarLHS) Type() Type {
 type RHS interface {
 	aststring(indent string) string
 	TypeCheck(*Scope, chan<- error)
-	GetType(*Scope) Type
+	Type() Type
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*RegAllocator, Reg, chan<- Instr)
@@ -187,10 +186,29 @@ type PairLiterRHS struct {
 	PairLiteral
 }
 
+// Type returns the deduced type of the right hand side assignment source.
+func (m *PairLiterRHS) Type() Type {
+	fstT := m.fst.Type()
+	sndT := m.snd.Type()
+
+	return PairType{first: fstT, second: sndT}
+}
+
 // ArrayLiterRHS is the struct for array literals on the rhs of an assignment
 type ArrayLiterRHS struct {
 	TokenBase
 	elements []Expression
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *ArrayLiterRHS) Type() Type {
+	if len(m.elements) == 0 {
+		return ArrayType{base: UnknownType{}}
+	}
+
+	t := m.elements[0].Type()
+
+	return ArrayType{t}
 }
 
 // PairElemRHS is the struct for pair elements on the rhs of an assignment
@@ -200,17 +218,41 @@ type PairElemRHS struct {
 	expr Expression
 }
 
+// Type returns the deduced type of the right hand side assignment source.
+func (m *PairElemRHS) Type() Type {
+	switch t := m.expr.Type().(type) {
+	case PairType:
+		if !m.snd {
+			return t.first
+		}
+		return t.second
+	default:
+		return InvalidType{}
+	}
+}
+
 // FunctionCallRHS is the struct for function calls on the rhs of an assignment
 type FunctionCallRHS struct {
 	TokenBase
 	ident string
 	args  []Expression
+	wtype Type
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *FunctionCallRHS) Type() Type {
+	return m.wtype
 }
 
 // ExpressionRHS is the struct for expressions on the rhs of an assignment
 type ExpressionRHS struct {
 	TokenBase
 	expr Expression
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *ExpressionRHS) Type() Type {
+	return m.expr.Type()
 }
 
 // AssignStatement is the struct for an assignment statement
