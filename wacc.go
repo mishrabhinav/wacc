@@ -25,7 +25,8 @@ func parseInput(filename string) *WACC {
 
 	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		os.Exit(100)
 	}
 
 	// Initialise the Lexer and Parser
