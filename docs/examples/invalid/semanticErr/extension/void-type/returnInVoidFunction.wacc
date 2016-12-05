@@ -1,0 +1,17 @@
+# returning an expression in a void function is an error
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  void f() is
+    return 42
+  end
+  skip
+end
+

@@ -1,0 +1,14 @@
+# declaring a variable as void is an error
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  void a = 1
+end
+
