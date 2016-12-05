@@ -655,7 +655,11 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	alloc.FreeReg(target, insch)
 
-	insch <- &BInstr{label: labelElse, cond: condEQ}
+	if m.falseStat != nil {
+		insch <- &BInstr{label: labelElse, cond: condEQ}
+	} else {
+		insch <- &BInstr{label: labelEnd, cond: condEQ}
+	}
 
 	//TruthCases
 	insch <- &LABELInstr{ident: labelThen}
@@ -667,12 +671,14 @@ func (m *IfStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	insch <- &BInstr{label: labelEnd}
 
 	//FalseCases
-	insch <- &LABELInstr{ident: labelElse}
-	alloc.StartScope(insch)
+	if m.falseStat != nil {
+		insch <- &LABELInstr{ident: labelElse}
+		alloc.StartScope(insch)
 
-	m.falseStat.CodeGen(alloc, insch)
+		m.falseStat.CodeGen(alloc, insch)
 
-	alloc.CleanupScope(insch)
+		alloc.CleanupScope(insch)
+	}
 	insch <- &LABELInstr{ident: labelEnd}
 
 	m.BaseStatement.CodeGen(alloc, insch)

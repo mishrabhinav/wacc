@@ -1451,7 +1451,7 @@ func parseStatement(node *node32) (Statement, error) {
 
 		elseNode := nextNode(bodyNode.next, ruleSTAT)
 		if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
-			return nil, err
+			//return nil, err
 		}
 
 		stm = ifs

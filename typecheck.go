@@ -483,7 +483,9 @@ func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	m.trueStat.TypeCheck(ts.Child(), errch)
-	m.falseStat.TypeCheck(ts.Child(), errch)
+	if m.falseStat != nil {
+		m.falseStat.TypeCheck(ts.Child(), errch)
+	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
