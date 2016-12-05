@@ -589,6 +589,36 @@ func (m *PrintStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
+//CodeGen generates code for FunctionCallStat
+// [CodeGen param] << reg
+// PUSH reg
+// POP r0,r1,r2,r3
+// BL f
+// MOV target, r0
+// POP [params]
+func (m *FunctionCallStat) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	for i := len(m.args) - 1; i >= 0; i-- {
+		reg := alloc.GetReg(insch)
+		m.args[i].CodeGen(alloc, reg, insch)
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
+		alloc.PushStack(4)
+		alloc.FreeReg(reg, insch)
+	}
+
+	for i := 0; i < 4 && i < len(m.args); i++ {
+		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
+	}
+
+	insch <- &BLInstr{BInstr: BInstr{label: m.mangledIdent}}
+
+	if pl := len(m.args); pl > 4 {
+		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
+			rhs: ImmediateOperand{(pl - 4) * 4}}}
+	}
+
+	alloc.PopStack(len(m.args) * 4)
+}
+
 //CodeGen generates code for IfStatement
 // if_%l
 // --> [CodeGen condition] << reg
