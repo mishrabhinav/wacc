@@ -383,6 +383,63 @@ func (m *PrintStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the call is valid
+// The check is propagated recursively.
+func (m *FunctionCallStat) TypeCheck(ts *Scope, errch chan<- error) {
+	for _, arg := range m.args {
+		arg.TypeCheck(ts, errch)
+	}
+
+	overloads := ts.LookupFunction(m.ident)
+
+	if overloads == nil {
+		errch <- CreateCallingNonFunctionError(
+			m.Token(),
+			m.ident,
+		)
+	}
+
+	found := false
+	mangledIdent := ""
+
+	m.wtype = InvalidType{}
+
+	for symbol, fun := range overloads {
+		if len(fun.params) != len(m.args) {
+			continue
+		}
+
+		match := true
+
+		for i := 0; i < len(fun.params) && i < len(m.args) && match; i++ {
+			paramT := fun.params[i].wtype
+			argT := m.args[i].Type()
+			if !argT.Match(paramT) {
+				match = false
+			}
+		}
+
+		if match && found {
+			errch <- CreateAmbigousFunctionCallError(
+				m.Token(),
+				m.ident,
+			)
+		}
+
+		if match {
+			found = true
+			mangledIdent = symbol
+			m.wtype = fun.returnType
+		}
+	}
+
+	if !found {
+		errch <- CreateNoSuchOverloadError(m.Token(), m.ident)
+	}
+
+	m.mangledIdent = mangledIdent
+}
+
 // TypeCheck checks whether the statement has any type mismatches in expressions
 // and assignments. The check is propagated recursively
 func (m *IfStatement) TypeCheck(ts *Scope, errch chan<- error) {
