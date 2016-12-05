@@ -1,0 +1,20 @@
+# one overload can only be defined once
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f(int a) is
+    return a
+  end
+  int f(int a) is
+    return a
+  end
+  int y = call f(true)
+end
+

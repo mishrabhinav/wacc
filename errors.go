@@ -299,3 +299,51 @@ func CreateFunctionRedelarationError(token *token32, ident string) error {
 		ident:         ident,
 	}
 }
+
+// AmbigousFunctionCallError is a semantic error when multiple overloads of a
+// function match the provided parameters
+type AmbigousFunctionCallError struct {
+	SemanticError
+	ident string
+}
+
+func (e *AmbigousFunctionCallError) Error() string {
+	return fmt.Sprintf(
+		"%s: calling function '%s' where multiple overloads match",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateAmbigousFunctionCallError creates an error from a token and a function
+// identifier
+func CreateAmbigousFunctionCallError(token *token32, ident string) error {
+	return &AmbigousFunctionCallError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// NoSuchOverloadError is a semantic error trying to call a non-existing variant
+// of an overloaded function
+type NoSuchOverloadError struct {
+	SemanticError
+	ident string
+}
+
+func (e *NoSuchOverloadError) Error() string {
+	return fmt.Sprintf(
+		"%s: calling function '%s' where no overload matches",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateNoSuchOverloadError creates an error from a token and a function
+// identifier
+func CreateNoSuchOverloadError(token *token32, ident string) error {
+	return &NoSuchOverloadError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}

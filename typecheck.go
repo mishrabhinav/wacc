@@ -14,7 +14,7 @@ package main
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
-	funcs      map[string]*FunctionDef
+	funcs      map[string]map[string]*FunctionDef
 	returnType Type
 }
 
@@ -23,7 +23,7 @@ func CreateRootScope() *Scope {
 	scope := &Scope{
 		parent: nil,
 		vars:   make(map[string]Type),
-		funcs:  make(map[string]*FunctionDef),
+		funcs:  make(map[string]map[string]*FunctionDef),
 	}
 
 	return scope
@@ -58,7 +58,7 @@ func (m *Scope) Lookup(ident string) Type {
 
 // LookupFunction tries to return the function given it's identifier
 // returns nil if not found.
-func (m *Scope) LookupFunction(ident string) *FunctionDef {
+func (m *Scope) LookupFunction(ident string) map[string]*FunctionDef {
 	t, ok := m.funcs[ident]
 
 	if !ok {
@@ -83,14 +83,19 @@ func (m *Scope) Declare(ident string, t Type) Type {
 
 // DeclareFunction registers a new function in the scope returning the previous
 // one in case of redeclaration, nil otherwise
-func (m *Scope) DeclareFunction(ident string, f *FunctionDef) *FunctionDef {
-	pf, ok := m.funcs[ident]
+func (m *Scope) DeclareFunction(ident, symbol string, f *FunctionDef) *FunctionDef {
+	if m.funcs[ident] == nil {
+		m.funcs[ident] = make(map[string]*FunctionDef)
+	}
 
-	m.funcs[ident] = f
+	pf, ok := m.funcs[ident][symbol]
+
+	m.funcs[ident][symbol] = f
 
 	if ok {
 		return pf
 	}
+
 	return nil
 }
 
@@ -178,7 +183,7 @@ func (m *AST) TypeCheck() []error {
 
 		// add the functions to the scope
 		for _, f := range m.functions {
-			if pf := global.DeclareFunction(f.ident, f); pf != nil {
+			if pf := global.DeclareFunction(f.ident, f.Symbol(), f); pf != nil {
 				errch <- CreateFunctionRedelarationError(
 					f.Token(),
 					f.ident,
@@ -537,41 +542,58 @@ func (m *ArrayLiterRHS) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the right hand side is valid and assignable
 // The check is propagated recursively.
 func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
-	fun := ts.LookupFunction(m.ident)
+	for _, arg := range m.args {
+		arg.TypeCheck(ts, errch)
+	}
 
-	if fun == nil {
+	overloads := ts.LookupFunction(m.ident)
+
+	if overloads == nil {
 		errch <- CreateCallingNonFunctionError(
 			m.Token(),
 			m.ident,
 		)
 	}
 
-	m.wtype = fun.returnType
+	found := false
+	mangledIdent := ""
 
-	if len(fun.params) != len(m.args) {
-		errch <- CreateFunctionCallWrongArityError(
-			m.Token(),
-			fun.ident,
-			len(fun.params),
-			len(m.args),
-		)
-	}
+	m.wtype = InvalidType{}
 
-	for _, arg := range m.args {
-		arg.TypeCheck(ts, errch)
-	}
+	for symbol, fun := range overloads {
+		if len(fun.params) != len(m.args) {
+			continue
+		}
 
-	for i := 0; i < len(fun.params) && i < len(m.args); i++ {
-		paramT := fun.params[i].wtype
-		argT := m.args[i].Type()
-		if !paramT.Match(argT) {
-			errch <- CreateTypeMismatchError(
-				m.args[i].Token(),
-				paramT,
-				argT,
+		match := true
+
+		for i := 0; i < len(fun.params) && i < len(m.args) && match; i++ {
+			paramT := fun.params[i].wtype
+			argT := m.args[i].Type()
+			if !argT.Match(paramT) {
+				match = false
+			}
+		}
+
+		if match && found {
+			errch <- CreateAmbigousFunctionCallError(
+				m.Token(),
+				m.ident,
 			)
 		}
+
+		if match {
+			found = true
+			mangledIdent = symbol
+			m.wtype = fun.returnType
+		}
 	}
+
+	if !found {
+		errch <- CreateNoSuchOverloadError(m.Token(), m.ident)
+	}
+
+	m.mangledIdent = mangledIdent
 }
 
 // TypeCheck checks whether the right hand side is valid and assignable

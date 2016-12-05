@@ -1,0 +1,17 @@
+# function call must match an overload
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f(int a) is
+    return a
+  end
+  int y = call f(true)
+end
+

@@ -1,0 +1,13 @@
+begin
+  int f(int c) is
+    println c ;
+    return 42
+  end
+  int f(string str) is
+    println str ;
+    return 42
+  end
+  int a = call f(42) ;
+  string str = "hello" ;
+  int b = call f(str)
+end
