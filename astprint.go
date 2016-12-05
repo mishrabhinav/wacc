@@ -228,6 +228,21 @@ func (rhs FunctionCallRHS) aststring(indent string) string {
 	return fmt.Sprintf("%v%v", nameStats, innerStats)
 }
 
+func (stat FunctionCallStat) aststring(indent string) string {
+	var innerStats string
+	nameStats := addIndAndNewLine(indent, stat.ident)
+
+	for _, param := range stat.args {
+		innerStats = fmt.Sprintf(
+			"%v%v",
+			innerStats,
+			param.aststring(indent),
+		)
+	}
+
+	return fmt.Sprintf("%v%v", nameStats, innerStats)
+}
+
 // Prints the LHS and RHS of an assignment. Format:
 // - ASSIGNMENT
 //   - LHS
