@@ -171,6 +171,18 @@ func (m ArrayType) Match(t Type) bool {
 	}
 }
 
+// Match checks whether a type is assignable to the current type
+func (m ClassType) Match(t Type) bool {
+	switch o := t.(type) {
+	case ClassType:
+		return m.name == o.name
+	case VoidType:
+		return true
+	default:
+		return false
+	}
+}
+
 // TypeCheck checks whether the AST has any type mismatches in expressions and
 // assignments
 func (m *AST) TypeCheck() []error {

@@ -517,6 +517,12 @@ func (c CharType) aststring(indent string) string {
 	return addType(indent, "char")
 }
 
+// Prints class Type. Format:
+// TODO
+func (m ClassType) aststring(indent string) string {
+	return "" // TODO
+}
+
 // Prints a SKIP statement. Format:
 // - SKIP
 func (stmt SkipStatement) aststring(indent string) string {

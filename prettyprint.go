@@ -95,6 +95,13 @@ func (a ArrayType) String() string {
 	return fmt.Sprintf("%v[]", a.base)
 }
 
+// Prints class Types. Format:
+//   TODO
+// TODO
+func (m ClassType) String() string {
+	return "" // TODO
+}
+
 // Prints the file includes. Format:
 //   "include <filename.wacc>"
 func includeString(file string) string {

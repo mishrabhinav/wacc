@@ -99,6 +99,23 @@ func (m ArrayType) MangleSymbol() string {
 	)
 }
 
+// ClassMember holds class member data
+type ClassMember struct {
+	ident string
+	wtype Type
+}
+
+// ClassType represents a class in WACC
+type ClassType struct {
+	name    string
+	members []*ClassMember
+	methods []*FunctionDef
+}
+
+func (m ClassType) MangleSymbol() string {
+	return m.name
+}
+
 // Expression is the interface for WACC expressions
 type Expression interface {
 	aststring(indent string) string
