@@ -1,0 +1,8 @@
+begin
+  int add(int a, int b) is
+    println a + b ;
+    return a + b
+  end
+
+  call add(1, 2)
+end

@@ -443,6 +443,24 @@ func (stmt *PrintStatement) istring(level int) string {
 	return fmt.Sprintf("%vprint %v", getIndentation(level), stmt.expr)
 }
 
+// Prints a new functionCall. Format:
+//   "call [fun]([args]*)"
+// Recurses fun and optional args.
+func (stat *FunctionCallStat) istring(level int) string {
+	var params string
+
+	if len(stat.args) > 0 {
+		params = fmt.Sprintf("%v", stat.args[0])
+
+		for _, param := range stat.args[1:] {
+			params = fmt.Sprintf("%v, %v", params, param)
+		}
+	}
+
+	return fmt.Sprintf("%vcall %v(%v)", getIndentation(level), stat.ident,
+		params)
+}
+
 // Prints an if statement. Format:
 //   "if [cond]
 //    then [trueStat]*

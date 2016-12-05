@@ -282,13 +282,24 @@ func (m *PairElemRHS) Type() Type {
 	}
 }
 
-// FunctionCallRHS is the struct for function calls on the rhs of an assignment
-type FunctionCallRHS struct {
-	TokenBase
+// FunctionCall is the base struct for function calls
+type FunctionCall struct {
 	ident        string
 	mangledIdent string
 	args         []Expression
 	wtype        Type
+}
+
+// FunctionCall is the struct for function calls not being assigned to a var
+type FunctionCallStat struct {
+	BaseStatement
+	FunctionCall
+}
+
+// FunctionCallRHS is the struct for function calls on the rhs of an assignment
+type FunctionCallRHS struct {
+	TokenBase
+	FunctionCall
 }
 
 // Type returns the deduced type of the right hand side assignment source.
@@ -1172,7 +1183,8 @@ func parseRHS(node *node32) (RHS, error) {
 		}
 
 		return target, nil
-	case ruleCALL:
+	case ruleFCALL:
+		node = node.up
 		call := new(FunctionCallRHS)
 
 		call.SetToken(&node.token32)
@@ -1382,6 +1394,32 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = print
+	case ruleFCALL:
+		node = node.up
+		call := new(FunctionCallStat)
+
+		call.SetToken(&node.token32)
+
+		identNode := nextNode(node, ruleIDENT)
+		call.ident = identNode.match
+
+		arglistNode := nextNode(node, ruleARGLIST)
+		if arglistNode == nil {
+			return call, nil
+		}
+
+		for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
+			var err error
+			var expr Expression
+
+			if expr, err = parseExpr(argNode.up); err != nil {
+				return nil, err
+			}
+
+			call.args = append(call.args, expr)
+		}
+
+		return call, nil
 	case ruleIF:
 		ifs := new(IfStatement)
 
