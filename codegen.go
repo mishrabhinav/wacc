@@ -134,7 +134,7 @@ var resReg = r0
 
 // FunctionContext tracks register usage
 type FunctionContext struct {
-	usage        []int
+	regUsage     []int
 	stringPool   *StringPool
 	builtInFuncs *BuiltInFuncs
 	fname        string
@@ -151,7 +151,7 @@ func CreateFunctionContext() *FunctionContext {
 		regs: []*ARMGenReg{
 			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
-		usage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		regUsage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -159,7 +159,7 @@ func CreateFunctionContext() *FunctionContext {
 func (m *FunctionContext) GetReg(insch chan<- Instr) Reg {
 	r := m.regs[0]
 
-	if m.usage[r.Reg()] > 0 {
+	if m.regUsage[r.Reg()] > 0 {
 		insch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -168,7 +168,7 @@ func (m *FunctionContext) GetReg(insch chan<- Instr) Reg {
 		m.PushStack(4)
 	}
 
-	m.usage[r.Reg()]++
+	m.regUsage[r.Reg()]++
 
 	m.regs = append(m.regs[1:], r)
 
@@ -183,7 +183,7 @@ func (m *FunctionContext) FreeReg(re Reg, insch chan<- Instr) {
 
 	r := re.(*ARMGenReg)
 
-	if m.usage[r.Reg()] > 1 {
+	if m.regUsage[r.Reg()] > 1 {
 		insch <- &POPInstr{
 			BaseStackInstr: BaseStackInstr{
 				regs: []Reg{r},
@@ -192,7 +192,7 @@ func (m *FunctionContext) FreeReg(re Reg, insch chan<- Instr) {
 		m.PopStack(4)
 	}
 
-	m.usage[r.Reg()]--
+	m.regUsage[r.Reg()]--
 
 	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
 }
