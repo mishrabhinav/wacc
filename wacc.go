@@ -130,14 +130,14 @@ func main() {
 	// Initial syntax analysis by the lexer/parser library
 	wacc := parseInput(flags.filename)
 
-	// Generate AST from the WACC struct produced by the peg library
-	ast := generateASTFromWACC(wacc, ifm)
-
 	// Prints the PEG Tree structure, if peg flag is supplied
 	if flags.printPEGTree {
 		fmt.Println("-- Printing PEG Tree")
 		wacc.PrintSyntaxTree()
 	}
+
+	// Generate AST from the WACC struct produced by the peg library
+	ast := generateASTFromWACC(wacc, ifm)
 
 	// Prints the AST in pretty format, if appropriate flag supplied
 	flags.PrintPrettyAST(ast)
