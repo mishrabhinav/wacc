@@ -1,0 +1,17 @@
+# assigning the result of a void function is an error
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  void f() is
+    skip
+  end
+  int a = call f()
+end
+

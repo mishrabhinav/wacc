@@ -30,15 +30,15 @@ type InvalidType struct{}
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m InvalidType) MangleSymbol() string {
-	panic(fmt.Errorf("Trying to mangle invalid type"))
+	panic(fmt.Errorf("Trying to mangle void type"))
 }
 
-// UnknownType is a WACC type for cases where the type is not known
-type UnknownType struct{}
+// VoidType is a WACC type for cases where the type is not known
+type VoidType struct{}
 
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
-func (m UnknownType) MangleSymbol() string {
+func (m VoidType) MangleSymbol() string {
 	return "unknown"
 }
 
@@ -254,7 +254,7 @@ type ArrayLiterRHS struct {
 // Type returns the deduced type of the right hand side assignment source.
 func (m *ArrayLiterRHS) Type() Type {
 	if len(m.elements) == 0 {
-		return ArrayType{base: UnknownType{}}
+		return ArrayType{base: VoidType{}}
 	}
 
 	t := m.elements[0].Type()
@@ -548,7 +548,7 @@ type NullPair struct {
 
 // Type returns the Type of the expression
 func (m *NullPair) Type() Type {
-	return PairType{first: UnknownType{}, second: UnknownType{}}
+	return PairType{first: VoidType{}, second: VoidType{}}
 }
 
 // ArrayElem is the struct to represent an array element
@@ -815,6 +815,16 @@ type ExprParen struct {
 // Type returns the Type of the expression
 func (m *ExprParen) Type() Type {
 	return InvalidType{}
+}
+
+// VoidExpr represents an expression without anything in it
+type VoidExpr struct {
+	TokenBase
+}
+
+// Type returns the Type of the expression
+func (m *VoidExpr) Type() Type {
+	return VoidType{}
 }
 
 // exprStream given an expression node sends the all the nodes after it to
@@ -1239,6 +1249,8 @@ func parseBaseType(node *node32) (Type, error) {
 		return CharType{}, nil
 	case ruleSTRING:
 		return ArrayType{base: CharType{}}, nil
+	case ruleVOID:
+		return VoidType{}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
@@ -1249,7 +1261,7 @@ func parseBaseType(node *node32) (Type, error) {
 func parsePairType(node *node32) (Type, error) {
 	var err error
 
-	pairType := PairType{first: UnknownType{}, second: UnknownType{}}
+	pairType := PairType{first: VoidType{}, second: VoidType{}}
 
 	first := nextNode(node, rulePAIRELEMTYPE)
 
@@ -1281,7 +1293,7 @@ func parseType(node *node32) (Type, error) {
 			return nil, err
 		}
 	case rulePAIR: // pair inside a pair, that misses type information
-		return PairType{UnknownType{}, UnknownType{}}, nil
+		return PairType{VoidType{}, VoidType{}}, nil
 	}
 
 	for node = nextNode(node.next, ruleARRAYTYPE); node != nil; node = nextNode(node.next, ruleARRAYTYPE) {
@@ -1362,8 +1374,12 @@ func parseStatement(node *node32) (Statement, error) {
 		retur := new(ReturnStatement)
 
 		exprNode := nextNode(node, ruleEXPR)
-		if retur.expr, err = parseExpr(exprNode.up); err != nil {
-			return nil, err
+		if exprNode != nil {
+			if retur.expr, err = parseExpr(exprNode.up); err != nil {
+				return nil, err
+			}
+		} else {
+			retur.expr = &VoidExpr{}
 		}
 
 		stm = retur

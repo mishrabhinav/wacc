@@ -347,3 +347,49 @@ func CreateNoSuchOverloadError(token *token32, ident string) error {
 		ident:         ident,
 	}
 }
+
+// InvalidVoidTypeError is a semantic error declaring a variable with void type
+type InvalidVoidTypeError struct {
+	SemanticError
+	ident string
+}
+
+func (e *InvalidVoidTypeError) Error() string {
+	return fmt.Sprintf(
+		"%s: void type for variable '%s' is invalid",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateInvalidVoidTypeError creates an error from a token and an identifier
+func CreateInvalidVoidTypeError(token *token32, ident string) error {
+	return &InvalidVoidTypeError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// VoidAssignmentError is a semantic error when trying to assign a void return
+// value
+type VoidAssignmentError struct {
+	SemanticError
+	ident string
+}
+
+func (e *VoidAssignmentError) Error() string {
+	return fmt.Sprintf(
+		"%s: assigning result of void function '%s' is invalid",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateVoidAssignmentError creates an error from a token and a function
+// identifier
+func CreateVoidAssignmentError(token *token32, ident string) error {
+	return &VoidAssignmentError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}

@@ -105,7 +105,7 @@ func (m InvalidType) Match(t Type) bool {
 }
 
 // Match checks whether a type is assignable to the current type
-func (m UnknownType) Match(t Type) bool {
+func (m VoidType) Match(t Type) bool {
 	return true
 }
 
@@ -114,7 +114,7 @@ func (m IntType) Match(t Type) bool {
 	switch t.(type) {
 	case IntType:
 		return true
-	case UnknownType:
+	case VoidType:
 		return true
 	default:
 		return false
@@ -126,7 +126,7 @@ func (m BoolType) Match(t Type) bool {
 	switch t.(type) {
 	case BoolType:
 		return true
-	case UnknownType:
+	case VoidType:
 		return true
 	default:
 		return false
@@ -138,7 +138,7 @@ func (m CharType) Match(t Type) bool {
 	switch t.(type) {
 	case CharType:
 		return true
-	case UnknownType:
+	case VoidType:
 		return true
 	default:
 		return false
@@ -152,7 +152,7 @@ func (m PairType) Match(t Type) bool {
 		fst := m.first.Match(o.first)
 		snd := m.second.Match(o.second)
 		return fst && snd
-	case UnknownType:
+	case VoidType:
 		return true
 	default:
 		return false
@@ -164,7 +164,7 @@ func (m ArrayType) Match(t Type) bool {
 	switch o := t.(type) {
 	case ArrayType:
 		return m.base.Match(o.base)
-	case UnknownType:
+	case VoidType:
 		return true
 	default:
 		return false
@@ -200,6 +200,13 @@ func (m *AST) TypeCheck() []error {
 		for _, f := range m.functions {
 			fscope := global.Child()
 			for _, arg := range f.params {
+				switch arg.wtype.(type) {
+				case VoidType:
+					errch <- CreateInvalidVoidTypeError(
+						arg.Token(),
+						arg.name,
+					)
+				}
 				pt := fscope.Declare(arg.name, arg.wtype)
 				if pt != nil {
 					errch <- CreateVariableRedeclarationError(
@@ -242,6 +249,14 @@ func (m *BlockStatement) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the statement has any type mismatches in expressions
 // and assignments. The check is propagated recursively
 func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	switch m.wtype.(type) {
+	case VoidType:
+		errch <- CreateInvalidVoidTypeError(
+			m.Token(),
+			m.ident,
+		)
+	}
+
 	if pt := ts.Declare(m.ident, m.wtype); pt != nil {
 		errch <- CreateVariableRedeclarationError(
 			m.Token(),
@@ -340,6 +355,19 @@ func (m *ReturnStatement) TypeCheck(ts *Scope, errch chan<- error) {
 
 	returnT := ts.returnType
 	exprT := m.expr.Type()
+
+	switch returnT.(type) {
+	case VoidType:
+		switch exprT.(type) {
+		case VoidType:
+		default:
+			errch <- CreateTypeMismatchError(
+				m.expr.Token(),
+				returnT,
+				exprT,
+			)
+		}
+	}
 
 	if !returnT.Match(exprT) {
 		errch <- CreateTypeMismatchError(
@@ -648,6 +676,14 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 
 	if !found {
 		errch <- CreateNoSuchOverloadError(m.Token(), m.ident)
+	}
+
+	switch m.wtype.(type) {
+	case VoidType:
+		errch <- CreateVoidAssignmentError(
+			m.Token(),
+			m.ident,
+		)
 	}
 
 	m.mangledIdent = mangledIdent
@@ -1015,6 +1051,10 @@ func typeCheckBoolean(m BinaryOperator, ts *Scope, errch chan<- error) {
 			lhsT,
 		)
 	}
+}
+
+// TypeCheck on VoidExpr
+func (m *VoidExpr) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 // TypeCheck on ExpLPar to satisfy interface. Never called.

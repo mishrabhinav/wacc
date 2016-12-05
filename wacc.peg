@@ -22,7 +22,7 @@ STAT		<- (SKIP
 		/ ASSIGNLHS EQU ASSIGNRHS
 		/ READ ASSIGNLHS
 		/ FREE EXPR
-		/ RETURN EXPR
+		/ RETURN EXPR?
 		/ EXIT EXPR
 		/ PRINTLN EXPR
 		/ PRINT EXPR
@@ -51,6 +51,8 @@ BASETYPE	<- INT
 		/ BOOL
 		/ CHAR
 		/ STRING
+		/ VOID
+
 
 ARRAYTYPE	<- LBRK RBRK
 
@@ -148,9 +150,9 @@ FI		<- 'fi'		!IDCHAR SPACE
 FREE		<- 'free'	!IDCHAR SPACE
 FST		<- 'fst'	!IDCHAR SPACE
 IF		<- 'if'		!IDCHAR SPACE
-IS		<- 'is'		!IDCHAR SPACE
 INCLUDE		<- 'include'	!IDCHAR SPACE
 INT		<- 'int'	!IDCHAR SPACE
+IS		<- 'is'		!IDCHAR SPACE
 LEN		<- 'len'	!IDCHAR SPACE
 NEWPAIR		<- 'newpair'	!IDCHAR SPACE
 NULL		<- 'null'	!IDCHAR SPACE
@@ -165,6 +167,7 @@ SND		<- 'snd'	!IDCHAR SPACE
 STRING		<- 'string'	!IDCHAR SPACE
 THEN		<- 'then'	!IDCHAR SPACE
 TRUE		<- 'true'	!IDCHAR SPACE
+VOID		<- 'void'	!IDCHAR SPACE
 WHILE		<- 'while'	!IDCHAR SPACE
 
 KEYWORD		<- ('begin'
@@ -182,9 +185,9 @@ KEYWORD		<- ('begin'
 		/ 'free'
 		/ 'fst'
 		/ 'if'
-		/ 'is'
 		/ 'include'
 		/ 'int'
+		/ 'is'
 		/ 'len'
 		/ 'newpair'
 		/ 'null'
@@ -199,6 +202,7 @@ KEYWORD		<- ('begin'
 		/ 'string'
 		/ 'then'
 		/ 'true'
+		/ 'void'
 		/ 'while'
 		) !IDCHAR
 

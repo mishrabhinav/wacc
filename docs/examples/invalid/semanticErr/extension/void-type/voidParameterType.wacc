@@ -1,0 +1,17 @@
+# declaring a parameter as void is an error
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f(void a) is
+    return 42
+  end
+  int a = call f()
+end
+
