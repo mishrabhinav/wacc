@@ -6,7 +6,11 @@ type WACC Peg {}
 # WACC Language Rules
 #-------------------------------------------------------------------------------
 
-WACC		<- SPACE BEGIN INCL* FUNC* STAT END EOT
+WACC		<- SPACE BEGIN INCL* CLASSDEF* FUNC* STAT END EOT
+
+CLASSDEF	<- CLASS IDENT SPACE IS MEMBERDEF* FUNC* END
+
+MEMBERDEF	<- TYPE IDENT SEMI SPACE
 
 INCL		<- INCLUDE STRLITER SPACE
 
@@ -141,6 +145,7 @@ CALL		<- 'call'	!IDCHAR SPACE
 CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
+CLASS		<- 'class'	!IDCHAR SPACE
 COLON		<- ':'		!IDCHAR SPACE
 DEFAULT		<- 'default'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
@@ -184,6 +189,7 @@ KEYWORD		<- ('begin'
 		/ 'call'
 		/ 'char'
 		/ 'chr'
+		/ 'class'
 		/ 'do'
 		/ 'done'
 		/ 'else'
