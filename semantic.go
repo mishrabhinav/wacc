@@ -64,9 +64,13 @@ func checkFunctionReturns(f *FunctionDef) <-chan error {
 	out := make(chan error)
 
 	go func() {
-		returns := hasReturn(f.body)
-		if !returns {
-			out <- CreateMissingReturnError(f.token, f.ident)
+		switch f.returnType.(type) {
+		case VoidType:
+		default:
+			returns := hasReturn(f.body)
+			if !returns {
+				out <- CreateMissingReturnError(f.token, f.ident)
+			}
 		}
 		close(out)
 	}()

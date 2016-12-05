@@ -500,8 +500,12 @@ func (m *FreeStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 func (m *ReturnStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	reg := alloc.GetReg(insch)
 
-	m.expr.CodeGen(alloc, reg, insch)
-	insch <- &MOVInstr{dest: resReg, source: reg}
+	switch m.expr.Type().(type) {
+	case VoidType:
+	default:
+		m.expr.CodeGen(alloc, reg, insch)
+		insch <- &MOVInstr{dest: resReg, source: reg}
+	}
 
 	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 		rhs: ImmediateOperand{alloc.stackSize}}}
@@ -1359,6 +1363,10 @@ func (m *BinaryOperatorOr) CodeGen(alloc *RegAllocator, target Reg, insch chan<-
 	insch <- binaryInstrOrr
 }
 
+//CodeGen generates code for VoidExpr
+func (m *VoidExpr) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
+}
+
 //CodeGen generates code for ExprParen
 func (m *ExprParen) CodeGen(alloc *RegAllocator, target Reg, insch chan<- Instr) {
 }
@@ -1458,6 +1466,11 @@ func (m *BinaryOperatorBase) Weight() int {
 	cost2 := maxWeight(m.lhs.Weight()+1, m.rhs.Weight())
 	m.weightCache = minWeight(cost1, cost2)
 	return m.weightCache
+}
+
+//Weight returns weight of VoidExpr
+func (m *VoidExpr) Weight() int {
+	return -1
 }
 
 //Weight returns weight of ExprParen
@@ -1967,7 +1980,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		// if the function has no return type then zero r0 before
 		// returning
 		switch m.returnType.(type) {
-		case InvalidType:
+		case VoidType:
 			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
 		}
 
@@ -2035,7 +2048,7 @@ func (m *AST) CodeGen() <-chan Instr {
 	}
 	mainF := &FunctionDef{
 		ident:      "main",
-		returnType: InvalidType{},
+		returnType: VoidType{},
 		body:       m.main,
 	}
 	charr = append(charr, mainF.CodeGen(strPool, builtInFuncs))

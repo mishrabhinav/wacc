@@ -436,7 +436,7 @@ func (i InvalidType) aststring(indent string) string {
 // Prints and unknown Type. Format:
 // - TYPE
 //   - <unknown>
-func (i UnknownType) aststring(indent string) string {
+func (i VoidType) aststring(indent string) string {
 	return addType(indent, "<unknown>")
 }
 
@@ -470,6 +470,11 @@ func (stmt SkipStatement) aststring(indent string) string {
 // Prints a useless BlockStatement.
 func (stmt BlockStatement) aststring(indent string) string {
 	return fmt.Sprintf("")
+}
+
+// Prints a void expression which is nothing
+func (void VoidExpr) aststring(indent string) string {
+	return ""
 }
 
 // Prints a useless parenthesis.

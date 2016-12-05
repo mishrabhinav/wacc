@@ -50,8 +50,8 @@ func (m InvalidType) String() string {
 
 // Prints unknown Types. Format:
 //   "<unknown>"
-func (m UnknownType) String() string {
-	return "<unknown>"
+func (m VoidType) String() string {
+	return "<void>"
 }
 
 // Prints integer Types. Format:
