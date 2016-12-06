@@ -516,6 +516,26 @@ func (stmt *WhileStatement) istring(level int) string {
 		indent)
 }
 
+// Prints a switch statement. Format:
+func (stmt *SwitchStatement) istring(level int) string {
+	var body string
+	var indent = getIndentation(level)
+
+	for index := 0; index < len(stmt.cases); index++ {
+		st := stmt.bodies[index]
+		body = fmt.Sprintf("%v\n%v  case %v:", body, indent, stmt.cases[index])
+		for st.GetNext() != nil {
+			body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+2))
+			st = st.GetNext()
+		}
+
+		body = fmt.Sprintf("%v\n%v", body, st.istring(level+2))
+	}
+
+	return fmt.Sprintf("%vswitch (%v)%v%v\n%vdone", indent, stmt.cond, indent,
+		body, indent)
+}
+
 // Prints a given function parameter. Format:
 //   "[type] [name]"
 // Recurses on type and name.
