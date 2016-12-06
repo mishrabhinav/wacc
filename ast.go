@@ -112,6 +112,8 @@ type ClassType struct {
 	methods []*FunctionDef
 }
 
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
 func (m *ClassType) MangleSymbol() string {
 	return m.name
 }
