@@ -142,7 +142,7 @@ CALL		<- 'call'	!IDCHAR SPACE
 CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
-COLON		<- ':'	!IDCHAR SPACE
+COLON		<- ':'		!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
 ELSE		<- 'else'	!IDCHAR SPACE
