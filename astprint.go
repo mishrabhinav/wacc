@@ -282,13 +282,13 @@ func (stmt IfStatement) aststring(indent string) string {
 	var falseStats string
 	var trueTmp string
 	var falseTmp string
+	var elseStats string
 	innerIndent := getGreaterIndent(indent)
 	doubleInnerIndent := getGreaterIndent(innerIndent)
 
 	ifStats := fmt.Sprintf("%vIF\n", addMinToIndent(indent))
 	condStats := fmt.Sprintf("%vCONDITION\n", addMinToIndent(innerIndent))
 	thenStats := fmt.Sprintf("%vTHEN\n", addMinToIndent(innerIndent))
-	elseStats := fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
 
 	stmtStats = stmt.cond.aststring(doubleInnerIndent)
 
@@ -302,15 +302,17 @@ func (stmt IfStatement) aststring(indent string) string {
 	trueTmp = st.aststring(doubleInnerIndent)
 	trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 
-	st = stmt.falseStat
-	for st.GetNext() != nil {
+	if stmt.falseStat != nil {
+		st = stmt.falseStat
+		for st.GetNext() != nil {
+			falseTmp = st.aststring(doubleInnerIndent)
+			falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
+			st = st.GetNext()
+		}
+		elseStats = fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
 		falseTmp = st.aststring(doubleInnerIndent)
 		falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
-		st = st.GetNext()
 	}
-
-	falseTmp = st.aststring(doubleInnerIndent)
-	falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 
 	return fmt.Sprintf(
 		"%v%v%v%v%v%v%v",
