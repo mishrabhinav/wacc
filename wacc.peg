@@ -136,7 +136,6 @@ SPACE		<- ( [ \t\r\n]
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'	!IDCHAR SPACE
 BOOL		<- 'bool'	!IDCHAR SPACE
 CALL		<- 'call'	!IDCHAR SPACE
 CASE		<- 'case'	!IDCHAR SPACE
@@ -147,7 +146,6 @@ DEFAULT		<- 'default'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
 ELSE		<- 'else'	!IDCHAR SPACE
-END		<- 'end'	!IDCHAR SPACE
 EXIT		<- 'exit'	!IDCHAR SPACE
 FALSE		<- 'false'	!IDCHAR SPACE
 FI		<- 'fi'		!IDCHAR SPACE
@@ -156,7 +154,6 @@ FST		<- 'fst'	!IDCHAR SPACE
 IF		<- 'if'		!IDCHAR SPACE
 INCLUDE		<- 'include'	!IDCHAR SPACE
 INT		<- 'int'	!IDCHAR SPACE
-IS		<- 'is'		!IDCHAR SPACE
 LEN		<- 'len'	!IDCHAR SPACE
 NEWPAIR		<- 'newpair'	!IDCHAR SPACE
 NULL		<- 'null'	!IDCHAR SPACE
@@ -174,6 +171,13 @@ THEN		<- 'then'	!IDCHAR SPACE
 TRUE		<- 'true'	!IDCHAR SPACE
 VOID		<- 'void'	!IDCHAR SPACE
 WHILE		<- 'while'	!IDCHAR SPACE
+
+BEGIN		<- ('begin'
+		/ LCUR)		!IDCHAR SPACE
+END		<- ('end'
+		/ RCUR)		!IDCHAR SPACE
+IS		<- ('is'
+		/ LCUR)		!IDCHAR SPACE
 
 KEYWORD		<- ('begin'
 		/ 'bool'
@@ -221,6 +225,8 @@ LBRK		<- '['		SPACE
 RBRK		<- ']'		SPACE
 LPAR		<- '('		SPACE
 RPAR		<- ')'		SPACE
+LCUR		<- '{'		SPACE
+RCUR		<- '}'		SPACE
 STAR		<- '*'  ![=]	SPACE
 PLUS		<- '+'  ![=]	SPACE
 MINUS		<- '-'  ![=>]	SPACE
