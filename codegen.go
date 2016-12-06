@@ -239,6 +239,16 @@ func (m *FunctionContext) ResolveVar(ident string) int {
 	panic(fmt.Sprintf("var %s not found in scope", ident))
 }
 
+// ResolveVarToRegister puts the address of a variable to the given register
+func (m *FunctionContext) ResolveVarToRegister(ident string, target Reg, insch chan<- Instr) {
+	insch <- &MOVInstr{dest: target, source: sp}
+	offset := m.ResolveVar(ident)
+	for _, d := range createImmediateValuesFor(offset) {
+		rhsVal := &ImmediateOperand{d}
+		insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: rhsVal}}
+	}
+}
+
 // StartScope starts a new scope with new variable mappings possible
 func (m *FunctionContext) StartScope(insch chan<- Instr) {
 	m.stack = append([]map[string]int{make(map[string]int)}, m.stack...)
@@ -247,11 +257,7 @@ func (m *FunctionContext) StartScope(insch chan<- Instr) {
 // CleanupScope starts a new scope with new variable mappings possible
 func (m *FunctionContext) CleanupScope(insch chan<- Instr) {
 	sl := len(m.stack[0]) * 4
-	for o := sl; o > 0; o -= 255 {
-		od := o
-		if od > 255 {
-			od = 255
-		}
+	for _, od := range createImmediateValuesFor(sl) {
 		insch <- &ADDInstr{
 			BaseBinaryInstr: BaseBinaryInstr{
 				dest: sp,
@@ -262,6 +268,32 @@ func (m *FunctionContext) CleanupScope(insch chan<- Instr) {
 	}
 	m.PopStack(sl)
 	m.stack = m.stack[1:]
+}
+
+// PrepareForReturn rolls back all the scopes and gets the stack ready for
+// returning
+func (m *FunctionContext) PrepareForReturn(insch chan<- Instr) {
+	for _, od := range createImmediateValuesFor(m.stackSize) {
+		insch <- &ADDInstr{
+			BaseBinaryInstr: BaseBinaryInstr{
+				dest: sp,
+				lhs:  sp,
+				rhs:  ImmediateOperand{od},
+			},
+		}
+	}
+}
+
+func createImmediateValuesFor(num int) []int {
+	var values []int
+	for o := num; o > 0; o -= 255 {
+		od := o
+		if od > 255 {
+			od = 255
+		}
+		values = append(values, od)
+	}
+	return values
 }
 
 //-----------------------------------------------------------------------------
@@ -507,8 +539,7 @@ func (m *ReturnStatement) CodeGen(context *FunctionContext, insch chan<- Instr) 
 		insch <- &MOVInstr{dest: resReg, source: reg}
 	}
 
-	insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
-		rhs: ImmediateOperand{context.stackSize}}}
+	context.PrepareForReturn(insch)
 
 	insch <- &BInstr{label: fmt.Sprintf("%s_return", context.fname)}
 
@@ -807,8 +838,7 @@ func (m *PairElemLHS) CodeGen(context *FunctionContext, target Reg, insch chan<-
 
 func arrayHelper(ident string, exprs []Expression, context *FunctionContext, target Reg, insch chan<- Instr) {
 	//Load array Address
-	rhsVal := &ImmediateOperand{context.ResolveVar(ident)}
-	insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: sp, rhs: rhsVal}}
+	context.ResolveVarToRegister(ident, target, insch)
 
 	//Place index in new Register
 	indexReg := context.GetReg(insch)
@@ -852,12 +882,10 @@ func (m *ArrayLHS) CodeGen(context *FunctionContext, target Reg, insch chan<- In
 }
 
 //CodeGen generates code for VarLHS
-// --> MOV target, sp
+// --> target << [var]
 // --> ADD target, target, #offset
 func (m *VarLHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	insch <- &MOVInstr{dest: target, source: sp}
-	rhsVal := &ImmediateOperand{context.ResolveVar(m.ident)}
-	insch <- &ADDInstr{BaseBinaryInstr{dest: target, lhs: target, rhs: rhsVal}}
+	context.ResolveVarToRegister(m.ident, target, insch)
 }
 
 //CodeGen generates code for PairLiterRHS
@@ -977,7 +1005,8 @@ func (m *ExpressionRHS) CodeGen(context *FunctionContext, target Reg, insch chan
 //CodeGen generates code for Ident
 // --> LDR target, [sp, #offset]
 func (m *Ident) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	loadValue := &RegisterLoadOperand{reg: sp, value: context.ResolveVar(m.ident)}
+	context.ResolveVarToRegister(m.ident, target, insch)
+	loadValue := &RegisterLoadOperand{reg: target}
 	insch <- &LDRInstr{LoadInstr{reg: target, value: loadValue}}
 }
 
