@@ -40,6 +40,7 @@ ASSIGNLHS	<- (PAIRELEM
 		/ IDENT) SPACE
 
 ASSIGNRHS	<- NEWPAIR LPAR EXPR COMMA EXPR RPAR
+		/ NEW IDENT LPAR RPAR
 		/ ARRAYLITER
 		/ PAIRELEM
 		/ FCALL
@@ -57,7 +58,11 @@ BASETYPE	<- INT
 		/ CHAR
 		/ STRING
 		/ VOID
+		/ CLASSTYPE
 
+CLASSTYPE	<- IDENT SPACE
+
+CLASSOBJ	<- IDENT
 
 ARRAYTYPE	<- LBRK RBRK
 
@@ -76,7 +81,7 @@ EXPR		<- (INTLITER
 		/ LPAR EXPR RPAR
 		/ IDENT) SPACE (BINARYOPER EXPR)*
 
-FCALL		<- CALL IDENT LPAR ARGLIST? RPAR SPACE
+FCALL		<- CALL (CLASSOBJ ARROW)? IDENT LPAR ARGLIST? RPAR SPACE
 
 UNARYOPER	<- BANG
 		/ MINUS
@@ -98,7 +103,7 @@ BINARYOPER	<- STAR
 		/ ANDAND
 		/ OROR
 
-IDENT		<- (!KEYWORD) ([_] / [a-z] / [A-Z])
+IDENT		<- (!KEYWORD) (AT)? ([_] / [a-z] / [A-Z])
 		([_] / [a-z] / [A-Z] / [0-9])*
 
 ARRAYELEM	<- IDENT (LBRK EXPR RBRK)+
@@ -160,6 +165,7 @@ IF		<- 'if'		!IDCHAR SPACE
 INCLUDE		<- 'include'	!IDCHAR SPACE
 INT		<- 'int'	!IDCHAR SPACE
 LEN		<- 'len'	!IDCHAR SPACE
+NEW		<- 'new'	!IDCHAR SPACE
 NEWPAIR		<- 'newpair'	!IDCHAR SPACE
 NULL		<- 'null'	!IDCHAR SPACE
 ORD		<- 'ord'	!IDCHAR SPACE
@@ -204,6 +210,7 @@ KEYWORD		<- ('begin'
 		/ 'int'
 		/ 'is'
 		/ 'len'
+		/ 'new'
 		/ 'newpair'
 		/ 'null'
 		/ 'ord'
@@ -252,6 +259,8 @@ EQU		<- '='  !"="	SPACE
 COMMA		<- ','		SPACE
 SINQUO		<- '\''
 DOUQUO		<- '\"'
+ARROW		<- '->'
+AT		<- '@'
 
 #-------------------------------------------------------------------------------
 # End of Input
