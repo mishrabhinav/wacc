@@ -1622,12 +1622,67 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	return function, nil
 }
 
-// parseInclude parses all the WACC files included in current file
+// parseInclude parses all the WACC files included in the current AST
 func parseInclude(node *node32) string {
 	strNode := nextNode(node, ruleSTRLITER)
 	file := nextNode(strNode.up, ruleSTR).match
 
 	return file
+}
+
+// parseClass parses all the members declared in a class
+func parseClassMembers(node *node32) (*ClassMember, error) {
+	var err error
+
+	member := &ClassMember{}
+
+	member.SetToken(&node.token32)
+	member.ident = nextNode(node, ruleIDENT).match
+
+	member.wtype, err = parseType(nextNode(node, ruleTYPE).up)
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
+}
+
+// parseClass parses all the Classes declared in the current ASR
+func parseClass(node *node32) (*ClassType, error) {
+	class := &ClassType{}
+
+	class.SetToken(&node.token32)
+
+	for node := range nodeRange(node) {
+		switch node.pegRule {
+		case ruleCLASS:
+		case ruleIS:
+		case ruleSPACE:
+		case ruleEND:
+		case ruleIDENT:
+			class.name = node.match
+		case ruleMEMBERDEF:
+			m, err := parseClassMembers(node.up)
+			class.members = append(class.members, m)
+			if err != nil {
+				return nil, err
+			}
+		case ruleFUNC:
+			f, err := parseFunction(node.up)
+			class.methods = append(class.methods, f)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf(
+				"Unexpected %s %s",
+				node.String(),
+				node.match,
+			)
+		}
+	}
+
+	return class, nil
 }
 
 // parse the main WACC block that contains all function definitions and the main
@@ -1640,6 +1695,12 @@ func parseWACC(node *node32, ifm *IncludeFiles) (*AST, error) {
 		case ruleBEGIN:
 		case ruleEND:
 		case ruleSPACE:
+		case ruleCLASSDEF:
+			c, err := parseClass(node.up)
+			ast.classes = append(ast.classes, c)
+			if err != nil {
+				return nil, err
+			}
 		case ruleINCL:
 			i := parseInclude(node.up)
 			ast.includes = append(ast.includes, i)
