@@ -443,6 +443,7 @@ type AST struct {
 	main      Statement
 	functions []*FunctionDef
 	includes  []string
+	classes   []ClassType
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
