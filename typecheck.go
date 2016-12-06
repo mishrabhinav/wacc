@@ -23,9 +23,10 @@ type Scope struct {
 // CreateRootScope creates a global scope that has no parent
 func CreateRootScope() *Scope {
 	scope := &Scope{
-		parent: nil,
-		vars:   make(map[string]Type),
-		funcs:  make(map[string]map[string]map[string]*FunctionDef),
+		parent:  nil,
+		vars:    make(map[string]Type),
+		members: make(map[string]Type),
+		funcs:   make(map[string]map[string]map[string]*FunctionDef),
 	}
 
 	return scope
