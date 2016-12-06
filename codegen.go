@@ -772,11 +772,10 @@ func (m *SwitchStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 		m.bodies[index].CodeGen(alloc, insch)
 
-		insch <- &BInstr{label: labelEnd}
-
 		alloc.FreeReg(target, insch)
 		alloc.CleanupScope(insch)
 
+		insch <- &BInstr{label: labelEnd}
 	}
 
 	labelDefault := fmt.Sprintf("case_%v%s", maxIndex+1, suffix)
@@ -788,7 +787,6 @@ func (m *SwitchStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	}
 
 	alloc.FreeReg(condReg, insch)
-	alloc.CleanupScope(insch)
 
 	insch <- &LABELInstr{ident: labelEnd}
 }
