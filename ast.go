@@ -112,7 +112,7 @@ type ClassType struct {
 	methods []*FunctionDef
 }
 
-func (m ClassType) MangleSymbol() string {
+func (m *ClassType) MangleSymbol() string {
 	return m.name
 }
 
@@ -448,7 +448,7 @@ type AST struct {
 	main      Statement
 	functions []*FunctionDef
 	includes  []string
-	classes   []ClassType
+	classes   []*ClassType
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
