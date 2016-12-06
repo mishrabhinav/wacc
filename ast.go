@@ -1490,7 +1490,6 @@ func parseStatement(node *node32) (Statement, error) {
 			if expr, err = parseExpr(caseNode.up); err != nil {
 				return nil, err
 			}
-			fmt.Printf("Expression: %v", expr.aststring(""))
 			switchs.cases = append(switchs.cases, expr)
 
 			stmNode := nextNode(caseNode, ruleSTAT)

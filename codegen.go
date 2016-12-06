@@ -733,6 +733,60 @@ func (m *WhileStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	m.BaseStatement.CodeGen(alloc, insch)
 }
 
+//CodeGen generates code for SwitchStatement
+func (m *SwitchStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
+	var maxIndex int
+
+	suffix := alloc.GetUniqueLabelSuffix()
+
+	labelSwitch := fmt.Sprintf("switch%s", suffix)
+	labelEnd := fmt.Sprintf("end%s", suffix)
+
+	// Start a Switch Statement
+
+	insch <- &LABELInstr{ident: labelSwitch}
+
+	// Codegen Condition
+
+	alloc.StartScope(insch)
+	condReg := alloc.GetReg(insch)
+
+	m.cond.CodeGen(alloc, condReg, insch)
+
+	for index := 0; index < len(m.cases); index++ {
+		maxIndex = index
+
+		alloc.StartScope(insch)
+		target := alloc.GetReg(insch)
+
+		labelCase := fmt.Sprintf("case_%v%s", index, suffix)
+		labelNext := fmt.Sprintf("case_%v%s", index+1, suffix)
+
+		// Codegen Case expression
+		insch <- &LABELInstr{ident: labelCase}
+		m.cases[index].CodeGen(alloc, target, insch)
+
+		insch <- &CMPInstr{BaseComparisonInstr{lhs: condReg,
+			rhs: &RegisterOperand{reg: target}}}
+
+		insch <- &BInstr{label: labelNext, cond: condNE}
+
+		m.bodies[index].CodeGen(alloc, insch)
+
+		insch <- &BInstr{label: labelEnd}
+
+		alloc.FreeReg(target, insch)
+		alloc.CleanupScope(insch)
+
+	}
+	alloc.FreeReg(condReg, insch)
+	alloc.CleanupScope(insch)
+
+	labelDefault := fmt.Sprintf("case_%v%s", maxIndex+1, suffix)
+	insch <- &LABELInstr{ident: labelDefault}
+	insch <- &LABELInstr{ident: labelEnd}
+}
+
 //CodeGen generates code for PairElemLHS
 // --> [CodeGen expr] << reg
 // --> MOV r0, reg
