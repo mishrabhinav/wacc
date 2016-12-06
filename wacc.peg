@@ -28,6 +28,7 @@ STAT		<- (SKIP
 		/ PRINT EXPR
 		/ FCALL
 		/ IF EXPR THEN STAT (ELSE STAT)? FI
+		/ SWITCH IDENT SPACE (CASE EXPR COLON STAT (SEMI BREAK)? )* FI
 		/ WHILE EXPR DO STAT DONE) (SEMI STAT)*
 
 ASSIGNLHS	<- (PAIRELEM
@@ -136,10 +137,13 @@ SPACE		<- ( [ \t\r\n]
 #-------------------------------------------------------------------------------
 
 BEGIN		<- 'begin'	!IDCHAR SPACE
+BREAK		<- 'break'	!IDCHAR SPACE
 BOOL		<- 'bool'	!IDCHAR SPACE
 CALL		<- 'call'	!IDCHAR SPACE
+CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
+COLON		<- ':'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
 ELSE		<- 'else'	!IDCHAR SPACE
@@ -165,6 +169,7 @@ RETURN		<- 'return'	!IDCHAR SPACE
 SKIP		<- 'skip'	!IDCHAR SPACE
 SND		<- 'snd'	!IDCHAR SPACE
 STRING		<- 'string'	!IDCHAR SPACE
+SWITCH		<- 'switch'	!IDCHAR SPACE
 THEN		<- 'then'	!IDCHAR SPACE
 TRUE		<- 'true'	!IDCHAR SPACE
 VOID		<- 'void'	!IDCHAR SPACE
