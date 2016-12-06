@@ -3,6 +3,11 @@ begin
     int a;
     int b;
 
+    void init(int x, int y) is
+      @a = x ;
+      @b = y
+    end
+
     # Setter for member
     void a(int x) is
       @a = x
@@ -22,7 +27,7 @@ begin
   A a = new A() ;
 
   # Constructor
-  call a->init() ;
+  call a->init(2, 3) ;
 
   # Calling function
   call a->foo() ;

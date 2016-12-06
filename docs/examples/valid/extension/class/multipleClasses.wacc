@@ -1,0 +1,53 @@
+begin
+  class A is
+    int a;
+    int b;
+
+    void init(int x, int y) is
+      @a = x ;
+      @b = y
+    end
+
+    void a(int x) is
+      @a = x
+    end
+
+    int a() is
+      return @a
+    end
+
+    void foo() is
+      println "bar"
+    end
+  end
+
+  class B is
+    int c;
+
+    void init(int a) is
+      @c = a
+    end
+
+    void c(int a) is
+      @c = a
+    end
+
+    int c() is
+      return @c
+    end
+  end
+
+  A a = new A() ;
+  B c = new B() ;
+
+  call a->init(2, 3) ;
+  call c->init(4) ;
+
+  call a->foo() ;
+
+  int y = call a->b() ;
+  int z = call c->c();
+
+  call a->a(y) ;
+  call c->c(z + 1)
+end
