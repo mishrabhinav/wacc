@@ -529,11 +529,21 @@ func (stmt *WhileStatement) istring(level int) string {
 // Recurses on cond and (multiple) case->body.
 func (stmt *SwitchStatement) istring(level int) string {
 	var body string
+	var st Statement
 	var indent = getIndentation(level)
 
-	for index := 0; index < len(stmt.cases); index++ {
-		st := stmt.bodies[index]
-		body = fmt.Sprintf("%v\n%v  case %v:", body, indent, stmt.cases[index])
+	for index := 0; index <= len(stmt.cases); index++ {
+		if index != len(stmt.cases) {
+			st = stmt.bodies[index]
+			body = fmt.Sprintf("%v\n%v  case %v:", body, indent, stmt.cases[index])
+		} else {
+			if stmt.defaultCase == nil {
+				break
+			}
+			st = stmt.defaultCase
+			body = fmt.Sprintf("%v\n%v  case default:", body, indent)
+		}
+
 		for st.GetNext() != nil {
 			body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+2))
 			st = st.GetNext()
