@@ -99,10 +99,6 @@ func (m CharType) MangleSymbol() string {
 	return m.String()
 }
 
-type Continue struct {}
-
-type Break struct {}
-
 // PairType is the WACC type for pairs
 type PairType struct {
 	first  Type
@@ -243,6 +239,16 @@ func (m *BaseStatement) SetNext(next Statement) {
 
 // SkipStatement is the struct for WACC skip statement
 type SkipStatement struct {
+	BaseStatement
+}
+
+// Continue Statement is the struct for WACC continue statement
+type ContinueStatement struct {
+	BaseStatement
+}
+
+// BreakStatement is the struct for WACC break statement
+type BreakStatement struct {
 	BaseStatement
 }
 
