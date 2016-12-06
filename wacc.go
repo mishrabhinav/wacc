@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	EXIT_SYNTAX   = 100
-	EXIT_SEMANTIC = 200
+	exitSyntax   = 100
+	exitSemantic = 200
 )
 
 // parseInput checks the syntax of the input file and exits if there
@@ -31,7 +31,7 @@ func parseInput(filename string) *WACC {
 	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Print(err)
-		os.Exit(EXIT_SYNTAX)
+		os.Exit(exitSyntax)
 	}
 
 	// Initialise the Lexer and Parser
@@ -42,7 +42,7 @@ func parseInput(filename string) *WACC {
 	err = wacc.Parse()
 	if err != nil {
 		log.Print(err)
-		os.Exit(EXIT_SYNTAX)
+		os.Exit(exitSyntax)
 	}
 
 	return wacc
@@ -55,7 +55,7 @@ func generateASTFromWACC(wacc *WACC, ifm *IncludeFiles) *AST {
 	ast, err := ParseAST(wacc, ifm)
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(EXIT_SYNTAX)
+		os.Exit(exitSyntax)
 	}
 
 	// Look for further syntax errors, which were missed by the grammar
@@ -63,7 +63,7 @@ func generateASTFromWACC(wacc *WACC, ifm *IncludeFiles) *AST {
 		for _, err := range retErrs {
 			fmt.Println(err.Error())
 		}
-		os.Exit(EXIT_SYNTAX)
+		os.Exit(exitSyntax)
 	}
 
 	return ast
@@ -77,7 +77,7 @@ func semanticAnalysis(ast *AST) {
 		for _, err := range typeErrs {
 			fmt.Println(err.Error())
 		}
-		os.Exit(EXIT_SEMANTIC)
+		os.Exit(exitSemantic)
 	}
 }
 
