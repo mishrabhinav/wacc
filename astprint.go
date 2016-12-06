@@ -374,6 +374,7 @@ func (stmt SwitchStatement) aststring(indent string) string {
 	var body string
 	var statBody string
 	var doStats string
+	var refStmt Statement
 	innerIndent := getGreaterIndent(indent)
 	doubleIndent := getGreaterIndent(innerIndent)
 
@@ -387,11 +388,20 @@ func (stmt SwitchStatement) aststring(indent string) string {
 	innerCondStats := addIndAndNewLine(getGreaterIndent(innerIndent), "CONDITION")
 	innerDoStats := addIndAndNewLine(getGreaterIndent(innerIndent), "DO")
 
-	for index := 0; index < len(stmt.cases); index++ {
-		body = stmt.cases[index].aststring(getGreaterIndent(doubleIndent))
+	for index := 0; index <= len(stmt.cases); index++ {
+		if index != len(stmt.cases) {
+			refStmt = stmt.bodies[index]
+			body = stmt.cases[index].aststring(getGreaterIndent(doubleIndent))
+		} else {
+			if stmt.defaultCase == nil {
+				break
+			}
+			body = addIndAndNewLine(getGreaterIndent(doubleIndent), "DEFAULT")
+			refStmt = stmt.defaultCase
+		}
 
 		statBody = ""
-		for tmpStat := stmt.bodies[index]; tmpStat != nil; tmpStat = tmpStat.GetNext() {
+		for tmpStat := refStmt; tmpStat != nil; tmpStat = tmpStat.GetNext() {
 			statBody = fmt.Sprintf("%v%v", statBody,
 				tmpStat.aststring(getGreaterIndent(doubleIndent)))
 		}
