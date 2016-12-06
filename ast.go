@@ -413,6 +413,7 @@ type FunctionParam struct {
 type FunctionDef struct {
 	TokenBase
 	ident      string
+	classname  string
 	returnType Type
 	params     []*FunctionParam
 	body       Statement
@@ -424,6 +425,10 @@ func (m *FunctionDef) Symbol() string {
 	var buffer bytes.Buffer
 
 	buffer.WriteString(m.ident)
+
+	if len(m.classname) > 0 {
+		buffer.WriteString("__class_")
+	}
 
 	if len(m.params) > 0 {
 		buffer.WriteString("__ol_")

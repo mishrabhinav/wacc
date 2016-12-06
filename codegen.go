@@ -142,6 +142,7 @@ type FunctionContext struct {
 	regs         []*ARMGenReg
 	stackSize    int
 	stack        []map[string]int
+	members      map[string]int
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
