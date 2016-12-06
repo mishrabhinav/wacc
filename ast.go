@@ -99,6 +99,10 @@ func (m CharType) MangleSymbol() string {
 	return m.String()
 }
 
+type Continue struct {}
+
+type Break struct {}
+
 // PairType is the WACC type for pairs
 type PairType struct {
 	first  Type
