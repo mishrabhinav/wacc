@@ -538,7 +538,9 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		m.bodies[index].TypeCheck(ts.Child(), errch)
 	}
 
-	m.defaultCase.TypeCheck(ts.Child(), errch)
+	if m.defaultCase != nil {
+		m.defaultCase.TypeCheck(ts.Child(), errch)
+	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
