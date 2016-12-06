@@ -359,6 +359,15 @@ func (stmt WhileStatement) aststring(indent string) string {
 }
 
 // Prints a Switch Statement. Format:
+// - SWITCH
+//   - CONDITION
+//     - [expr]
+//   - [CASE #]
+//     - CONDITION
+//       - [condExpr]
+//     - DO
+//       - [doEXPR]
+// doEXPR, condExpr and CASE are recursed upon
 func (stmt SwitchStatement) aststring(indent string) string {
 	var body string
 	var statBody string
