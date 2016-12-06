@@ -748,7 +748,6 @@ func (m *SwitchStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 
 	// Codegen Condition
 
-	alloc.StartScope(insch)
 	condReg := alloc.GetReg(insch)
 
 	m.cond.CodeGen(alloc, condReg, insch)
