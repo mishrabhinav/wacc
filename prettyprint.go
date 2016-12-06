@@ -469,6 +469,7 @@ func (stat *FunctionCallStat) istring(level int) string {
 // Recurses on cond, (multiple) trueStat and (multiple) falseStat.
 func (stmt *IfStatement) istring(level int) string {
 	var trueStats string
+	var elseStats string
 	var falseStats string
 
 	var indent = getIndentation(level)
@@ -482,17 +483,21 @@ func (stmt *IfStatement) istring(level int) string {
 
 	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.istring(level+1))
 
-	st = stmt.falseStat
-	for st.GetNext() != nil {
-		falseStats = fmt.Sprintf("%v\n%v ;", falseStats,
-			st.istring(level+1))
-		st = st.GetNext()
+	if stmt.falseStat != nil {
+		st = stmt.falseStat
+		for st.GetNext() != nil {
+			falseStats = fmt.Sprintf("%v\n%v ;", falseStats,
+				st.istring(level+1))
+			st = st.GetNext()
+		}
+
+		falseStats = fmt.Sprintf("%v\n%v", falseStats, st.istring(level+1))
+
+		elseStats = fmt.Sprintf("%velse %v\n", indent, falseStats)
 	}
 
-	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.istring(level+1))
-
-	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent,
-		stmt.cond, indent, trueStats, indent, falseStats, indent)
+	return fmt.Sprintf("%vif %v\n%vthen %v\n%v%vfi", indent,
+		stmt.cond, indent, trueStats, elseStats, indent)
 }
 
 // Prints a while loop. Format:
