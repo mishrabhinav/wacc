@@ -379,9 +379,10 @@ type WhileStatement struct {
 // SwitchStatement is the struct for a while statement
 type SwitchStatement struct {
 	BaseStatement
-	cond   Expression
-	cases  []Expression
-	bodies []Statement
+	cond        Expression
+	cases       []Expression
+	bodies      []Statement
+	defaultCase Statement
 }
 
 // FunctionParam is the struct for a function parameter
@@ -1504,7 +1505,18 @@ func parseStatement(node *node32) (Statement, error) {
 				return nil, err
 			}
 			switchs.bodies = append(switchs.bodies, stat)
-			//break
+		}
+
+		defaultHolder := nextNode(node, ruleDEFAULT)
+		fiNode := nextNode(node, ruleFI)
+		defaultNode := nextNode(defaultHolder, ruleSTAT)
+
+		if defaultNode != nil {
+			if defaultNode.begin < fiNode.begin {
+				if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		stm = switchs
