@@ -14,7 +14,9 @@ package main
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
-	funcs      map[string]map[string]*FunctionDef
+	members    map[string]Type
+	funcs      map[string]map[string]map[string]*FunctionDef
+	class      *ClassType
 	returnType Type
 }
 
@@ -23,7 +25,7 @@ func CreateRootScope() *Scope {
 	scope := &Scope{
 		parent: nil,
 		vars:   make(map[string]Type),
-		funcs:  make(map[string]map[string]*FunctionDef),
+		funcs:  make(map[string]map[string]map[string]*FunctionDef),
 	}
 
 	return scope
@@ -59,7 +61,20 @@ func (m *Scope) Lookup(ident string) Type {
 // LookupFunction tries to return the function given it's identifier
 // returns nil if not found.
 func (m *Scope) LookupFunction(ident string) map[string]*FunctionDef {
-	t, ok := m.funcs[ident]
+	t, ok := m.funcs[""][ident]
+
+	if !ok {
+		return nil
+	}
+
+	return t
+}
+
+// LookupMember tries to return the function given it's identifier and the name
+// of the class it is on
+// returns nil if not found.
+func (m *Scope) LookupMember(class, ident string) map[string]*FunctionDef {
+	t, ok := m.funcs[class][ident]
 
 	if !ok {
 		return nil
@@ -81,16 +96,55 @@ func (m *Scope) Declare(ident string, t Type) Type {
 	return nil
 }
 
+// DeclareMember creates a new variable in the current scope returning the previous
+// type in case of redeclaration, nil otherwise
+func (m *Scope) DeclareMember(ident string, t Type) Type {
+	pt, ok := m.members[ident]
+
+	m.members[ident] = t
+
+	if ok {
+		return pt
+	}
+	return nil
+}
+
 // DeclareFunction registers a new function in the scope returning the previous
 // one in case of redeclaration, nil otherwise
 func (m *Scope) DeclareFunction(ident, symbol string, f *FunctionDef) *FunctionDef {
-	if m.funcs[ident] == nil {
-		m.funcs[ident] = make(map[string]*FunctionDef)
+	if m.funcs[""] == nil {
+		m.funcs[""] = make(map[string]map[string]*FunctionDef)
 	}
 
-	pf, ok := m.funcs[ident][symbol]
+	if m.funcs[""][ident] == nil {
+		m.funcs[""][ident] = make(map[string]*FunctionDef)
+	}
 
-	m.funcs[ident][symbol] = f
+	pf, ok := m.funcs[""][ident][symbol]
+
+	m.funcs[""][ident][symbol] = f
+
+	if ok {
+		return pf
+	}
+
+	return nil
+}
+
+// DeclareMethod registers a new function in the scope returning the previous
+// one in case of redeclaration, nil otherwise
+func (m *Scope) DeclareMethod(class, ident, symbol string, f *FunctionDef) *FunctionDef {
+	if m.funcs[class] == nil {
+		m.funcs[class] = make(map[string]map[string]*FunctionDef)
+	}
+
+	if m.funcs[class][ident] == nil {
+		m.funcs[class][ident] = make(map[string]*FunctionDef)
+	}
+
+	pf, ok := m.funcs[class][ident][symbol]
+
+	m.funcs[class][ident][symbol] = f
 
 	if ok {
 		return pf
@@ -193,6 +247,18 @@ func (m *AST) TypeCheck() []error {
 	go func() {
 		global := CreateRootScope()
 
+		// add the methods to the scope
+		for _, c := range m.classes {
+			for _, m := range c.methods {
+				if pm := global.DeclareMethod(c.name, m.ident, m.Symbol(), m); pm != nil {
+					errch <- CreateFunctionRedelarationError(
+						m.Token(),
+						m.ident,
+					)
+				}
+			}
+		}
+
 		// add the functions to the scope
 		for _, f := range m.functions {
 			if pf := global.DeclareFunction(f.ident, f.Symbol(), f); pf != nil {
@@ -200,6 +266,54 @@ func (m *AST) TypeCheck() []error {
 					f.Token(),
 					f.ident,
 				)
+			}
+		}
+
+		// check class methods
+		for _, c := range m.classes {
+			cs := global.Child()
+			cs.class = c
+			// add the members
+			for _, m := range c.members {
+				switch m.wtype.(type) {
+				case VoidType:
+					errch <- CreateInvalidVoidTypeError(
+						m.Token(),
+						m.ident,
+					)
+				}
+				if pt := cs.DeclareMember(m.ident, m.wtype); pt != nil {
+					errch <- CreateVariableRedeclarationError(
+						m.Token(),
+						m.ident,
+						pt,
+						m.wtype,
+					)
+				}
+			}
+			// typecheck methods
+			for _, m := range c.methods {
+				mscope := cs.Child()
+				for _, arg := range m.params {
+					switch arg.wtype.(type) {
+					case VoidType:
+						errch <- CreateInvalidVoidTypeError(
+							arg.Token(),
+							arg.name,
+						)
+					}
+					pt := mscope.Declare(arg.name, arg.wtype)
+					if pt != nil {
+						errch <- CreateVariableRedeclarationError(
+							arg.Token(),
+							arg.name,
+							pt,
+							arg.wtype,
+						)
+					}
+				}
+				mscope.returnType = m.returnType
+				m.body.TypeCheck(mscope, errch)
 			}
 		}
 
