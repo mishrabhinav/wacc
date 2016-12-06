@@ -509,6 +509,40 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
+func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.cond.TypeCheck(ts, errch)
+	condT := m.cond.Type()
+
+	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT)) {
+		errch <- CreateTypeMismatchError(
+			m.cond.Token(),
+			IntType{},
+			condT,
+		)
+	}
+
+	for index := 0; index < len(m.cases); index++ {
+		m.cases[index].TypeCheck(ts.Child(), errch)
+
+		exprT := m.cases[index].Type()
+		if !condT.Match(exprT) {
+			errch <- CreateTypeMismatchError(
+				m.cond.Token(),
+				condT,
+				exprT,
+			)
+		}
+
+		m.bodies[index].TypeCheck(ts.Child(), errch)
+	}
+
+	m.defaultCase.TypeCheck(ts.Child(), errch)
+
+	m.BaseStatement.TypeCheck(ts, errch)
+}
+
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
