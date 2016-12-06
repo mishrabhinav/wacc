@@ -2,13 +2,11 @@ stages:
   - build
   - test
 
-before_script:
-  - export PATH=$PATH:/usr/local/go/bin
-  - export GOPATH=$HOME/gopath
-
 build:
   stage: build
   script:
+    - export PATH=$PATH:/usr/local/go/bin
+    - export GOPATH=$HOME/gopath
     - make
   artifacts:
       paths:
@@ -17,5 +15,4 @@ build:
 test:
   stage: test
   script:
-    - make
     - ./tests/test
