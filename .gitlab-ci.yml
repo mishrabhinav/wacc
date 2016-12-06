@@ -10,6 +10,9 @@ build:
   stage: build
   script:
     - make
+  artifacts:
+      paths:
+      - wacc_34
 
 test:
   stage: test
