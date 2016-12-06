@@ -332,6 +332,18 @@ func (stmt *SkipStatement) istring(level int) string {
 	return fmt.Sprintf("%vskip", getIndentation(level))
 }
 
+// Prints a continue statement. Format:
+//   "continue"
+func (stmt *ContinueStatement) istring(level int) string {
+	return fmt.Sprintf("%vcontinue", getIndentation(level))
+}
+
+// Prints a skip statement. Format:
+//   "break"
+func (stmt *BreakStatement) istring(level int) string {
+	return fmt.Sprintf("%vbreak", getIndentation(level))
+}
+
 // Prints a useless block statement. Format:
 //   ""
 func (stmt *BlockStatement) istring(level int) string {
