@@ -1509,6 +1509,10 @@ func parseStatement(node *node32) (Statement, error) {
 	switch node.pegRule {
 	case ruleSKIP:
 		stm = &SkipStatement{}
+	case ruleCONTINUE:
+		stm = &ContinueStatement{}
+	case ruleBREAK:
+		stm = &BreakStatement{}
 	case ruleBEGIN:
 		block := new(BlockStatement)
 
