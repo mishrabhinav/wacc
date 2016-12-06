@@ -358,6 +358,41 @@ func (stmt WhileStatement) aststring(indent string) string {
 	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
 }
 
+// Prints a Switch Statement. Format:
+func (stmt SwitchStatement) aststring(indent string) string {
+	var body string
+	var statBody string
+	var doStats string
+	innerIndent := getGreaterIndent(indent)
+	doubleIndent := getGreaterIndent(innerIndent)
+
+	condStats := addIndentForFirst(
+		innerIndent,
+		"CONDITION",
+		stmt.cond.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	caseStats := addIndAndNewLine(innerIndent, "CASE")
+	innerCondStats := addIndAndNewLine(getGreaterIndent(innerIndent), "CONDITION")
+	innerDoStats := addIndAndNewLine(getGreaterIndent(innerIndent), "DO")
+
+	for index := 0; index < len(stmt.cases); index++ {
+		body = stmt.cases[index].aststring(getGreaterIndent(doubleIndent))
+
+		statBody = ""
+		for tmpStat := stmt.bodies[index]; tmpStat != nil; tmpStat = tmpStat.GetNext() {
+			statBody = fmt.Sprintf("%v%v", statBody,
+				tmpStat.aststring(getGreaterIndent(doubleIndent)))
+		}
+		doStats = fmt.Sprintf("%v%v%v%v%v%v", doStats, caseStats, innerCondStats, body,
+			innerDoStats, statBody)
+	}
+
+	loopStats := addIndAndNewLine(indent, "SWITCH")
+
+	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
+}
+
 // Prints FunctionParameters in function declaration.
 func (fp FunctionParam) aststring(indent string) string {
 	return fmt.Sprintf("%v %v", fp.wtype, fp.name)
