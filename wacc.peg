@@ -238,8 +238,6 @@ LBRK		<- '['		SPACE
 RBRK		<- ']'		SPACE
 LPAR		<- '('		SPACE
 RPAR		<- ')'		SPACE
-LCUR		<- '{'		SPACE
-RCUR		<- '}'		SPACE
 STAR		<- '*'  ![=]	SPACE
 PLUS		<- '+'  ![=]	SPACE
 MINUS		<- '-'  ![=>]	SPACE
@@ -261,6 +259,8 @@ SINQUO		<- '\''
 DOUQUO		<- '\"'
 ARROW		<- '->'
 AT		<- '@'
+LCUR		<- '{'
+RCUR		<- '}'
 
 #-------------------------------------------------------------------------------
 # End of Input
