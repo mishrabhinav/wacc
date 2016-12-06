@@ -1458,8 +1458,13 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		elseNode := nextNode(bodyNode.next, ruleSTAT)
-		if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
-			//return nil, err
+		fiNode := nextNode(bodyNode.next, ruleFI)
+		if elseNode != nil {
+			if elseNode.begin < fiNode.begin {
+				if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		stm = ifs

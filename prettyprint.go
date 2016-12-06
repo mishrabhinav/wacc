@@ -517,6 +517,11 @@ func (stmt *WhileStatement) istring(level int) string {
 }
 
 // Prints a switch statement. Format:
+//   "switch ([cond])
+//    [case #]*
+//   		[body]*
+//    done"
+// Recurses on cond and (multiple) case->body.
 func (stmt *SwitchStatement) istring(level int) string {
 	var body string
 	var indent = getIndentation(level)
