@@ -1,0 +1,7 @@
+begin
+	bool b = true;
+	do
+		println b;
+		b = false
+	while b == true done
+end
