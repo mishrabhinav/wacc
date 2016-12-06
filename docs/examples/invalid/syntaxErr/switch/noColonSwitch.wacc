@@ -1,0 +1,7 @@
+begin
+  switch 5
+		case 4:
+			println "4"
+    default:
+      println "Default"
+end
