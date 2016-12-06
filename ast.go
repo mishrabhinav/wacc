@@ -233,8 +233,9 @@ func (m *ArrayLHS) Type() Type {
 // VarLHS is the struct for a variable on the lhs of an assignment
 type VarLHS struct {
 	TokenBase
-	wtype Type
-	ident string
+	wtype     Type
+	ident     string
+	objMember bool
 }
 
 // Type returns the Type of the LHS
@@ -305,6 +306,7 @@ func (m *PairElemRHS) Type() Type {
 
 // FunctionCall is the base struct for function calls
 type FunctionCall struct {
+	obj          string
 	ident        string
 	mangledIdent string
 	args         []Expression
@@ -1235,6 +1237,11 @@ func parseRHS(node *node32) (RHS, error) {
 
 		call.SetToken(&node.token32)
 
+		objNode := nextNode(node, ruleCLASSOBJ)
+		if objNode != nil {
+			call.obj = objNode.match
+		}
+
 		identNode := nextNode(node, ruleIDENT)
 		call.ident = identNode.match
 
@@ -1451,6 +1458,11 @@ func parseStatement(node *node32) (Statement, error) {
 		call := new(FunctionCallStat)
 
 		call.SetToken(&node.token32)
+
+		objNode := nextNode(fnode, ruleCLASSOBJ)
+		if objNode != nil {
+			call.obj = objNode.match
+		}
 
 		identNode := nextNode(fnode, ruleIDENT)
 		call.ident = identNode.match
