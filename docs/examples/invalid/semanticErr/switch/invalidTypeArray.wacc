@@ -1,0 +1,7 @@
+begin
+  int[] hi = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] ;
+  switch hi
+    default:
+      skip
+    fi
+end

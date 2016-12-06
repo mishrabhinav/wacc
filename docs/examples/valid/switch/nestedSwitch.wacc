@@ -1,0 +1,17 @@
+begin
+  int x = 2 + 3;
+  switch x
+		case 4:
+			skip
+		case (1+1+1+1+1):
+			switch false
+	      case true:
+	        skip
+	      case false:
+					int result = 50;
+	        println result
+			fi
+    default:
+      skip
+	fi
+end

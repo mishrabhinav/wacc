@@ -376,6 +376,15 @@ type WhileStatement struct {
 	body Statement
 }
 
+// SwitchStatement is the struct for a while statement
+type SwitchStatement struct {
+	BaseStatement
+	cond        Expression
+	cases       []Expression
+	bodies      []Statement
+	defaultCase Statement
+}
+
 // FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
@@ -1450,8 +1459,13 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		elseNode := nextNode(bodyNode.next, ruleSTAT)
-		if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
-			return nil, err
+		fiNode := nextNode(bodyNode.next, ruleFI)
+		if elseNode != nil {
+			if elseNode.begin < fiNode.begin {
+				if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		stm = ifs
@@ -1469,6 +1483,43 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = whiles
+	case ruleSWITCH:
+		switchs := new(SwitchStatement)
+
+		exprNode := nextNode(node, ruleEXPR)
+		if switchs.cond, err = parseExpr(exprNode.up); err != nil {
+			return nil, err
+		}
+		for caseNode := nextNode(exprNode.next, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {
+			var expr Expression
+			var err error
+			if expr, err = parseExpr(caseNode.up); err != nil {
+				return nil, err
+			}
+			switchs.cases = append(switchs.cases, expr)
+
+			stmNode := nextNode(caseNode, ruleSTAT)
+
+			var stat Statement
+			if stat, err = parseStatement(stmNode.up); err != nil {
+				return nil, err
+			}
+			switchs.bodies = append(switchs.bodies, stat)
+		}
+
+		defaultHolder := nextNode(node, ruleDEFAULT)
+		fiNode := nextNode(node, ruleFI)
+		defaultNode := nextNode(defaultHolder, ruleSTAT)
+
+		if defaultNode != nil {
+			if defaultNode.begin < fiNode.begin {
+				if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		stm = switchs
 	default:
 		return nil, fmt.Errorf(
 			"unexpected %s %s",

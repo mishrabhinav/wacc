@@ -1,0 +1,8 @@
+begin
+  switch 4
+		case 4
+      skip
+    default:
+      skip
+    fi
+end

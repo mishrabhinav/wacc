@@ -282,13 +282,13 @@ func (stmt IfStatement) aststring(indent string) string {
 	var falseStats string
 	var trueTmp string
 	var falseTmp string
+	var elseStats string
 	innerIndent := getGreaterIndent(indent)
 	doubleInnerIndent := getGreaterIndent(innerIndent)
 
 	ifStats := fmt.Sprintf("%vIF\n", addMinToIndent(indent))
 	condStats := fmt.Sprintf("%vCONDITION\n", addMinToIndent(innerIndent))
 	thenStats := fmt.Sprintf("%vTHEN\n", addMinToIndent(innerIndent))
-	elseStats := fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
 
 	stmtStats = stmt.cond.aststring(doubleInnerIndent)
 
@@ -302,15 +302,17 @@ func (stmt IfStatement) aststring(indent string) string {
 	trueTmp = st.aststring(doubleInnerIndent)
 	trueStats = fmt.Sprintf("%v%v", trueStats, trueTmp)
 
-	st = stmt.falseStat
-	for st.GetNext() != nil {
+	if stmt.falseStat != nil {
+		st = stmt.falseStat
+		for st.GetNext() != nil {
+			falseTmp = st.aststring(doubleInnerIndent)
+			falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
+			st = st.GetNext()
+		}
+		elseStats = fmt.Sprintf("%vELSE\n", addMinToIndent(innerIndent))
 		falseTmp = st.aststring(doubleInnerIndent)
 		falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
-		st = st.GetNext()
 	}
-
-	falseTmp = st.aststring(doubleInnerIndent)
-	falseStats = fmt.Sprintf("%v%v", falseStats, falseTmp)
 
 	return fmt.Sprintf(
 		"%v%v%v%v%v%v%v",
@@ -354,6 +356,60 @@ func (stmt WhileStatement) aststring(indent string) string {
 	doStats = fmt.Sprintf("%v%v", doStats, body)
 
 	loopStats := addIndAndNewLine(indent, "LOOP")
+
+	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
+}
+
+// Prints a Switch Statement. Format:
+// - SWITCH
+//   - CONDITION
+//     - [expr]
+//   - [CASE #]
+//     - CONDITION
+//       - [condExpr]
+//     - DO
+//       - [doEXPR]
+// doEXPR, condExpr and CASE are recursed upon
+func (stmt SwitchStatement) aststring(indent string) string {
+	var body string
+	var statBody string
+	var doStats string
+	var refStmt Statement
+	innerIndent := getGreaterIndent(indent)
+	doubleIndent := getGreaterIndent(innerIndent)
+
+	condStats := addIndentForFirst(
+		innerIndent,
+		"CONDITION",
+		stmt.cond.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	caseStats := addIndAndNewLine(innerIndent, "CASE")
+	innerCondStats := addIndAndNewLine(getGreaterIndent(innerIndent), "CONDITION")
+	innerDoStats := addIndAndNewLine(getGreaterIndent(innerIndent), "DO")
+
+	for index := 0; index <= len(stmt.cases); index++ {
+		if index != len(stmt.cases) {
+			refStmt = stmt.bodies[index]
+			body = stmt.cases[index].aststring(getGreaterIndent(doubleIndent))
+		} else {
+			if stmt.defaultCase == nil {
+				break
+			}
+			body = addIndAndNewLine(getGreaterIndent(doubleIndent), "DEFAULT")
+			refStmt = stmt.defaultCase
+		}
+
+		statBody = ""
+		for tmpStat := refStmt; tmpStat != nil; tmpStat = tmpStat.GetNext() {
+			statBody = fmt.Sprintf("%v%v", statBody,
+				tmpStat.aststring(getGreaterIndent(doubleIndent)))
+		}
+		doStats = fmt.Sprintf("%v%v%v%v%v%v", doStats, caseStats, innerCondStats, body,
+			innerDoStats, statBody)
+	}
+
+	loopStats := addIndAndNewLine(indent, "SWITCH")
 
 	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
 }

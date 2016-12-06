@@ -469,6 +469,7 @@ func (stat *FunctionCallStat) istring(level int) string {
 // Recurses on cond, (multiple) trueStat and (multiple) falseStat.
 func (stmt *IfStatement) istring(level int) string {
 	var trueStats string
+	var elseStats string
 	var falseStats string
 
 	var indent = getIndentation(level)
@@ -482,17 +483,21 @@ func (stmt *IfStatement) istring(level int) string {
 
 	trueStats = fmt.Sprintf("%v\n%v", trueStats, st.istring(level+1))
 
-	st = stmt.falseStat
-	for st.GetNext() != nil {
-		falseStats = fmt.Sprintf("%v\n%v ;", falseStats,
-			st.istring(level+1))
-		st = st.GetNext()
+	if stmt.falseStat != nil {
+		st = stmt.falseStat
+		for st.GetNext() != nil {
+			falseStats = fmt.Sprintf("%v\n%v ;", falseStats,
+				st.istring(level+1))
+			st = st.GetNext()
+		}
+
+		falseStats = fmt.Sprintf("%v\n%v", falseStats, st.istring(level+1))
+
+		elseStats = fmt.Sprintf("%velse %v\n", indent, falseStats)
 	}
 
-	falseStats = fmt.Sprintf("%v\n%v", falseStats, st.istring(level+1))
-
-	return fmt.Sprintf("%vif %v\n%vthen %v\n%velse %v\n%vfi", indent,
-		stmt.cond, indent, trueStats, indent, falseStats, indent)
+	return fmt.Sprintf("%vif %v\n%vthen %v\n%v%vfi", indent,
+		stmt.cond, indent, trueStats, elseStats, indent)
 }
 
 // Prints a while loop. Format:
@@ -514,6 +519,41 @@ func (stmt *WhileStatement) istring(level int) string {
 
 	return fmt.Sprintf("%vwhile (%v) do%v\n%vdone", indent, stmt.cond, body,
 		indent)
+}
+
+// Prints a switch statement. Format:
+//   "switch ([cond])
+//    [case #]*
+//   		[body]*
+//    done"
+// Recurses on cond and (multiple) case->body.
+func (stmt *SwitchStatement) istring(level int) string {
+	var body string
+	var st Statement
+	var indent = getIndentation(level)
+
+	for index := 0; index <= len(stmt.cases); index++ {
+		if index != len(stmt.cases) {
+			st = stmt.bodies[index]
+			body = fmt.Sprintf("%v\n%v  case %v:", body, indent, stmt.cases[index])
+		} else {
+			if stmt.defaultCase == nil {
+				break
+			}
+			st = stmt.defaultCase
+			body = fmt.Sprintf("%v\n%v  case default:", body, indent)
+		}
+
+		for st.GetNext() != nil {
+			body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+2))
+			st = st.GetNext()
+		}
+
+		body = fmt.Sprintf("%v\n%v", body, st.istring(level+2))
+	}
+
+	return fmt.Sprintf("%vswitch (%v)%v%v\n%vdone", indent, stmt.cond, indent,
+		body, indent)
 }
 
 // Prints a given function parameter. Format:

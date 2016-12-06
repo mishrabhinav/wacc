@@ -1,0 +1,9 @@
+begin
+  char[] hi = "hi";
+  switch hi
+		case 4:
+      skip
+    default:
+      skip
+    fi
+end
