@@ -503,6 +503,28 @@ func (stmt *SwitchStatement) istring(level int) string {
 		body, indent)
 }
 
+// Prints a doWhile loop. Format:
+//   "do
+//    [body]*
+//    while ([cond])
+//    done"
+// Recurses on cond and (multiple) body.
+func (stmt *DoWhileStatement) istring(level int) string {
+	var body string
+	var indent = getIndentation(level)
+
+	st := stmt.body
+	for st.GetNext() != nil {
+		body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+1))
+		st = st.GetNext()
+	}
+
+	body = fmt.Sprintf("%v\n%v", body, st.istring(level+1))
+
+	return fmt.Sprintf("%vdo\n%v\n%vwhile (%v) \n%vdone", indent, body,
+		indent, stmt.cond, indent)
+}
+
 // Prints a given function parameter. Format:
 //   "[type] [name]"
 // Recurses on type and name.
