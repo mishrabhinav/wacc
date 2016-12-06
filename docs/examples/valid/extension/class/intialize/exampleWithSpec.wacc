@@ -1,0 +1,35 @@
+begin
+  class A is
+    int a;
+    int b;
+
+    # Setter for member
+    void a(int x) is
+      @a = x
+    end
+
+    # Getter for member
+    int a() is
+      return @a
+    end
+
+    void foo() is
+      println "bar"
+    end
+  end
+
+  # Initiate new class
+  A a = new A() ;
+
+  # Constructor
+  call a->init() ;
+
+  # Calling function
+  call a->foo() ;
+
+  # Get a member
+  int y = call a->b() ;
+
+  # Set a member
+  call a->a(y)
+end
