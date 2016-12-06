@@ -779,14 +779,18 @@ func (m *SwitchStatement) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 		alloc.CleanupScope(insch)
 
 	}
-	alloc.FreeReg(condReg, insch)
-	alloc.CleanupScope(insch)
 
 	labelDefault := fmt.Sprintf("case_%v%s", maxIndex+1, suffix)
 	insch <- &LABELInstr{ident: labelDefault}
 	if m.defaultCase != nil {
+		alloc.StartScope(insch)
 		m.defaultCase.CodeGen(alloc, insch)
+		alloc.CleanupScope(insch)
 	}
+
+	alloc.FreeReg(condReg, insch)
+	alloc.CleanupScope(insch)
+
 	insch <- &LABELInstr{ident: labelEnd}
 }
 
