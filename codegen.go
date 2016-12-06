@@ -2026,9 +2026,7 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		context.StartScope(ch)
 
 		// save previous pc for returning
-		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{lr}}}
-
-		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, lr}}}
 
 		// save callee saved registers
 		ch <- &PUSHInstr{
@@ -2098,10 +2096,8 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 			},
 		}
 
-		ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
-
 		// return
-		ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{pc}}}
+		ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, pc}}}
 
 		// ensures literal pools for LDR are in range
 		ch <- &LTORGInstr{}
