@@ -1,0 +1,10 @@
+begin
+  switch 6
+		case 4:
+			println "4"
+		case 5:
+			println "5"
+		case (1+5):
+			println "6"
+	fi
+end
