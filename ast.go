@@ -1294,6 +1294,8 @@ func parseBaseType(node *node32) (Type, error) {
 		return ArrayType{base: CharType{}}, nil
 	case ruleVOID:
 		return VoidType{}, nil
+	case ruleCLASSTYPE:
+		return &ClassType{name: node.up.match}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
