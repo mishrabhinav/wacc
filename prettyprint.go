@@ -603,6 +603,35 @@ func (fd *FunctionDef) istring(level int) string {
 	return fmt.Sprintf("%v %v\n%vend", declaration, body, indent)
 }
 
+// Prints the ClassMember. Format:
+//   "[type] [ident];"
+func (m *ClassMember) istring(level int) string {
+	return fmt.Sprintf("%v%v %v;", getIndentation(level), m.wtype, m.ident)
+}
+
+// Prints the AST. Format:
+//   "class [name] is
+//      ([members])*
+//      ([methods])*
+//    end"
+// Recurses on (multpiple/optional) methods and members.
+func (c *ClassType) istring(level int) string {
+	class := fmt.Sprintf("%vclass %v is", getIndentation(level), c.name)
+
+	for _, member := range c.members {
+		class = fmt.Sprintf("%v\n%v", class, member.istring(level+1))
+	}
+
+	class = fmt.Sprintf("%v\n", class)
+
+	for _, method := range c.methods {
+		class = fmt.Sprintf("%v\n%v\n", class,
+			method.istring(level+1))
+	}
+
+	return fmt.Sprintf("%v\n%vend", class, getIndentation(level))
+}
+
 // Prints the AST. Format:
 //   "begin
 //    ([functions])*
@@ -617,6 +646,11 @@ func (ast *AST) String() string {
 
 	for _, include := range ast.includes {
 		tree = fmt.Sprintf("%v\n  %v\n", tree, includeString(include))
+	}
+
+	for _, class := range ast.classes {
+		tree = fmt.Sprintf("%v\n%v\n", tree,
+			class.istring(startingIndent))
 	}
 
 	for _, function := range ast.functions {
