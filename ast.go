@@ -101,12 +101,14 @@ func (m ArrayType) MangleSymbol() string {
 
 // ClassMember holds class member data
 type ClassMember struct {
+	TokenBase
 	ident string
 	wtype Type
 }
 
 // ClassType represents a class in WACC
 type ClassType struct {
+	TokenBase
 	name    string
 	members []*ClassMember
 	methods []*FunctionDef
