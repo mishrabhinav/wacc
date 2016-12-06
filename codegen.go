@@ -897,6 +897,41 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 	insch <- &LABELInstr{ident: labelEnd}
 }
 
+// CodeGen generates code for DoWhileStatement
+// do_%l
+// --> [CodeGen body]
+// --> [CodeGen cond] << reg
+// --> CMP reg, 1
+// --> BEQ do_%l
+// --> [CodeGen next instruction]
+func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	suffix := context.GetUniqueLabelSuffix()
+
+	labelDo := fmt.Sprintf("do%s", suffix)
+
+	insch <- &LABELInstr{ident: labelDo}
+
+	//Body
+	context.StartScope(insch)
+
+	m.body.CodeGen(context, insch)
+
+	// Condition
+	target := context.GetReg(insch)
+
+	m.cond.CodeGen(context, target, insch)
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: &ImmediateOperand{1}}}
+
+	insch <- &BInstr{cond: condEQ, label: labelDo}
+
+	context.FreeReg(target, insch)
+
+	context.CleanupScope(insch)
+
+	m.BaseStatement.CodeGen(context, insch)
+}
+
 //CodeGen generates code for PairElemLHS
 // --> [CodeGen expr] << reg
 // --> MOV r0, reg
