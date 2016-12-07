@@ -1,0 +1,26 @@
+{
+  class A {
+    int[] a;
+
+    void init(int[] x) {
+      @a = x
+    }
+
+    void a(int[] x) {
+      @a = x
+    }
+
+    int[] a() {
+      return @a
+    }
+  }
+
+  A a = new A() ;
+
+  int[] x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ;
+
+  call a->init(x) ;
+
+  int[] r = call a->a() ;
+  println r[1]
+}

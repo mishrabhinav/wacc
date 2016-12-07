@@ -1,0 +1,9 @@
+{
+  include "sameNameInclude2.wacc"
+
+  class A {
+  
+  }
+
+  skip
+}

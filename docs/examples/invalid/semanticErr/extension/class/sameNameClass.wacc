@@ -1,0 +1,18 @@
+{
+  class A {
+    int[] a;
+
+    void init(int[] x) {
+      @a = x
+    }
+  }
+
+  class A {
+    int b;
+
+    void init(int x) {
+      @a = x
+    }
+  }
+  skip
+}
