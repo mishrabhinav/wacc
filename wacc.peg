@@ -153,7 +153,6 @@ SPACE		<- ( [ \t\r\n]
 # Keywords
 #-------------------------------------------------------------------------------
 
-BEGIN		<- 'begin'	!IDCHAR SPACE
 BREAK		<- 'break'	!IDCHAR SPACE
 BOOL		<- 'bool'	!IDCHAR SPACE
 CALL		<- 'call'	!IDCHAR SPACE

@@ -47,6 +47,7 @@ func (m *Scope) Child() *Scope {
 		funcs:      m.funcs,
 		class:      m.class,
 		returnType: m.returnType,
+		loop:	    m.loop,
 	}
 }
 
@@ -722,8 +723,11 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 			boolT,
 		)
 	}
+	ts.loop = ts.loop + 1
 
 	m.body.TypeCheck(ts.Child(), errch)
+
+	ts.loop = ts.loop - 1
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
