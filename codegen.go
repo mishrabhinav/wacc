@@ -856,7 +856,11 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 
 	condReg := alloc.GetReg(insch)
 
-	m.cond.CodeGen(alloc, condReg, insch)
+	if m.cond != nil {
+		m.cond.CodeGen(alloc, condReg, insch)
+	} else {
+		insch <- &MOVInstr{dest: condReg, source: &ImmediateOperand{1}}
+	}
 
 	for index := 0; index < len(m.cases); index++ {
 		maxIndex = index
