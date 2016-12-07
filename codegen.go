@@ -673,6 +673,13 @@ func (m *FunctionCallStat) CodeGen(context *FunctionContext, insch chan<- Instr)
 		loadValue := &RegisterLoadOperand{reg: reg}
 		insch <- &LDRInstr{LoadInstr{reg: reg, value: loadValue}}
 
+		context.builtInFuncs.Use(mNullReferenceLbl)
+		context.builtInFuncs.Use(mThrowRuntimeErr)
+
+		//Mov + CheckNullPointer Label
+		insch <- &MOVInstr{dest: r0, source: reg}
+		insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
+
 		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
 
 		context.PushStack(4)
@@ -1025,6 +1032,13 @@ func (m *FunctionCallRHS) CodeGen(context *FunctionContext, target Reg, insch ch
 		context.ResolveVarToRegister(m.obj, reg, insch)
 		loadValue := &RegisterLoadOperand{reg: reg}
 		insch <- &LDRInstr{LoadInstr{reg: reg, value: loadValue}}
+
+		context.builtInFuncs.Use(mNullReferenceLbl)
+		context.builtInFuncs.Use(mThrowRuntimeErr)
+
+		//Mov + CheckNullPointer Label
+		insch <- &MOVInstr{dest: r0, source: reg}
+		insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
 
 		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
 
