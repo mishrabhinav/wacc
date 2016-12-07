@@ -896,6 +896,20 @@ func (op BinaryOperatorAnd) aststring(indent string) string {
 	)
 }
 
+// Prints a & binaryOperator. Format:
+// - &
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorBitAnd) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"&",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
 // Prints a || binaryOperator. Format:
 // - ||
 //   - [arg1]
@@ -905,6 +919,20 @@ func (op BinaryOperatorOr) aststring(indent string) string {
 	return addTripleIndentOnlyFst(
 		indent,
 		"||",
+		op.GetLHS().aststring(getGreaterIndent(indent)),
+		op.GetRHS().aststring(getGreaterIndent(indent)),
+	)
+}
+
+// Prints a | binaryOperator. Format:
+// - |
+//   - [arg1]
+//   - [arg2]
+// Recurses on arg1 and arg2.
+func (op BinaryOperatorBitOr) aststring(indent string) string {
+	return addTripleIndentOnlyFst(
+		indent,
+		"|",
 		op.GetLHS().aststring(getGreaterIndent(indent)),
 		op.GetRHS().aststring(getGreaterIndent(indent)),
 	)

@@ -11,6 +11,7 @@ package main
 
 // Scope stores the available variables, functions, and expected return type
 // during lexical analysis
+
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
@@ -1284,6 +1285,20 @@ func (m *BinaryOperatorAnd) TypeCheck(ts *Scope, errch chan<- error) {
 // The check is propagated recursively.
 func (m *BinaryOperatorOr) TypeCheck(ts *Scope, errch chan<- error) {
 	typeCheckBoolean(m, ts, errch)
+}
+
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
+func (m *BinaryOperatorBitAnd) TypeCheck(ts *Scope, errch chan<- error) {
+	typeCheckArithmetic(m, ts, errch)
+}
+
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
+func (m *BinaryOperatorBitOr) TypeCheck(ts *Scope, errch chan<- error) {
+	typeCheckArithmetic(m, ts, errch)
 }
 
 func typeCheckArithmetic(m BinaryOperator, ts *Scope, errch chan<- error) {
