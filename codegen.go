@@ -999,6 +999,12 @@ func (m *ExpressionRHS) CodeGen(context *FunctionContext, target Reg, insch chan
 	m.expr.CodeGen(context, target, insch)
 }
 
+//CodeGen generates code for NewInstanceRHS
+// --> BL malloc
+func (m *NewInstanceRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	// TODO
+}
+
 //------------------------------------------------------------------------------
 // LITERALS AND ELEMENTS CODEGEN
 //------------------------------------------------------------------------------

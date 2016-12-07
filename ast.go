@@ -341,6 +341,17 @@ func (m *ExpressionRHS) Type() Type {
 	return m.expr.Type()
 }
 
+// NewInstanceRHS is the for new class instance on the rhs of an assignment
+type NewInstanceRHS struct {
+	TokenBase
+	wtype Type
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *NewInstanceRHS) Type() Type {
+	return m.wtype
+}
+
 // AssignStatement is the struct for an assignment statement
 type AssignStatement struct {
 	BaseStatement
@@ -433,7 +444,7 @@ func (m *FunctionDef) Symbol() string {
 	buffer.WriteString(m.ident)
 
 	if len(m.classname) > 0 {
-		buffer.WriteString("__class_")
+		buffer.WriteString(fmt.Sprintf("__class_%s_", m.classname))
 	}
 
 	if len(m.params) > 0 {
@@ -1276,6 +1287,16 @@ func parseRHS(node *node32) (RHS, error) {
 		exprRHS.expr = expr
 
 		return exprRHS, nil
+	case ruleNEW:
+		newInst := new(NewInstanceRHS)
+
+		newInst.SetToken(&node.token32)
+
+		identNode := nextNode(node, ruleIDENT)
+
+		newInst.wtype = &ClassType{name: identNode.match}
+
+		return newInst, nil
 	default:
 		return nil, fmt.Errorf("Unexpected rule %s %s", node.String(), node.match)
 	}

@@ -549,6 +549,11 @@ func (rhs ExpressionRHS) aststring(indent string) string {
 	return rhs.expr.aststring(indent)
 }
 
+// Recurses oh the RHS of an Expression.
+func (rhs NewInstanceRHS) aststring(indent string) string {
+	return "" // TODO
+}
+
 // Prints a READ statement. Format:
 // - READ
 //   - [args]

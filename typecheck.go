@@ -14,6 +14,7 @@ package main
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
+	classes    map[string]*ClassType
 	members    map[string]Type
 	funcs      map[string]map[string]map[string]*FunctionDef
 	class      *ClassType
@@ -25,6 +26,7 @@ func CreateRootScope() *Scope {
 	scope := &Scope{
 		parent:  nil,
 		vars:    make(map[string]Type),
+		classes: make(map[string]*ClassType),
 		members: make(map[string]Type),
 		funcs:   make(map[string]map[string]map[string]*FunctionDef),
 	}
@@ -38,7 +40,10 @@ func (m *Scope) Child() *Scope {
 	return &Scope{
 		parent:     m,
 		vars:       make(map[string]Type),
+		classes:    m.classes,
+		members:    m.members,
 		funcs:      m.funcs,
+		class:      m.class,
 		returnType: m.returnType,
 	}
 }
@@ -59,6 +64,18 @@ func (m *Scope) Lookup(ident string) Type {
 	return t
 }
 
+// LookupMember tries to search for the type of a given member
+// It returns InvalidType if not found
+func (m *Scope) LookupMember(ident string) Type {
+	t, ok := m.members[ident]
+
+	if !ok {
+		return InvalidType{}
+	}
+
+	return t
+}
+
 // LookupFunction tries to return the function given it's identifier
 // returns nil if not found.
 func (m *Scope) LookupFunction(ident string) map[string]*FunctionDef {
@@ -71,11 +88,23 @@ func (m *Scope) LookupFunction(ident string) map[string]*FunctionDef {
 	return t
 }
 
-// LookupMember tries to return the function given it's identifier and the name
+// LookupMethod tries to return the function given it's identifier and the name
 // of the class it is on
 // returns nil if not found.
-func (m *Scope) LookupMember(class, ident string) map[string]*FunctionDef {
+func (m *Scope) LookupMethod(class, ident string) map[string]*FunctionDef {
 	t, ok := m.funcs[class][ident]
+
+	if !ok {
+		return nil
+	}
+
+	return t
+}
+
+// LookupClass tries to return the class given it's identifier
+// returns nil if not found.
+func (m *Scope) LookupClass(ident string) *ClassType {
+	t, ok := m.classes[ident]
 
 	if !ok {
 		return nil
@@ -146,6 +175,24 @@ func (m *Scope) DeclareMethod(class, ident, symbol string, f *FunctionDef) *Func
 	pf, ok := m.funcs[class][ident][symbol]
 
 	m.funcs[class][ident][symbol] = f
+
+	if ok {
+		return pf
+	}
+
+	return nil
+}
+
+// DeclareClass registers a new class in the scope returning the previous
+// one in case of redeclaration, nil otherwise
+func (m *Scope) DeclareClass(ident string, c *ClassType) *ClassType {
+	if m.classes == nil {
+		m.classes = make(map[string]*ClassType)
+	}
+
+	pf, ok := m.classes[ident]
+
+	m.classes[ident] = c
 
 	if ok {
 		return pf
@@ -248,9 +295,16 @@ func (m *AST) TypeCheck() []error {
 	go func() {
 		global := CreateRootScope()
 
-		// add the methods to the scope
+		// add the classes and methods to the scope
 		for _, c := range m.classes {
+			if pc := global.DeclareClass(c.name, c); pc != nil {
+				errch <- CreateClassRedeclarationError(
+					c.Token(),
+					c.name,
+				)
+			}
 			for _, m := range c.methods {
+				m.classname = c.name
 				if pm := global.DeclareMethod(c.name, m.ident, m.Symbol(), m); pm != nil {
 					errch <- CreateFunctionRedelarationError(
 						m.Token(),
@@ -274,6 +328,7 @@ func (m *AST) TypeCheck() []error {
 		for _, c := range m.classes {
 			cs := global.Child()
 			cs.class = c
+			cs.members = make(map[string]Type)
 			// add the members
 			for _, m := range c.members {
 				switch m.wtype.(type) {
@@ -545,7 +600,34 @@ func (m *FunctionCallStat) TypeCheck(ts *Scope, errch chan<- error) {
 		arg.TypeCheck(ts, errch)
 	}
 
-	overloads := ts.LookupFunction(m.ident)
+	var classname string
+	if len(m.obj) > 0 {
+		var recvT Type
+		switch m.obj[0] {
+		case '@':
+			recvT = ts.LookupMember(m.obj[1:])
+		default:
+			recvT = ts.Lookup(m.obj)
+		}
+
+		switch t := recvT.(type) {
+		case *ClassType:
+			classname = t.name
+		default:
+			errch <- CreateFunctionCallOnNonObjectError(
+				m.Token(),
+				m.ident,
+				t,
+			)
+		}
+	}
+
+	var overloads map[string]*FunctionDef
+	if len(classname) > 0 {
+		overloads = ts.LookupMethod(classname, m.ident)
+	} else {
+		overloads = ts.LookupFunction(m.ident)
+	}
 
 	if overloads == nil {
 		errch <- CreateCallingNonFunctionError(
@@ -699,7 +781,13 @@ func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
-	t := ts.Lookup(m.ident)
+	var t Type
+	switch m.ident[0] {
+	case '@':
+		t = ts.LookupMember(m.ident[1:])
+	default:
+		t = ts.Lookup(m.ident)
+	}
 
 	for _, i := range m.index {
 		i.TypeCheck(ts, errch)
@@ -730,7 +818,13 @@ func (m *ArrayLHS) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *VarLHS) TypeCheck(ts *Scope, errch chan<- error) {
-	t := ts.Lookup(m.ident)
+	var t Type
+	switch m.ident[0] {
+	case '@':
+		t = ts.LookupMember(m.ident[1:])
+	default:
+		t = ts.Lookup(m.ident)
+	}
 
 	switch t.(type) {
 	case InvalidType:
@@ -798,7 +892,34 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 		arg.TypeCheck(ts, errch)
 	}
 
-	overloads := ts.LookupFunction(m.ident)
+	var classname string
+	if len(m.obj) > 0 {
+		var recvT Type
+		switch m.obj[0] {
+		case '@':
+			recvT = ts.LookupMember(m.ident[1:])
+		default:
+			recvT = ts.Lookup(m.ident)
+		}
+
+		switch t := recvT.(type) {
+		case *ClassType:
+			classname = t.name
+		default:
+			errch <- CreateFunctionCallOnNonObjectError(
+				m.Token(),
+				m.ident,
+				t,
+			)
+		}
+	}
+
+	var overloads map[string]*FunctionDef
+	if len(classname) > 0 {
+		overloads = ts.LookupMethod(classname, m.ident)
+	} else {
+		overloads = ts.LookupFunction(m.ident)
+	}
 
 	if overloads == nil {
 		errch <- CreateCallingNonFunctionError(
@@ -845,6 +966,8 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- CreateNoSuchOverloadError(m.Token(), m.ident)
 	}
 
+	m.mangledIdent = mangledIdent
+
 	switch m.wtype.(type) {
 	case VoidType:
 		errch <- CreateVoidAssignmentError(
@@ -852,8 +975,6 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 			m.ident,
 		)
 	}
-
-	m.mangledIdent = mangledIdent
 }
 
 // TypeCheck checks whether the right hand side is valid and assignable
@@ -862,11 +983,45 @@ func (m *ExpressionRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	m.expr.TypeCheck(ts, errch)
 }
 
+// TypeCheck checks whether the right hand side is valid and assignable
+// The check is propagated recursively.
+func (m *NewInstanceRHS) TypeCheck(ts *Scope, errch chan<- error) {
+	var ct *ClassType
+	switch t := m.wtype.(type) {
+	case *ClassType:
+		ct = t
+	default:
+		errch <- CreateTypeMismatchError(
+			m.Token(),
+			&ClassType{name: "any class"},
+			t,
+		)
+	}
+
+	c := ts.LookupClass(ct.name)
+
+	if c == nil {
+		errch <- CreateUndeclaredClassError(
+			m.Token(),
+			ct.name,
+		)
+		m.wtype = InvalidType{}
+	} else {
+		m.wtype = c
+	}
+}
+
 // TypeCheck checks expression whether all operators get the type they can
 // operate on, all variables are declared, arrays are indexed properly.
 // The check is propagated recursively.
 func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
-	t := ts.Lookup(m.ident)
+	var t Type
+	switch m.ident[0] {
+	case '@':
+		t = ts.LookupMember(m.ident[1:])
+	default:
+		t = ts.Lookup(m.ident)
+	}
 
 	switch t.(type) {
 	case InvalidType:
