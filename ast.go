@@ -914,6 +914,26 @@ func (m *BinaryOperatorOr) Type() Type {
 	return BoolType{}
 }
 
+// BinaryOperatorBitAnd represents '&'
+type BinaryOperatorBitAnd struct {
+	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorBitAnd) Type() Type {
+	return IntType{}
+}
+
+// BinaryOperatorBitOr represents '|'
+type BinaryOperatorBitOr struct {
+	BinaryOperatorBase
+}
+
+// Type returns the Type of the expression
+func (m *BinaryOperatorBitOr) Type() Type {
+	return IntType{}
+}
+
 // ExprParen represents '()'
 type ExprParen struct {
 	TokenBase
@@ -977,7 +997,9 @@ var PriorityMap = map[interface{}]int{
 	BinaryOperatorEqual{}:        7,
 	BinaryOperatorNotEqual{}:     7,
 	BinaryOperatorAnd{}:          11,
+	BinaryOperatorBitAnd{}:       11,
 	BinaryOperatorOr{}:           12,
+	BinaryOperatorBitOr{}:        12,
 	ExprParen{}:                  13,
 }
 
@@ -1096,6 +1118,8 @@ func parseExpr(node *node32) (Expression, error) {
 				ruleBANGEQU: &BinaryOperatorNotEqual{},
 				ruleANDAND:  &BinaryOperatorAnd{},
 				ruleOROR:    &BinaryOperatorOr{},
+				ruleAND:     &BinaryOperatorBitAnd{},
+				ruleOR:      &BinaryOperatorBitOr{},
 			},
 		}
 
