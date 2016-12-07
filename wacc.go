@@ -81,6 +81,12 @@ func semanticAnalysis(ast *AST) {
 	}
 }
 
+// optimisation optimises the AST by modifying and replacing nodes to make
+// the expression simpler
+func optimise(ast *AST) {
+	ast.Optimise()
+}
+
 // codeGeneration generates the assembly code for the input file and puts it in
 // a `.s` file
 func codeGeneration(ast *AST, flags *Flags) {
@@ -147,6 +153,9 @@ func main() {
 
 	// Perform semantic analysis on the AST
 	semanticAnalysis(ast)
+
+	// Perform optimisation on the AST
+	optimise(ast)
 
 	// Generate assembly code for the input wacc file
 	codeGeneration(ast, flags)
