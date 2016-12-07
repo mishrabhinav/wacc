@@ -2122,34 +2122,47 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 
 		// put the first four params on the stack
 		pl := len(m.params)
-		if m.class != nil {
-			pl++
-		}
 
 		switch {
-		case pl >= 4:
+		case pl >= 4 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r3}}}
 			fallthrough
-		case pl == 3:
+		case pl == 3 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r2}}}
 			fallthrough
-		case pl == 2:
+		case pl == 2 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r1}}}
 			fallthrough
-		case pl == 1:
+		case pl == 1 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r0}}}
+
+		case pl >= 3 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r3}}}
+			fallthrough
+		case pl == 2 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r2}}}
+			fallthrough
+		case pl == 1 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r1}}}
 		}
 
 		// set the addresses of the arguments relative to sp on the
 		// stack
-		for i := 0; i < 4 && i < len(m.params); i++ {
-			p := m.params[i]
-			context.stack[0][p.name] = i * -4
-		}
-
-		for i := 4; i < len(m.params); i++ {
-			p := m.params[i]
-			context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+		for i := 0; i < len(m.params); i++ {
+			switch {
+			case i < 4 && m.class == nil:
+				p := m.params[i]
+				context.stack[0][p.name] = i * -4
+			case i < 3 && m.class != nil:
+				p := m.params[i]
+				context.stack[0][p.name] = i * -4
+			case i >= 4 && m.class == nil:
+				p := m.params[i]
+				context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+			case i >= 3 && m.class != nil:
+				p := m.params[i]
+				context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+			}
 		}
 
 		// if we are in a function put the this address in ip
@@ -2185,6 +2198,9 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 			ppregs := pl * 4
 			if ppregs > 16 {
 				ppregs = 16
+			}
+			if ppregs > 12 && m.class != nil {
+				ppregs = 12
 			}
 			ch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 				rhs: ImmediateOperand{ppregs}}}
