@@ -46,8 +46,12 @@
   call a->foo() ;
 
   int y = call a->b() ;
-  int z = call c->c();
+  println y ;
+  y = call c->c();
+  println y ;
 
-  call a->a(y) ;
-  call c->c(z + 1)
+  call c->c(z + 1) ;
+
+  y = call c->c() ;
+  println y
 }
