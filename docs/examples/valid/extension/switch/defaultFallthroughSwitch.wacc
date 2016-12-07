@@ -1,0 +1,10 @@
+begin
+  switch on
+  case true:
+    println "True"
+    fallthrough
+  default:
+    println "Default"
+  end
+end
+

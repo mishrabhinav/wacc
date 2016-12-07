@@ -856,7 +856,11 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 
 	condReg := alloc.GetReg(insch)
 
-	m.cond.CodeGen(alloc, condReg, insch)
+	if m.cond != nil {
+		m.cond.CodeGen(alloc, condReg, insch)
+	} else {
+		insch <- &MOVInstr{dest: condReg, source: &ImmediateOperand{1}}
+	}
 
 	for index := 0; index < len(m.cases); index++ {
 		maxIndex = index
@@ -865,7 +869,9 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 		target := alloc.GetReg(insch)
 
 		labelCase := fmt.Sprintf("case_%v%s", index, suffix)
+		labelCaseBody := fmt.Sprintf("body_%v%s", index, suffix)
 		labelNext := fmt.Sprintf("case_%v%s", index+1, suffix)
+		labelNextBody := fmt.Sprintf("body_%v%s", index+1, suffix)
 
 		// Codegen Case expression
 		insch <- &LABELInstr{ident: labelCase}
@@ -876,16 +882,25 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 
 		insch <- &BInstr{label: labelNext, cond: condNE}
 
+		insch <- &LABELInstr{ident: labelCaseBody}
+
 		m.bodies[index].CodeGen(alloc, insch)
 
 		alloc.FreeReg(target, insch)
 		alloc.CleanupScope(insch)
 
-		insch <- &BInstr{label: labelEnd}
+		if !m.fts[index] {
+			insch <- &BInstr{label: labelEnd}
+		} else {
+			insch <- &BInstr{label: labelNextBody}
+		}
+
 	}
 
 	labelDefault := fmt.Sprintf("case_%v%s", maxIndex+1, suffix)
+	labelDefaultBody := fmt.Sprintf("body_%v%s", maxIndex+1, suffix)
 	insch <- &LABELInstr{ident: labelDefault}
+	insch <- &LABELInstr{ident: labelDefaultBody}
 	if m.defaultCase != nil {
 		alloc.StartScope(insch)
 		m.defaultCase.CodeGen(alloc, insch)

@@ -473,6 +473,7 @@ type SwitchStatement struct {
 	BaseStatement
 	cond        Expression
 	cases       []Expression
+	fts         []bool
 	bodies      []Statement
 	defaultCase Statement
 }
@@ -1645,13 +1646,19 @@ func parseStatement(node *node32) (Statement, error) {
 	case ruleSWITCH:
 		switchs := new(SwitchStatement)
 
-		exprNode := nextNode(node, ruleEXPR)
-		if switchs.cond, err = parseExpr(exprNode.up); err != nil {
-			return nil, err
+		condNode := nextNode(node, ruleEXPR)
+		onNode := nextNode(node, ruleON)
+
+		if onNode.begin > condNode.begin {
+			if switchs.cond, err = parseExpr(condNode.up); err != nil {
+				return nil, err
+			}
+		} else {
+			switchs.cond = nil
 		}
-		for caseNode := nextNode(exprNode.next, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {
+
+		for caseNode := nextNode(onNode, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {
 			var expr Expression
-			var err error
 			if expr, err = parseExpr(caseNode.up); err != nil {
 				return nil, err
 			}
@@ -1664,6 +1671,14 @@ func parseStatement(node *node32) (Statement, error) {
 				return nil, err
 			}
 			switchs.bodies = append(switchs.bodies, stat)
+
+			ftNode := nextNode(stmNode, ruleFALLTHROUGH)
+
+			ft := false
+			if ftNode != nil {
+				ft = true
+			}
+			switchs.fts = append(switchs.fts, ft)
 		}
 
 		defaultHolder := nextNode(node, ruleDEFAULT)

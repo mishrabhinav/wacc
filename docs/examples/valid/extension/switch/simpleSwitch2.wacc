@@ -1,0 +1,12 @@
+begin
+  switch {
+  case false:
+    println "false"
+  case 2 == 3:
+    println "false"
+  case 'f' < 'a':
+    println "false"
+  default:
+    println "true"
+  }
+end

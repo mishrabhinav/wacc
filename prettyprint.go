@@ -499,7 +499,15 @@ func (stmt *SwitchStatement) istring(level int) string {
 		body = fmt.Sprintf("%v\n%v", body, st.istring(level+2))
 	}
 
-	return fmt.Sprintf("%vswitch (%v)%v%v\n%vdone", indent, stmt.cond, indent,
+	var cond string
+
+	if stmt.cond != nil {
+		cond = fmt.Sprintf("%v", stmt.cond)
+	} else {
+		cond = "true"
+	}
+
+	return fmt.Sprintf("%vswitch (%v)%v%v\n%vdone", indent, cond, indent,
 		body, indent)
 }
 
