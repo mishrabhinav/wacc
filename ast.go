@@ -488,7 +488,7 @@ type FunctionParam struct {
 type FunctionDef struct {
 	TokenBase
 	ident      string
-	classname  string
+	class      *ClassType
 	returnType Type
 	params     []*FunctionParam
 	body       Statement
@@ -501,8 +501,8 @@ func (m *FunctionDef) Symbol() string {
 
 	buffer.WriteString(m.ident)
 
-	if len(m.classname) > 0 {
-		buffer.WriteString(fmt.Sprintf("__class_%s_", m.classname))
+	if m.class != nil {
+		buffer.WriteString(fmt.Sprintf("__class_%s_", m.class.name))
 	}
 
 	if len(m.params) > 0 {

@@ -304,7 +304,7 @@ func (m *AST) TypeCheck() []error {
 				)
 			}
 			for _, m := range c.methods {
-				m.classname = c.name
+				m.class = c
 				if pm := global.DeclareMethod(c.name, m.ident, m.Symbol(), m); pm != nil {
 					errch <- CreateFunctionRedelarationError(
 						m.Token(),
