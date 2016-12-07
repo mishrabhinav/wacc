@@ -32,7 +32,7 @@ STAT		<- (SKIP
 		/ PRINT EXPR
 		/ FCALL
 		/ IF EXPR THEN STAT (ELSE STAT)? FI
-		/ SWITCH EXPR (CASE EXPR COLON STAT)* (DEFAULT COLON STAT)? FI
+		/ SWITCH EXPR ON (CASE EXPR COLON STAT)* (DEFAULT COLON STAT)? END
 		/ WHILE EXPR DO STAT DONE) (SEMI STAT?)?
 
 ASSIGNLHS	<- (PAIRELEM
@@ -153,7 +153,6 @@ CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
 CLASS		<- 'class'	!IDCHAR SPACE
-COLON		<- ':'		!IDCHAR SPACE
 DEFAULT		<- 'default'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
@@ -187,10 +186,12 @@ WHILE		<- 'while'	!IDCHAR SPACE
 
 BEGIN		<- ('begin'
 		/ LCUR)		!IDCHAR SPACE
-END		<- ('end'
-		/ RCUR)		!IDCHAR SPACE
 IS		<- ('is'
 		/ LCUR)		!IDCHAR SPACE
+ON		<- ('on'
+		/ LCUR)		!IDCHAR SPACE
+END		<- ('end'
+		/ RCUR)		!IDCHAR SPACE
 
 KEYWORD		<- ('begin'
 		/ 'bool'
@@ -215,6 +216,7 @@ KEYWORD		<- ('begin'
 		/ 'new'
 		/ 'newpair'
 		/ 'null'
+		/ 'on'
 		/ 'ord'
 		/ 'pair'
 		/ 'print'
@@ -259,6 +261,7 @@ OR		<- '|'		SPACE
 SEMI		<- ';'		SPACE
 EQU		<- '='  !"="	SPACE
 COMMA		<- ','		SPACE
+COLON		<- ':'		SPACE
 SINQUO		<- '\''
 DOUQUO		<- '\"'
 ARROW		<- '->'
