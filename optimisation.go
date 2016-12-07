@@ -426,6 +426,7 @@ func (m *AST) Optimise() {
 	for _, f := range m.functions {
 		chs = append(chs, f.Optimise())
 	}
+	m.main = m.main.Optimise(&OptimisationContext{})
 
 	for _, ch := range chs {
 		<-ch
