@@ -1,0 +1,17 @@
+{
+  class A {
+    int[] a;
+
+    void init(int[] x) {
+      @a = x
+    }
+
+    void b() {
+      @b = 0
+    }
+  }
+
+  A a = new A() ;
+
+  call a->b()
+}

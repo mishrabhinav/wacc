@@ -27,6 +27,12 @@ type Type interface {
 // InvalidType is a WACC type for invalid constructs
 type InvalidType struct{}
 
+// Prints invalid Types. Format:
+//   "<invalid>"
+func (m InvalidType) String() string {
+	return "<invalid>"
+}
+
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m InvalidType) MangleSymbol() string {
@@ -42,8 +48,20 @@ func (m VoidType) MangleSymbol() string {
 	return "unknown"
 }
 
+// Prints void Types. Format:
+//   "<void>"
+func (m VoidType) String() string {
+	return "<void>"
+}
+
 // IntType is the WACC type for integers
 type IntType struct{}
+
+// Prints integer Types. Format:
+//   "int"
+func (i IntType) String() string {
+	return "int"
+}
 
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
@@ -54,6 +72,12 @@ func (m IntType) MangleSymbol() string {
 // BoolType is the WACC type for booleans
 type BoolType struct{}
 
+// Prints boolean Types. Format:
+//   "bool"
+func (b BoolType) String() string {
+	return "bool"
+}
+
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m BoolType) MangleSymbol() string {
@@ -62,6 +86,12 @@ func (m BoolType) MangleSymbol() string {
 
 // CharType is the WACC type for characters
 type CharType struct{}
+
+// Prints char Types. Format:
+//   "char"
+func (c CharType) String() string {
+	return "char"
+}
 
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
@@ -73,6 +103,22 @@ func (m CharType) MangleSymbol() string {
 type PairType struct {
 	first  Type
 	second Type
+}
+
+// Prints pair Types. Format:
+//   "pair([fst], [snd])"
+// Recurses on fst and snd.
+func (p PairType) String() string {
+	var first = fmt.Sprintf("%v", p.first)
+	var second = fmt.Sprintf("%v", p.second)
+
+	if p.first == nil {
+		first = "pair"
+	}
+	if p.second == nil {
+		second = "pair"
+	}
+	return fmt.Sprintf("pair(%v, %v)", first, second)
 }
 
 // MangleSymbol returns the type in a form that is ready to be included in
@@ -90,6 +136,13 @@ type ArrayType struct {
 	base Type
 }
 
+// Prints array Types. Format:
+//   "[arr][]"
+// Recurses on arr.
+func (a ArrayType) String() string {
+	return fmt.Sprintf("%v[]", a.base)
+}
+
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m ArrayType) MangleSymbol() string {
@@ -97,6 +150,33 @@ func (m ArrayType) MangleSymbol() string {
 		"a_%s_e",
 		m.base.MangleSymbol(),
 	)
+}
+
+// ClassMember holds class member data
+type ClassMember struct {
+	TokenBase
+	ident string
+	wtype Type
+}
+
+// ClassType represents a class in WACC
+type ClassType struct {
+	TokenBase
+	name    string
+	members []*ClassMember
+	methods []*FunctionDef
+}
+
+// Prints class Types. Format:
+//   [classname]
+func (m *ClassType) String() string {
+	return m.name
+}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (m *ClassType) MangleSymbol() string {
+	return m.name
 }
 
 // Expression is the interface for WACC expressions
@@ -284,6 +364,7 @@ func (m *PairElemRHS) Type() Type {
 
 // FunctionCall is the base struct for function calls
 type FunctionCall struct {
+	obj          string
 	ident        string
 	mangledIdent string
 	args         []Expression
@@ -316,6 +397,17 @@ type ExpressionRHS struct {
 // Type returns the deduced type of the right hand side assignment source.
 func (m *ExpressionRHS) Type() Type {
 	return m.expr.Type()
+}
+
+// NewInstanceRHS is the for new class instance on the rhs of an assignment
+type NewInstanceRHS struct {
+	TokenBase
+	wtype Type
+}
+
+// Type returns the deduced type of the right hand side assignment source.
+func (m *NewInstanceRHS) Type() Type {
+	return m.wtype
 }
 
 // AssignStatement is the struct for an assignment statement
@@ -396,6 +488,7 @@ type FunctionParam struct {
 type FunctionDef struct {
 	TokenBase
 	ident      string
+	class      *ClassType
 	returnType Type
 	params     []*FunctionParam
 	body       Statement
@@ -407,6 +500,10 @@ func (m *FunctionDef) Symbol() string {
 	var buffer bytes.Buffer
 
 	buffer.WriteString(m.ident)
+
+	if m.class != nil {
+		buffer.WriteString(fmt.Sprintf("__class_%s_", m.class.name))
+	}
 
 	if len(m.params) > 0 {
 		buffer.WriteString("__ol_")
@@ -426,6 +523,7 @@ type AST struct {
 	main      Statement
 	functions []*FunctionDef
 	includes  []string
+	classes   []*ClassType
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
@@ -1208,6 +1306,11 @@ func parseRHS(node *node32) (RHS, error) {
 
 		call.SetToken(&node.token32)
 
+		objNode := nextNode(node, ruleCLASSOBJ)
+		if objNode != nil {
+			call.obj = objNode.match
+		}
+
 		identNode := nextNode(node, ruleIDENT)
 		call.ident = identNode.match
 
@@ -1242,6 +1345,16 @@ func parseRHS(node *node32) (RHS, error) {
 		exprRHS.expr = expr
 
 		return exprRHS, nil
+	case ruleNEW:
+		newInst := new(NewInstanceRHS)
+
+		newInst.SetToken(&node.token32)
+
+		identNode := nextNode(node, ruleIDENT)
+
+		newInst.wtype = &ClassType{name: identNode.match}
+
+		return newInst, nil
 	default:
 		return nil, fmt.Errorf("Unexpected rule %s %s", node.String(), node.match)
 	}
@@ -1260,6 +1373,8 @@ func parseBaseType(node *node32) (Type, error) {
 		return ArrayType{base: CharType{}}, nil
 	case ruleVOID:
 		return VoidType{}, nil
+	case ruleCLASSTYPE:
+		return &ClassType{name: node.up.match}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
@@ -1424,6 +1539,11 @@ func parseStatement(node *node32) (Statement, error) {
 		call := new(FunctionCallStat)
 
 		call.SetToken(&node.token32)
+
+		objNode := nextNode(fnode, ruleCLASSOBJ)
+		if objNode != nil {
+			call.obj = objNode.match
+		}
 
 		identNode := nextNode(fnode, ruleIDENT)
 		call.ident = identNode.match
@@ -1595,12 +1715,67 @@ func parseFunction(node *node32) (*FunctionDef, error) {
 	return function, nil
 }
 
-// parseInclude parses all the WACC files included in current file
+// parseInclude parses all the WACC files included in the current AST
 func parseInclude(node *node32) string {
 	strNode := nextNode(node, ruleSTRLITER)
 	file := nextNode(strNode.up, ruleSTR).match
 
 	return file
+}
+
+// parseClass parses all the members declared in a class
+func parseClassMembers(node *node32) (*ClassMember, error) {
+	var err error
+
+	member := &ClassMember{}
+
+	member.SetToken(&node.token32)
+	member.ident = nextNode(node, ruleIDENT).match
+
+	member.wtype, err = parseType(nextNode(node, ruleTYPE).up)
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
+}
+
+// parseClass parses all the Classes declared in the current ASR
+func parseClass(node *node32) (*ClassType, error) {
+	class := &ClassType{}
+
+	class.SetToken(&node.token32)
+
+	for node := range nodeRange(node) {
+		switch node.pegRule {
+		case ruleCLASS:
+		case ruleIS:
+		case ruleSPACE:
+		case ruleEND:
+		case ruleIDENT:
+			class.name = node.match
+		case ruleMEMBERDEF:
+			m, err := parseClassMembers(node.up)
+			class.members = append(class.members, m)
+			if err != nil {
+				return nil, err
+			}
+		case ruleFUNC:
+			f, err := parseFunction(node.up)
+			class.methods = append(class.methods, f)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf(
+				"Unexpected %s %s",
+				node.String(),
+				node.match,
+			)
+		}
+	}
+
+	return class, nil
 }
 
 // parse the main WACC block that contains all function definitions and the main
@@ -1613,6 +1788,12 @@ func parseWACC(node *node32, ifm *IncludeFiles) (*AST, error) {
 		case ruleBEGIN:
 		case ruleEND:
 		case ruleSPACE:
+		case ruleCLASSDEF:
+			c, err := parseClass(node.up)
+			ast.classes = append(ast.classes, c)
+			if err != nil {
+				return nil, err
+			}
 		case ruleINCL:
 			i := parseInclude(node.up)
 			ast.includes = append(ast.includes, i)
@@ -1678,10 +1859,12 @@ func appendIncludedFiles(ast *AST, ifm *IncludeFiles) {
 		waccIncl := parseInput(absoluteFile)
 		astIncl := generateASTFromWACC(waccIncl, ifm)
 
+		ast.classes = append(ast.classes,
+			astIncl.classes...)
+
 		ast.functions = append(ast.functions,
 			astIncl.functions...)
 	}
-
 }
 
 // ParseAST given a syntax tree generated by the Peg library returns the

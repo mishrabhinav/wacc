@@ -1,0 +1,50 @@
+{
+  class A {
+    int a;
+    int b;
+
+    void init(int x, int y) {
+      @a = x ;
+      @b = y
+    }
+
+    # Setter for member a
+    void a(int x) {
+      @a = x
+    }
+
+    # Getter for member a
+    int a() {
+      return @a
+    }
+
+    # Setter for member b
+    void b(int x) {
+      @b = x
+    }
+
+    # Getter for member b
+    int b() {
+      return @b
+    }
+
+    void foo() {
+      println "bar"
+    }
+  }
+
+  # Initiate new class
+  A a = new A() ;
+
+  # Constructor
+  call a->init(2, 3) ;
+
+  # Calling function
+  call a->foo() ;
+
+  # Get a member
+  int y = call a->b() ;
+
+  # Set a member
+  call a->a(y)
+}

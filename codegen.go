@@ -142,6 +142,7 @@ type FunctionContext struct {
 	regs         []*ARMGenReg
 	stackSize    int
 	stack        []map[string]int
+	members      map[string]int
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
@@ -228,11 +229,27 @@ func (m *FunctionContext) DeclareVar(ident string, insch chan<- Instr) {
 	}
 }
 
+// DeclareMember registers a new member for use
+func (m *FunctionContext) DeclareMember(ident string) {
+	if m.members == nil {
+		m.members = make(map[string]int)
+	}
+
+	m.members[ident] = len(m.members) * 4
+}
+
 // ResolveVar returns the location of a variable
 func (m *FunctionContext) ResolveVar(ident string) int {
-	for _, scope := range m.stack {
-		if v, ok := scope[ident]; ok {
-			return (m.stackSize - v)
+	switch ident[0] {
+	case '@':
+		if offset, ok := m.members[ident[1:]]; ok {
+			return offset
+		}
+	default:
+		for _, scope := range m.stack {
+			if v, ok := scope[ident]; ok {
+				return (m.stackSize - v)
+			}
 		}
 	}
 
@@ -241,7 +258,14 @@ func (m *FunctionContext) ResolveVar(ident string) int {
 
 // ResolveVarToRegister puts the address of a variable to the given register
 func (m *FunctionContext) ResolveVarToRegister(ident string, target Reg, insch chan<- Instr) {
-	insch <- &MOVInstr{dest: target, source: sp}
+	var source Reg
+	switch ident[0] {
+	case '@':
+		source = ip
+	default:
+		source = sp
+	}
+	insch <- &MOVInstr{dest: target, source: source}
 	offset := m.ResolveVar(ident)
 	for _, d := range createImmediateValuesFor(offset) {
 		rhsVal := &ImmediateOperand{d}
@@ -475,6 +499,9 @@ func (m *AssignStatement) CodeGen(context *FunctionContext, insch chan<- Instr) 
 // --> {char}: BL p_read_char
 // --> [CodeGen next instruction]
 func (m *ReadStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	readReg := context.GetReg(insch)
 
 	m.target.CodeGen(context, readReg, insch)
@@ -495,6 +522,10 @@ func (m *ReadStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	}
 
 	context.FreeReg(readReg, insch)
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
+
 	m.BaseStatement.CodeGen(context, insch)
 }
 
@@ -512,6 +543,9 @@ func (m *FreeStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 
 	m.expr.CodeGen(context, reg, insch)
 
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	insch <- &MOVInstr{dest: r0, source: reg}
 
 	insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
@@ -519,6 +553,9 @@ func (m *FreeStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &MOVInstr{dest: r0, source: reg}
 
 	insch <- &BLInstr{BInstr{label: mFreeLabel}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 
 	m.BaseStatement.CodeGen(context, insch)
 }
@@ -606,10 +643,16 @@ func print(m Expression, context *FunctionContext, insch chan<- Instr) {
 // --> BL p_print_ln
 // --> [CodeGen next instruction]
 func (m *PrintLnStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	context.builtInFuncs.Use(mPrintNewLineLabel)
 	print(m.expr, context, insch)
 
 	insch <- &BLInstr{BInstr{label: mPrintNewLineLabel}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 
 	m.BaseStatement.CodeGen(context, insch)
 }
@@ -632,7 +675,11 @@ func (m *PrintStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 // MOV target, r0
 // POP [params]
 func (m *FunctionCallStat) CodeGen(context *FunctionContext, insch chan<- Instr) {
-	for i := len(m.args) - 1; i >= 0; i-- {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
+	argL := len(m.args)
+	for i := argL - 1; i >= 0; i-- {
 		reg := context.GetReg(insch)
 		m.args[i].CodeGen(context, reg, insch)
 		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
@@ -640,18 +687,44 @@ func (m *FunctionCallStat) CodeGen(context *FunctionContext, insch chan<- Instr)
 		context.FreeReg(reg, insch)
 	}
 
-	for i := 0; i < 4 && i < len(m.args); i++ {
+	// if method call resolve the obj and pass it as first argument
+	if len(m.obj) > 0 {
+		reg := context.GetReg(insch)
+
+		context.ResolveVarToRegister(m.obj, reg, insch)
+		loadValue := &RegisterLoadOperand{reg: reg}
+		insch <- &LDRInstr{LoadInstr{reg: reg, value: loadValue}}
+
+		context.builtInFuncs.Use(mNullReferenceLbl)
+		context.builtInFuncs.Use(mThrowRuntimeErr)
+
+		//Mov + CheckNullPointer Label
+		insch <- &MOVInstr{dest: r0, source: reg}
+		insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
+
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
+
+		context.PushStack(4)
+		context.FreeReg(reg, insch)
+
+		argL++
+	}
+
+	for i := 0; i < 4 && i < argL; i++ {
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
 
 	insch <- &BLInstr{BInstr: BInstr{label: m.mangledIdent}}
 
-	if pl := len(m.args); pl > 4 {
+	if pl := argL; pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 			rhs: ImmediateOperand{(pl - 4) * 4}}}
 	}
 
-	context.PopStack(len(m.args) * 4)
+	context.PopStack(argL * 4)
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 
 	m.BaseStatement.CodeGen(context, insch)
 }
@@ -903,6 +976,8 @@ func (m *PairLiterRHS) CodeGen(context *FunctionContext, target Reg, insch chan<
 // --> LDR reg, #length
 // --> STR reg, [target]
 func (m *ArrayLiterRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
 
 	//Call Malloc
 	leng := &ConstLoadOperand{len(m.elements)*4 + 4}
@@ -931,6 +1006,9 @@ func (m *ArrayLiterRHS) CodeGen(context *FunctionContext, target Reg, insch chan
 	insch <- &LDRInstr{LoadInstr{reg: arrayReg, value: lenInt}}
 
 	insch <- &STRInstr{StoreInstr{reg: arrayReg, value: &RegStoreOperand{target}}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 func pairElem(expr Expression, context *FunctionContext, target Reg, insch chan<- Instr) {
@@ -948,6 +1026,9 @@ func pairElem(expr Expression, context *FunctionContext, target Reg, insch chan<
 // --> BL pi_check_null_pointer
 // --> LDR target, [target, #offset]
 func (m *PairElemRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	pairElem(m.expr, context, target, insch)
 
 	offset := 0
@@ -958,6 +1039,9 @@ func (m *PairElemRHS) CodeGen(context *FunctionContext, target Reg, insch chan<-
 
 	//Load fst or snd
 	insch <- &LDRInstr{LoadInstr{reg: target, value: &RegisterLoadOperand{reg: target, value: offset}}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for FunctionCallRHS
@@ -968,7 +1052,11 @@ func (m *PairElemRHS) CodeGen(context *FunctionContext, target Reg, insch chan<-
 // MOV target, r0
 // POP [params]
 func (m *FunctionCallRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	for i := len(m.args) - 1; i >= 0; i-- {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
+	argL := len(m.args)
+	for i := argL - 1; i >= 0; i-- {
 		reg := context.GetReg(insch)
 		m.args[i].CodeGen(context, reg, insch)
 		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
@@ -976,7 +1064,30 @@ func (m *FunctionCallRHS) CodeGen(context *FunctionContext, target Reg, insch ch
 		context.FreeReg(reg, insch)
 	}
 
-	for i := 0; i < 4 && i < len(m.args); i++ {
+	// if method call resolve the obj and pass it as first argument
+	if len(m.obj) > 0 {
+		reg := context.GetReg(insch)
+
+		context.ResolveVarToRegister(m.obj, reg, insch)
+		loadValue := &RegisterLoadOperand{reg: reg}
+		insch <- &LDRInstr{LoadInstr{reg: reg, value: loadValue}}
+
+		context.builtInFuncs.Use(mNullReferenceLbl)
+		context.builtInFuncs.Use(mThrowRuntimeErr)
+
+		//Mov + CheckNullPointer Label
+		insch <- &MOVInstr{dest: r0, source: reg}
+		insch <- &BLInstr{BInstr{label: mNullReferenceLbl}}
+
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
+
+		context.PushStack(4)
+		context.FreeReg(reg, insch)
+
+		argL++
+	}
+
+	for i := 0; i < 4 && i < argL; i++ {
 		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
 	}
 
@@ -984,18 +1095,40 @@ func (m *FunctionCallRHS) CodeGen(context *FunctionContext, target Reg, insch ch
 
 	insch <- &MOVInstr{dest: target, source: resReg}
 
-	if pl := len(m.args); pl > 4 {
+	if pl := argL; pl > 4 {
 		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 			rhs: ImmediateOperand{(pl - 4) * 4}}}
 	}
 
-	context.PopStack(len(m.args) * 4)
+	context.PopStack(argL * 4)
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for ExpressionRHS
 // --> [Codegen expr]
 func (m *ExpressionRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
 	m.expr.CodeGen(context, target, insch)
+}
+
+//CodeGen generates code for NewInstanceRHS
+// --> BL malloc
+func (m *NewInstanceRHS) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
+	cT := m.wtype.(*ClassType)
+
+	leng := &ConstLoadOperand{len(cT.members) * 4}
+	insch <- &LDRInstr{LoadInstr{reg: r0, value: leng}}
+
+	insch <- &BLInstr{BInstr{label: mMalloc}}
+
+	insch <- &MOVInstr{dest: target, source: resReg}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //------------------------------------------------------------------------------
@@ -1053,6 +1186,9 @@ func (m *StringLiteral) CodeGen(context *FunctionContext, target Reg, insch chan
 // --> [Codegen snd] << reg
 // --> STR reg, [target, #4]
 func (m *PairLiteral) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	insch <- &LDRInstr{LoadInstr{reg: r0, value: &ConstLoadOperand{8}}}
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 	//target cointains address of newpair
@@ -1064,6 +1200,9 @@ func (m *PairLiteral) CodeGen(context *FunctionContext, target Reg, insch chan<-
 	insch <- &STRInstr{StoreInstr{reg: elemReg,
 		value: &RegStoreOffsetOperand{reg: target, offset: 4}}}
 	context.FreeReg(elemReg, insch)
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for NullPair
@@ -1103,6 +1242,9 @@ func (m *UnaryOperatorNot) CodeGen(context *FunctionContext, target Reg, insch c
 // --> NEGS target, target
 // --> BL p_throw_overflow_error
 func (m *UnaryOperatorNegate) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	m.expr.CodeGen(context, target, insch)
 	context.builtInFuncs.Use(mOverflowLbl)
 	context.builtInFuncs.Use(mThrowRuntimeErr)
@@ -1110,6 +1252,9 @@ func (m *UnaryOperatorNegate) CodeGen(context *FunctionContext, target Reg, insc
 	insch <- &NEGInstr{BaseUnaryInstr{arg: target, dest: target}}
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for UnaryOperatorLen
@@ -1150,6 +1295,9 @@ func (m *UnaryOperatorChr) CodeGen(context *FunctionContext, target Reg, insch c
 // --> CMP target2, target, ASR #31
 // --> BLNE p_throw_overflow_error
 func (m *BinaryOperatorMult) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
@@ -1175,6 +1323,9 @@ func (m *BinaryOperatorMult) CodeGen(context *FunctionContext, target Reg, insch
 		rhs: &RegisterOperand{reg: target, shift: shiftASR, amount: 31}}}
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condNE, label: mOverflowLbl}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for BinaryOperatorDiv
@@ -1189,6 +1340,9 @@ func (m *BinaryOperatorMult) CodeGen(context *FunctionContext, target Reg, insch
 // --> BL __aeabi_idiv
 // --> MOV target, r0
 func (m *BinaryOperatorDiv) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
@@ -1217,6 +1371,8 @@ func (m *BinaryOperatorDiv) CodeGen(context *FunctionContext, target Reg, insch 
 	insch <- &MOVInstr{dest: target, source: resReg}
 	context.FreeReg(target2, insch)
 
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for BinaryOperatorMod
@@ -1231,6 +1387,9 @@ func (m *BinaryOperatorDiv) CodeGen(context *FunctionContext, target Reg, insch 
 // --> BL __aeabi_idivmod
 // --> MOV target, r1
 func (m *BinaryOperatorMod) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
@@ -1258,6 +1417,9 @@ func (m *BinaryOperatorMod) CodeGen(context *FunctionContext, target Reg, insch 
 	insch <- &BLInstr{BInstr: BInstr{label: "__aeabi_idivmod"}}
 	insch <- &MOVInstr{dest: target, source: r1}
 	context.FreeReg(target2, insch)
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for BinaryOperatorAdd
@@ -1270,6 +1432,9 @@ func (m *BinaryOperatorMod) CodeGen(context *FunctionContext, target Reg, insch 
 // --> MOV r1, rhsResult
 // --> BLVS p_throw_overflow_error
 func (m *BinaryOperatorAdd) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
@@ -1297,6 +1462,9 @@ func (m *BinaryOperatorAdd) CodeGen(context *FunctionContext, target Reg, insch 
 			label: mOverflowLbl,
 		},
 	}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGen generates code for BinaryOperatorSub
@@ -1308,6 +1476,9 @@ func (m *BinaryOperatorAdd) CodeGen(context *FunctionContext, target Reg, insch 
 // --> SUB target, target, target2
 // --> BLVS p_throw_overflow_errorcode
 func (m *BinaryOperatorSub) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PushStack(4)
+
 	lhs := m.GetLHS()
 	rhs := m.GetRHS()
 	var target2 Reg
@@ -1333,6 +1504,9 @@ func (m *BinaryOperatorSub) CodeGen(context *FunctionContext, target Reg, insch 
 	insch <- binaryInstrSub
 
 	insch <- &BLInstr{BInstr: BInstr{cond: condVS, label: mOverflowLbl}}
+
+	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+	context.PopStack(4)
 }
 
 //CodeGenComparators is a helper function for CodeGen over Comparator instructions
@@ -2037,30 +2211,59 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 
 		// put the first four params on the stack
 		pl := len(m.params)
+
 		switch {
-		case pl >= 4:
+		case pl >= 4 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r3}}}
 			fallthrough
-		case pl == 3:
+		case pl == 3 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r2}}}
 			fallthrough
-		case pl == 2:
+		case pl == 2 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r1}}}
 			fallthrough
-		case pl == 1:
+		case pl == 1 && m.class == nil:
 			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r0}}}
+
+		case pl >= 3 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r3}}}
+			fallthrough
+		case pl == 2 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r2}}}
+			fallthrough
+		case pl == 1 && m.class != nil:
+			ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r1}}}
 		}
 
 		// set the addresses of the arguments relative to sp on the
 		// stack
-		for i := 0; i < 4 && i < len(m.params); i++ {
-			p := m.params[i]
-			context.stack[0][p.name] = i * -4
+		for i := 0; i < len(m.params); i++ {
+			switch {
+			case i < 4 && m.class == nil:
+				p := m.params[i]
+				context.stack[0][p.name] = i * -4
+			case i < 3 && m.class != nil:
+				p := m.params[i]
+				context.stack[0][p.name] = i * -4
+			case i >= 4 && m.class == nil:
+				p := m.params[i]
+				context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+			case i >= 3 && m.class != nil:
+				p := m.params[i]
+				context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+			}
 		}
 
-		for i := 4; i < len(m.params); i++ {
-			p := m.params[i]
-			context.stack[0][p.name] = -4 + -4 + i*-4 + 8*-4
+		// if we are in a function put the this address in ip
+		if m.class != nil {
+			ch <- &MOVInstr{dest: ip, source: r0}
+		}
+
+		// if we are in a function set up the members
+		if m.class != nil {
+			for _, member := range m.class.members {
+				context.DeclareMember(member.ident)
+			}
 		}
 
 		context.StartScope(ch)
@@ -2080,10 +2283,13 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.Symbol())}
 
 		// restore the stack from pushing first four parameters
-		if pl := len(m.params); pl > 0 {
+		if pl > 0 {
 			ppregs := pl * 4
 			if ppregs > 16 {
 				ppregs = 16
+			}
+			if ppregs > 12 && m.class != nil {
+				ppregs = 12
 			}
 			ch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
 				rhs: ImmediateOperand{ppregs}}}
@@ -2134,6 +2340,11 @@ func (m *AST) CodeGen() <-chan Instr {
 	builtInFuncs := &BuiltInFuncs{}
 
 	// start codegen for all functions concurrently
+	for _, c := range m.classes {
+		for _, m := range c.methods {
+			charr = append(charr, m.CodeGen(strPool, builtInFuncs))
+		}
+	}
 	for _, f := range m.functions {
 		charr = append(charr, f.CodeGen(strPool, builtInFuncs))
 	}

@@ -517,6 +517,12 @@ func (c CharType) aststring(indent string) string {
 	return addType(indent, "char")
 }
 
+// Prints class Type. Format:
+// TODO
+func (m ClassType) aststring(indent string) string {
+	return "" // TODO
+}
+
 // Prints a SKIP statement. Format:
 // - SKIP
 func (stmt SkipStatement) aststring(indent string) string {
@@ -541,6 +547,11 @@ func (par ExprParen) aststring(indent string) string {
 // Recurses oh the RHS of an Expression.
 func (rhs ExpressionRHS) aststring(indent string) string {
 	return rhs.expr.aststring(indent)
+}
+
+// Recurses oh the RHS of an Expression.
+func (rhs NewInstanceRHS) aststring(indent string) string {
+	return "" // TODO
 }
 
 // Prints a READ statement. Format:

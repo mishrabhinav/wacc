@@ -183,6 +183,54 @@ func (e *UndeclaredVariableError) Error() string {
 	)
 }
 
+// ClassRedeclarationError is a semantic error when a variable is declared
+// again within the same scope
+type ClassRedeclarationError struct {
+	SemanticError
+	ident string
+}
+
+func (e *ClassRedeclarationError) Error() string {
+	return fmt.Sprintf(
+		"%s: class '%s' already declared",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateClassRedeclarationError creates an error from the token, variable
+// identifier, previous and new type
+func CreateClassRedeclarationError(token *token32, ident string) error {
+	return &ClassRedeclarationError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// CreateUndeclaredClassError creates an error from the token and variable
+// identifier
+func CreateUndeclaredClassError(token *token32, ident string) error {
+	return &UndeclaredClassError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// UndeclaredClassError is a semantic error when trying to access an
+// undeclared variable
+type UndeclaredClassError struct {
+	SemanticError
+	ident string
+}
+
+func (e *UndeclaredClassError) Error() string {
+	return fmt.Sprintf(
+		"%s: class '%s' is undeclared",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
 // CreateUndeclaredVariableError creates an error from the token and variable
 // identifier
 func CreateUndeclaredVariableError(token *token32, ident string) error {
@@ -273,6 +321,36 @@ func CreateFunctionCallWrongArityError(
 		ident:         ident,
 		expected:      expected,
 		got:           got,
+	}
+}
+
+// FunctionCallOnNonObjectError is a semantic error trying to call a function
+// on a non class instance
+type FunctionCallOnNonObjectError struct {
+	SemanticError
+	ident string
+	wtype Type
+}
+
+func (e *FunctionCallOnNonObjectError) Error() string {
+	return fmt.Sprintf(
+		"%s: trying to call '%s' on non object of type '%s'",
+		e.SemanticError.Error(),
+		e.ident,
+		e.wtype,
+	)
+}
+
+// CreateFunctionCallOnNonObjectError creates and error from a token, function
+// identifier, and type
+func CreateFunctionCallOnNonObjectError(
+	token *token32,
+	ident string,
+	wtype Type) error {
+	return &FunctionCallOnNonObjectError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+		wtype:         wtype,
 	}
 }
 

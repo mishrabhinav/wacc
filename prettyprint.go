@@ -42,59 +42,6 @@ func generateBinaryOperator(lhs Expression, rhs Expression, op string) string {
 
 //------------------------------------------------------------------------------
 
-// Prints invalid Types. Format:
-//   "<invalid>"
-func (m InvalidType) String() string {
-	return "<invalid>"
-}
-
-// Prints unknown Types. Format:
-//   "<unknown>"
-func (m VoidType) String() string {
-	return "<void>"
-}
-
-// Prints integer Types. Format:
-//   "int"
-func (i IntType) String() string {
-	return "int"
-}
-
-// Prints boolean Types. Format:
-//   "bool"
-func (b BoolType) String() string {
-	return "bool"
-}
-
-// Prints char Types. Format:
-//   "char"
-func (c CharType) String() string {
-	return "char"
-}
-
-// Prints pair Types. Format:
-//   "pair([fst], [snd])"
-// Recurses on fst and snd.
-func (p PairType) String() string {
-	var first = fmt.Sprintf("%v", p.first)
-	var second = fmt.Sprintf("%v", p.second)
-
-	if p.first == nil {
-		first = "pair"
-	}
-	if p.second == nil {
-		second = "pair"
-	}
-	return fmt.Sprintf("pair(%v, %v)", first, second)
-}
-
-// Prints array Types. Format:
-//   "[arr][]"
-// Recurses on arr.
-func (a ArrayType) String() string {
-	return fmt.Sprintf("%v[]", a.base)
-}
-
 // Prints the file includes. Format:
 //   "include <filename.wacc>"
 func includeString(file string) string {
@@ -596,6 +543,35 @@ func (fd *FunctionDef) istring(level int) string {
 	return fmt.Sprintf("%v %v\n%vend", declaration, body, indent)
 }
 
+// Prints the ClassMember. Format:
+//   "[type] [ident];"
+func (m *ClassMember) istring(level int) string {
+	return fmt.Sprintf("%v%v %v;", getIndentation(level), m.wtype, m.ident)
+}
+
+// Prints the AST. Format:
+//   "class [name] is
+//      ([members])*
+//      ([methods])*
+//    end"
+// Recurses on (multpiple/optional) methods and members.
+func (c *ClassType) istring(level int) string {
+	class := fmt.Sprintf("%vclass %v is", getIndentation(level), c.name)
+
+	for _, member := range c.members {
+		class = fmt.Sprintf("%v\n%v", class, member.istring(level+1))
+	}
+
+	class = fmt.Sprintf("%v\n", class)
+
+	for _, method := range c.methods {
+		class = fmt.Sprintf("%v\n%v\n", class,
+			method.istring(level+1))
+	}
+
+	return fmt.Sprintf("%v\n%vend", class, getIndentation(level))
+}
+
 // Prints the AST. Format:
 //   "begin
 //    ([functions])*
@@ -610,6 +586,11 @@ func (ast *AST) String() string {
 
 	for _, include := range ast.includes {
 		tree = fmt.Sprintf("%v\n  %v\n", tree, includeString(include))
+	}
+
+	for _, class := range ast.classes {
+		tree = fmt.Sprintf("%v\n%v\n", tree,
+			class.istring(startingIndent))
 	}
 
 	for _, function := range ast.functions {

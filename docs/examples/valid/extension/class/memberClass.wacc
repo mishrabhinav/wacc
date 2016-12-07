@@ -1,0 +1,49 @@
+{
+  class A {
+    int a;
+    int b;
+
+    void init(int x, int y) {
+      @a = x ;
+      @b = y
+    }
+
+    void a(int x) {
+      @a = x
+    }
+
+    int a() {
+      return @a
+    }
+
+    void foo() {
+      println "bar"
+    }
+  }
+
+  class B {
+    A a;
+    int c;
+
+    void init(int Aa, int Ab, int c) {
+      @a = new A() ;
+      call @a->init(Aa, Ab) ;
+      @c = c
+    }
+
+    void c(int y) {
+      @c = y
+    }
+
+    A a() {
+      return @a
+    }
+  }
+
+  B b = new B() ;
+
+  call b->init(2, 3, 4) ;
+
+  A a = call b->a() ;
+  call a->foo()
+}
