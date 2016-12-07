@@ -1,0 +1,12 @@
+{
+  include "singleClass.wacc"
+
+  A a = new A() ;
+
+  call a->init(2, 3) ;
+  call a->foo() ;
+
+  int y = call a->b() ;
+
+  call a->a(y)
+}
