@@ -378,11 +378,21 @@ func (stmt SwitchStatement) aststring(indent string) string {
 	innerIndent := getGreaterIndent(indent)
 	doubleIndent := getGreaterIndent(innerIndent)
 
-	condStats := addIndentForFirst(
-		innerIndent,
-		"CONDITION",
-		stmt.cond.aststring(getGreaterIndent(innerIndent)),
-	)
+	var condStats string
+
+	if stmt.cond != nil {
+
+		condStats = addIndentForFirst(
+			innerIndent,
+			"CONDITION",
+			stmt.cond.aststring(getGreaterIndent(innerIndent)),
+		)
+	} else {
+		condStats = addIndentForFirst(
+			innerIndent,
+			"CONDITION",
+			addIndAndNewLine(getGreaterIndent(innerIndent), "true"))
+	}
 
 	caseStats := addIndAndNewLine(innerIndent, "CASE")
 	innerCondStats := addIndAndNewLine(getGreaterIndent(innerIndent), "CONDITION")
