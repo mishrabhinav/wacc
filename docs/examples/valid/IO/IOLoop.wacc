@@ -11,15 +11,15 @@
 # Program:
 
 begin
-  char continue = 'Y' ;
+  char continu = 'Y' ;
   int buff = 0 ;
-  while continue != 'N' do
+  while continu != 'N' do
     print "Please input an integer: " ;
     read buff ;
     print "echo input: " ;
     println buff ;
     println "Do you want to continue entering input?" ; 
     println "(enter Y for \'yes\' and N for \'no\')" ;
-    read continue
+    read continu
   done
 end
