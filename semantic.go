@@ -100,6 +100,16 @@ func checkJunkStatement(stm Statement) <-chan error {
 			for err := range checkJunkStatement(t.body) {
 				out <- err
 			}
+		case *ForStatement:
+			for err := range checkJunkStatement(t.init) {
+				out <- err
+			}
+			for err := range checkJunkStatement(t.after) {
+				out <- err
+			}
+			for err := range checkJunkStatement(t.body) {
+				out <- err
+			}
 		case *ReturnStatement:
 			if n := t.next; n != nil {
 				out <- CreateUnreachableStatementError(
