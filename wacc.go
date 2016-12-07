@@ -99,11 +99,14 @@ func codeGeneration(ast *AST, flags *Flags) {
 		armFile = bufio.NewWriter(armFileHandle)
 	}
 
+	// If the noassembly flag is not set
 	// Take all the instructions in the channel and push them to the defined
 	// IO Writer
-	for instr := range ast.CodeGen() {
-		fInstr := fmt.Sprintf("%v\n", instr)
-		fmt.Fprint(armFile, fInstr)
+	if !flags.noassembly {
+		for instr := range ast.CodeGen() {
+			fInstr := fmt.Sprintf("%v\n", instr)
+			fmt.Fprint(armFile, fInstr)
+		}
 	}
 
 	// Flush the buffered writer
