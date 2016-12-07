@@ -370,9 +370,28 @@ func (m *ExprParen) Optimise(context *OptimisationContext) Expression {
 //------------------------------------------------------------------------------
 
 // Optimise generates instructions for functions
-func (m *FunctionDef) Optimise() {
+func (m *FunctionDef) Optimise() <-chan interface{} {
+	ch := make(chan interface{})
+	go func() {
+		m.body = m.body.Optimise(&OptimisationContext{})
+		close(ch)
+	}()
+	return ch
 }
 
 // Optimise generates instructions for the whole program
 func (m *AST) Optimise() {
+	var chs []<-chan interface{}
+	for _, c := range m.classes {
+		for _, m := range c.methods {
+			chs = append(chs, m.Optimise())
+		}
+	}
+	for _, f := range m.functions {
+		chs = append(chs, f.Optimise())
+	}
+
+	for _, ch := range chs {
+		<-ch
+	}
 }
