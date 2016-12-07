@@ -142,6 +142,19 @@ func (m *FunctionCallStat) Optimise(context *OptimisationContext) Statement {
 func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 	m.cond = m.cond.Optimise(context)
 
+	switch m.cond.(type) {
+	case *BoolLiteralTrue:
+		block := &BlockStatement{}
+		block.body = m.trueStat
+		block.SetNext(m.GetNext())
+		return block.Optimise(context)
+	case *BoolLiteralFalse:
+		block := &BlockStatement{}
+		block.body = m.falseStat
+		block.SetNext(m.GetNext())
+		return block.Optimise(context)
+	}
+
 	m.trueStat = m.trueStat.Optimise(context)
 	if m.falseStat != nil {
 		m.falseStat = m.falseStat.Optimise(context)
@@ -181,6 +194,11 @@ func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
 		return m.next
 	}
 
+	switch m.cond.(type) {
+	case *BoolLiteralFalse:
+		return m.next
+	}
+
 	return m
 }
 
@@ -210,6 +228,11 @@ func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
 	}
 
 	if m.body == nil {
+		return m.next
+	}
+
+	switch m.cond.(type) {
+	case *BoolLiteralFalse:
 		return m.next
 	}
 
