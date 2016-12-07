@@ -26,6 +26,7 @@
     int c;
 
     void init(int Aa, int Ab, int c) {
+      @a = new A() ;
       call @a->init(Aa, Ab) ;
       @c = c
     }
