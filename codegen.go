@@ -2284,6 +2284,14 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		// save previous pc for returning
 		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, lr}}}
 
+		if m.body == nil {
+			// return
+			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
+			ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, pc}}}
+			close(ch)
+			return
+		}
+
 		// save callee saved registers
 		ch <- &PUSHInstr{
 			BaseStackInstr: BaseStackInstr{

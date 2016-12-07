@@ -20,7 +20,7 @@ func (m *SkipStatement) Optimise(context *OptimisationContext) Statement {
 		m.SetNext(m.next.Optimise(context))
 	}
 
-	return m
+	return m.next
 }
 
 //Optimise for block statements
@@ -29,7 +29,14 @@ func (m *BlockStatement) Optimise(context *OptimisationContext) Statement {
 		m.SetNext(m.next.Optimise(context))
 	}
 
-	return m
+	m.body = m.body.Optimise(context)
+
+	switch m.body {
+	case nil:
+		return m.next
+	default:
+		return m
+	}
 }
 
 //Optimise optimises for DeclareAssignStatement
@@ -128,6 +135,12 @@ func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
 		m.SetNext(m.next.Optimise(context))
 	}
 
+	m.body = m.body.Optimise(context)
+
+	if m.body == nil {
+		return m.next
+	}
+
 	return m
 }
 
@@ -144,6 +157,12 @@ func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
 func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
+	}
+
+	m.body = m.body.Optimise(context)
+
+	if m.body == nil {
+		return m.next
 	}
 
 	return m
