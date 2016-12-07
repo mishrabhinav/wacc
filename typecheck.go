@@ -759,6 +759,23 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	if m.defaultCase != nil {
 		m.defaultCase.TypeCheck(ts.Child(), errch)
 	}
+}
+
+// TypeCheck checks whether the left hand is a valid assignment target.
+// The check propagated recursively.
+func (m *DoWhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.cond.TypeCheck(ts, errch)
+	boolT := m.cond.Type()
+
+	if !(BoolType{}.Match(boolT)) {
+		errch <- CreateTypeMismatchError(
+			m.cond.Token(),
+			BoolType{},
+			boolT,
+		)
+	}
+
+	m.body.TypeCheck(ts.Child(), errch)
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }

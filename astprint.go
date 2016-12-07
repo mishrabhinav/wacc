@@ -414,6 +414,40 @@ func (stmt SwitchStatement) aststring(indent string) string {
 	return fmt.Sprintf("%v%v%v", loopStats, condStats, doStats)
 }
 
+// Prints a WhileLoop. Format:
+// - LOOP
+//   - DO
+//     - [bodySTAT]
+//   - CONDITION WHILE
+//     -[condEXPR]
+// bodySTAT is recursed upon
+func (stmt DoWhileStatement) aststring(indent string) string {
+	var body string
+	var doStats string
+	innerIndent := getGreaterIndent(indent)
+
+	doStats = addIndAndNewLine(innerIndent, "DO")
+
+	condStats := addIndentForFirst(
+		innerIndent,
+		"CONDITION WHILE",
+		stmt.cond.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	st := stmt.body
+	for st.GetNext() != nil {
+		body = st.aststring(getGreaterIndent(innerIndent))
+		doStats = fmt.Sprintf("%v%v", doStats, body)
+		st = st.GetNext()
+	}
+	body = st.aststring(getGreaterIndent(innerIndent))
+	doStats = fmt.Sprintf("%v%v", doStats, body)
+
+	loopStats := addIndAndNewLine(indent, "LOOP")
+
+	return fmt.Sprintf("%v%v%v", loopStats, doStats, condStats)
+}
+
 // Prints FunctionParameters in function declaration.
 func (fp FunctionParam) aststring(indent string) string {
 	return fmt.Sprintf("%v %v", fp.wtype, fp.name)

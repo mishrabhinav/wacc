@@ -1,0 +1,7 @@
+begin
+	int i = 0;
+	do
+		println i;
+		i = i+1
+	while i < 4 done
+end
