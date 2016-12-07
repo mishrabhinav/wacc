@@ -42,66 +42,6 @@ func generateBinaryOperator(lhs Expression, rhs Expression, op string) string {
 
 //------------------------------------------------------------------------------
 
-// Prints invalid Types. Format:
-//   "<invalid>"
-func (m InvalidType) String() string {
-	return "<invalid>"
-}
-
-// Prints unknown Types. Format:
-//   "<unknown>"
-func (m VoidType) String() string {
-	return "<void>"
-}
-
-// Prints integer Types. Format:
-//   "int"
-func (i IntType) String() string {
-	return "int"
-}
-
-// Prints boolean Types. Format:
-//   "bool"
-func (b BoolType) String() string {
-	return "bool"
-}
-
-// Prints char Types. Format:
-//   "char"
-func (c CharType) String() string {
-	return "char"
-}
-
-// Prints pair Types. Format:
-//   "pair([fst], [snd])"
-// Recurses on fst and snd.
-func (p PairType) String() string {
-	var first = fmt.Sprintf("%v", p.first)
-	var second = fmt.Sprintf("%v", p.second)
-
-	if p.first == nil {
-		first = "pair"
-	}
-	if p.second == nil {
-		second = "pair"
-	}
-	return fmt.Sprintf("pair(%v, %v)", first, second)
-}
-
-// Prints array Types. Format:
-//   "[arr][]"
-// Recurses on arr.
-func (a ArrayType) String() string {
-	return fmt.Sprintf("%v[]", a.base)
-}
-
-// Prints class Types. Format:
-//   TODO
-// TODO
-func (m ClassType) String() string {
-	return "" // TODO
-}
-
 // Prints the file includes. Format:
 //   "include <filename.wacc>"
 func includeString(file string) string {

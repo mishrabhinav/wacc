@@ -27,6 +27,12 @@ type Type interface {
 // InvalidType is a WACC type for invalid constructs
 type InvalidType struct{}
 
+// Prints invalid Types. Format:
+//   "<invalid>"
+func (m InvalidType) String() string {
+	return "<invalid>"
+}
+
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m InvalidType) MangleSymbol() string {
@@ -42,8 +48,20 @@ func (m VoidType) MangleSymbol() string {
 	return "unknown"
 }
 
+// Prints void Types. Format:
+//   "<void>"
+func (m VoidType) String() string {
+	return "<void>"
+}
+
 // IntType is the WACC type for integers
 type IntType struct{}
+
+// Prints integer Types. Format:
+//   "int"
+func (i IntType) String() string {
+	return "int"
+}
 
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
@@ -54,6 +72,12 @@ func (m IntType) MangleSymbol() string {
 // BoolType is the WACC type for booleans
 type BoolType struct{}
 
+// Prints boolean Types. Format:
+//   "bool"
+func (b BoolType) String() string {
+	return "bool"
+}
+
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m BoolType) MangleSymbol() string {
@@ -62,6 +86,12 @@ func (m BoolType) MangleSymbol() string {
 
 // CharType is the WACC type for characters
 type CharType struct{}
+
+// Prints char Types. Format:
+//   "char"
+func (c CharType) String() string {
+	return "char"
+}
 
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
@@ -73,6 +103,22 @@ func (m CharType) MangleSymbol() string {
 type PairType struct {
 	first  Type
 	second Type
+}
+
+// Prints pair Types. Format:
+//   "pair([fst], [snd])"
+// Recurses on fst and snd.
+func (p PairType) String() string {
+	var first = fmt.Sprintf("%v", p.first)
+	var second = fmt.Sprintf("%v", p.second)
+
+	if p.first == nil {
+		first = "pair"
+	}
+	if p.second == nil {
+		second = "pair"
+	}
+	return fmt.Sprintf("pair(%v, %v)", first, second)
 }
 
 // MangleSymbol returns the type in a form that is ready to be included in
@@ -88,6 +134,13 @@ func (m PairType) MangleSymbol() string {
 // ArrayType is the WACC type for arrays
 type ArrayType struct {
 	base Type
+}
+
+// Prints array Types. Format:
+//   "[arr][]"
+// Recurses on arr.
+func (a ArrayType) String() string {
+	return fmt.Sprintf("%v[]", a.base)
 }
 
 // MangleSymbol returns the type in a form that is ready to be included in
@@ -112,6 +165,12 @@ type ClassType struct {
 	name    string
 	members []*ClassMember
 	methods []*FunctionDef
+}
+
+// Prints class Types. Format:
+//   [classname]
+func (m *ClassType) String() string {
+	return m.name
 }
 
 // MangleSymbol returns the type in a form that is ready to be included in
