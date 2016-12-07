@@ -1,21 +1,11 @@
 {
   class A {
-    int a;
+    int a {GET, SET};
     int b;
 
     void init(int x, int y) {
       @a = x ;
       @b = y
-    }
-
-    # Setter for member a
-    void a(int x) {
-      @a = x
-    }
-
-    # Getter for member a
-    int a() {
-      return @a
     }
 
     # Setter for member b

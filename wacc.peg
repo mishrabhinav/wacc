@@ -10,7 +10,9 @@ WACC		<- SPACE BEGIN INCL* CLASSDEF* FUNC* STAT END EOT
 
 CLASSDEF	<- CLASS IDENT SPACE IS MEMBERDEF* FUNC* END
 
-MEMBERDEF	<- TYPE IDENT SEMI SPACE
+MEMBERDEF	<- TYPE IDENT SPACE GETSET? SEMI SPACE
+
+GETSET		<- LCUR (GET / SET) (COMMA (GET / SET))? RCUR
 
 INCL		<- INCLUDE STRLITER SPACE
 
@@ -163,6 +165,7 @@ FALLTHROUGH	<- 'fallthrough' !IDCHAR SPACE
 FALSE		<- 'false'	!IDCHAR SPACE
 FREE		<- 'free'	!IDCHAR SPACE
 FST		<- 'fst'	!IDCHAR SPACE
+GET		<- 'GET'	!IDCHAR SPACE
 IF		<- 'if'		!IDCHAR SPACE
 INCLUDE		<- 'include'	!IDCHAR SPACE
 INT		<- 'int'	!IDCHAR SPACE
@@ -176,6 +179,7 @@ PRINT		<- 'print'	!IDCHAR SPACE
 PRINTLN 	<- 'println'	!IDCHAR SPACE
 READ		<- 'read'	!IDCHAR SPACE
 RETURN		<- 'return'	!IDCHAR SPACE
+SET		<- 'SET'	!IDCHAR SPACE
 SKIP		<- 'skip'	!IDCHAR SPACE
 SND		<- 'snd'	!IDCHAR SPACE
 STRING		<- 'string'	!IDCHAR SPACE
@@ -210,8 +214,8 @@ KEYWORD		<- ('begin'
 		/ 'else'
 		/ 'end'
 		/ 'exit'
-		/ 'false'
 		/ 'fallthrough'
+		/ 'false'
 		/ 'fi'
 		/ 'free'
 		/ 'fst'
