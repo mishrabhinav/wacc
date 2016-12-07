@@ -123,6 +123,26 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 		m.SetNext(m.next.Optimise(context))
 	}
 
+	m.cond = m.cond.Optimise(context)
+
+	m.trueStat = m.trueStat.Optimise(context)
+	if m.falseStat != nil {
+		m.falseStat = m.falseStat.Optimise(context)
+	}
+
+	if m.trueStat == nil {
+		m.trueStat = m.falseStat
+		m.falseStat = nil
+		m.cond = &UnaryOperatorNot{
+			UnaryOperatorBase{expr: m.cond},
+		}
+		m.cond = m.cond.Optimise(context)
+	}
+
+	if m.trueStat == nil {
+		return m.next
+	}
+
 	return m
 }
 
