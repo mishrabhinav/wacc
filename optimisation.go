@@ -25,11 +25,11 @@ func (m *SkipStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise for block statements
 func (m *BlockStatement) Optimise(context *OptimisationContext) Statement {
+	m.body = m.body.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
-
-	m.body = m.body.Optimise(context)
 
 	switch m.body {
 	case nil:
@@ -41,6 +41,8 @@ func (m *BlockStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for DeclareAssignStatement
 func (m *DeclareAssignStatement) Optimise(context *OptimisationContext) Statement {
+	m.rhs = m.rhs.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -50,6 +52,9 @@ func (m *DeclareAssignStatement) Optimise(context *OptimisationContext) Statemen
 
 //Optimise optimises for AssignStatement
 func (m *AssignStatement) Optimise(context *OptimisationContext) Statement {
+	m.target = m.target.Optimise(context)
+	m.rhs = m.rhs.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -59,6 +64,8 @@ func (m *AssignStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for ReadStatement
 func (m *ReadStatement) Optimise(context *OptimisationContext) Statement {
+	m.target = m.target.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -68,6 +75,8 @@ func (m *ReadStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for FreeStatement
 func (m *FreeStatement) Optimise(context *OptimisationContext) Statement {
+	m.expr = m.expr.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -77,6 +86,8 @@ func (m *FreeStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for ReturnStatement
 func (m *ReturnStatement) Optimise(context *OptimisationContext) Statement {
+	m.expr = m.expr.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -86,12 +97,16 @@ func (m *ReturnStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for ExitStatement
 func (m *ExitStatement) Optimise(context *OptimisationContext) Statement {
+	m.expr = m.expr.Optimise(context)
+
 	m.next = nil
 	return m
 }
 
 //Optimise optimises for PrintLnStatement
 func (m *PrintLnStatement) Optimise(context *OptimisationContext) Statement {
+	m.expr = m.expr.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -101,6 +116,8 @@ func (m *PrintLnStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for PrintStatement
 func (m *PrintStatement) Optimise(context *OptimisationContext) Statement {
+	m.expr = m.expr.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -110,6 +127,10 @@ func (m *PrintStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for FunctionCallStat
 func (m *FunctionCallStat) Optimise(context *OptimisationContext) Statement {
+	for i, arg := range m.args {
+		m.args[i] = arg.Optimise(context)
+	}
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -119,10 +140,6 @@ func (m *FunctionCallStat) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for IfStatement
 func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
-	if m.next != nil {
-		m.SetNext(m.next.Optimise(context))
-	}
-
 	m.cond = m.cond.Optimise(context)
 
 	m.trueStat = m.trueStat.Optimise(context)
@@ -139,6 +156,10 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 		m.cond = m.cond.Optimise(context)
 	}
 
+	if m.next != nil {
+		m.SetNext(m.next.Optimise(context))
+	}
+
 	if m.trueStat == nil {
 		return m.next
 	}
@@ -148,11 +169,13 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for WhileStatement
 func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
+	m.cond = m.cond.Optimise(context)
+
+	m.body = m.body.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
-
-	m.body = m.body.Optimise(context)
 
 	if m.body == nil {
 		return m.next
@@ -163,6 +186,12 @@ func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for SwitchStatement
 func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
+	m.cond = m.cond.Optimise(context)
+
+	for i, cs := range m.cases {
+		m.cases[i] = cs.Optimise(context)
+	}
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -172,11 +201,13 @@ func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for DoWhileStatement
 func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
+	m.cond = m.cond.Optimise(context)
+
+	m.body = m.body.Optimise(context)
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
-
-	m.body = m.body.Optimise(context)
 
 	if m.body == nil {
 		return m.next
