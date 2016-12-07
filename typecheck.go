@@ -514,6 +514,7 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	switch t := freeT.(type) {
 	case PairType:
 	case ArrayType:
+	case *ClassType:
 	default:
 		errch <- CreateTypeMismatchError(
 			m.expr.Token(),
@@ -523,6 +524,11 @@ func (m *FreeStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		errch <- CreateTypeMismatchError(
 			m.expr.Token(),
 			ArrayType{},
+			t,
+		)
+		errch <- CreateTypeMismatchError(
+			m.expr.Token(),
+			&ClassType{name: "any class"},
 			t,
 		)
 	}
