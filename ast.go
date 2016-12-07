@@ -1601,12 +1601,9 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		elseNode := nextNode(bodyNode.next, ruleSTAT)
-		fiNode := nextNode(bodyNode.next, ruleFI)
 		if elseNode != nil {
-			if elseNode.begin < fiNode.begin {
-				if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
-					return nil, err
-				}
+			if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
+				return nil, err
 			}
 		}
 
@@ -1650,14 +1647,11 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		defaultHolder := nextNode(node, ruleDEFAULT)
-		fiNode := nextNode(node, ruleFI)
 		defaultNode := nextNode(defaultHolder, ruleSTAT)
 
 		if defaultNode != nil {
-			if defaultNode.begin < fiNode.begin {
-				if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
-					return nil, err
-				}
+			if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
+				return nil, err
 			}
 		}
 
