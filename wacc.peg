@@ -102,6 +102,8 @@ BINARYOPER	<- STAR
 		/ BANGEQU
 		/ ANDAND
 		/ OROR
+		/ AND
+		/ OR
 
 IDENT		<- (!KEYWORD) (AT)? ([_] / [a-z] / [A-Z])
 		([_] / [a-z] / [A-Z] / [0-9])*
@@ -252,6 +254,8 @@ EQUEQU		<- '=='		SPACE
 BANGEQU		<- '!='		SPACE
 ANDAND		<- '&&'		SPACE
 OROR		<- '||'		SPACE
+AND		<- '&'		SPACE
+OR		<- '|'		SPACE
 SEMI		<- ';'		SPACE
 EQU		<- '='  !"="	SPACE
 COMMA		<- ','		SPACE
