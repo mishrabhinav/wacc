@@ -106,7 +106,7 @@ type Expression interface {
 	Type() Type
 	Token() *token32
 	SetToken(*token32)
-	CodeGen(*RegAllocator, Reg, chan<- Instr)
+	CodeGen(*FunctionContext, Reg, chan<- Instr)
 	Weight() int
 }
 
@@ -119,7 +119,7 @@ type Statement interface {
 	TypeCheck(*Scope, chan<- error)
 	Token() *token32
 	SetToken(*token32)
-	CodeGen(*RegAllocator, chan<- Instr)
+	CodeGen(*FunctionContext, chan<- Instr)
 }
 
 // TokenBase is the base structure that contains the token reference
@@ -180,7 +180,7 @@ type LHS interface {
 	Type() Type
 	Token() *token32
 	SetToken(*token32)
-	CodeGen(*RegAllocator, Reg, chan<- Instr)
+	CodeGen(*FunctionContext, Reg, chan<- Instr)
 }
 
 // PairElemLHS is the struct for a pair on the lhs of an assignment
@@ -228,7 +228,7 @@ type RHS interface {
 	Type() Type
 	Token() *token32
 	SetToken(*token32)
-	CodeGen(*RegAllocator, Reg, chan<- Instr)
+	CodeGen(*FunctionContext, Reg, chan<- Instr)
 }
 
 // PairLiterRHS is the struct for pair literals on the rhs of an assignment
