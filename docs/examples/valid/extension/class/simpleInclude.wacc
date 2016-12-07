@@ -8,5 +8,8 @@
 
   int y = call a->b() ;
 
-  call a->a(y)
+  call a->a(y) ;
+
+  y = call a->a() ;
+  println y
 }
