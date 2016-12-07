@@ -2,9 +2,9 @@ begin
   include "addThree.wacc"
 
   int add(int a, int b) is
-    return a + b
+    return a + b;
   end
 
-  int y = call addThree(1, 2, 3) ;
-  println y
+  int y = call addThree(1, 2, 3);
+  println y;
 end
