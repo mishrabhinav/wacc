@@ -1601,12 +1601,9 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		elseNode := nextNode(bodyNode.next, ruleSTAT)
-		fiNode := nextNode(bodyNode.next, ruleFI)
 		if elseNode != nil {
-			if elseNode.begin < fiNode.begin {
-				if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
-					return nil, err
-				}
+			if ifs.falseStat, err = parseStatement(elseNode.up); err != nil {
+				return nil, err
 			}
 		}
 
@@ -1650,14 +1647,11 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		defaultHolder := nextNode(node, ruleDEFAULT)
-		fiNode := nextNode(node, ruleFI)
 		defaultNode := nextNode(defaultHolder, ruleSTAT)
 
 		if defaultNode != nil {
-			if defaultNode.begin < fiNode.begin {
-				if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
-					return nil, err
-				}
+			if switchs.defaultCase, err = parseStatement(defaultNode.up); err != nil {
+				return nil, err
 			}
 		}
 
@@ -1673,10 +1667,11 @@ func parseStatement(node *node32) (Statement, error) {
 	// check if there is semicolon and parse the next statement
 	if semi := nextNode(node, ruleSEMI); semi != nil {
 		var next Statement
-		if next, err = parseStatement(semi.next.up); err != nil {
-			return nil, err
+		if nextStat := semi.next; nextStat != nil {
+			if next, err = parseStatement(nextStat.up); err == nil {
+				stm.SetNext(next)
+			}
 		}
-		stm.SetNext(next)
 	}
 
 	stm.SetToken(&node.token32)

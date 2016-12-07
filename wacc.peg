@@ -31,9 +31,9 @@ STAT		<- (SKIP
 		/ PRINTLN EXPR
 		/ PRINT EXPR
 		/ FCALL
-		/ IF EXPR THEN STAT (ELSE STAT)? FI
-		/ SWITCH EXPR (CASE EXPR COLON STAT)* (DEFAULT COLON STAT)? FI
-		/ WHILE EXPR DO STAT DONE) (SEMI STAT)*
+		/ IF EXPR THEN STAT (ELSE LCUR? STAT RCUR?)? FI
+		/ SWITCH EXPR ON (CASE EXPR COLON STAT)* (DEFAULT COLON STAT)? END
+		/ WHILE EXPR DO STAT DONE) (SEMI STAT?)?
 
 ASSIGNLHS	<- (PAIRELEM
 		/ ARRAYELEM
@@ -153,14 +153,12 @@ CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
 CLASS		<- 'class'	!IDCHAR SPACE
-COLON		<- ':'		!IDCHAR SPACE
 DEFAULT		<- 'default'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
 ELSE		<- 'else'	!IDCHAR SPACE
 EXIT		<- 'exit'	!IDCHAR SPACE
 FALSE		<- 'false'	!IDCHAR SPACE
-FI		<- 'fi'		!IDCHAR SPACE
 FREE		<- 'free'	!IDCHAR SPACE
 FST		<- 'fst'	!IDCHAR SPACE
 IF		<- 'if'		!IDCHAR SPACE
@@ -180,17 +178,24 @@ SKIP		<- 'skip'	!IDCHAR SPACE
 SND		<- 'snd'	!IDCHAR SPACE
 STRING		<- 'string'	!IDCHAR SPACE
 SWITCH		<- 'switch'	!IDCHAR SPACE
-THEN		<- 'then'	!IDCHAR SPACE
 TRUE		<- 'true'	!IDCHAR SPACE
 VOID		<- 'void'	!IDCHAR SPACE
 WHILE		<- 'while'	!IDCHAR SPACE
 
+# Substitute Keyword
+
 BEGIN		<- ('begin'
+		/ LCUR)		!IDCHAR SPACE
+IS		<- ('is'
+		/ LCUR)		!IDCHAR SPACE
+ON		<- ('on'
+		/ LCUR)		!IDCHAR SPACE
+THEN		<- ('then'
 		/ LCUR)		!IDCHAR SPACE
 END		<- ('end'
 		/ RCUR)		!IDCHAR SPACE
-IS		<- ('is'
-		/ LCUR)		!IDCHAR SPACE
+FI		<- ('fi'
+		/ RCUR)		!IDCHAR SPACE
 
 KEYWORD		<- ('begin'
 		/ 'bool'
@@ -215,6 +220,7 @@ KEYWORD		<- ('begin'
 		/ 'new'
 		/ 'newpair'
 		/ 'null'
+		/ 'on'
 		/ 'ord'
 		/ 'pair'
 		/ 'print'
@@ -259,6 +265,7 @@ OR		<- '|'		SPACE
 SEMI		<- ';'		SPACE
 EQU		<- '='  !"="	SPACE
 COMMA		<- ','		SPACE
+COLON		<- ':'		SPACE
 SINQUO		<- '\''
 DOUQUO		<- '\"'
 ARROW		<- '->'
