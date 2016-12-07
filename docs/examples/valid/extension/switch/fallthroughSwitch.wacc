@@ -1,0 +1,23 @@
+begin
+  int x = 7;
+
+  switch on
+  case x > 10:
+    println "Greater than 10";
+    fallthrough;
+  case x > 8:
+    println "Greater than 8";
+    fallthrough;
+  case x > 6:
+    println "Greater than 6";
+    fallthrough;
+  case x > 4:
+    println "Greater than 4";
+    fallthrough
+  case x > 2:
+    println "Greater than 2"
+  default:
+    println "Default"
+  end
+end
+
