@@ -26,15 +26,15 @@
     int c;
 
     void init(int Aa, int Ab, int c) {
-      call @a->init(Aa, Ab)
-      @c = a
+      call @a->init(Aa, Ab) ;
+      @c = c
     }
 
-    void c(int a) {
-      @c = a
+    void c(int y) {
+      @c = y
     }
 
-    int a() {
+    A a() {
       return @a
     }
   }
