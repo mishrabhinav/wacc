@@ -1,0 +1,26 @@
+{
+  class Car {
+    int wheels {GET, SET};
+    string paint {GET, SET};
+
+    void init(int w, string p) {
+      @wheels = w;
+      @paint = p
+    }
+  }
+
+  string paint = "Silver";
+
+  Car audi = new Car();
+  call audi->init(4, paint);
+
+  paint = "Red";
+
+  call audi->paint(paint);
+
+  string color = call audi->paint();
+  println color;
+
+  int wheels = call audi->wheels();
+  println wheels
+}
