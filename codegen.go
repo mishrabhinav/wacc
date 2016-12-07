@@ -1596,7 +1596,7 @@ func (m *BinaryOperatorAnd) CodeGen(context *FunctionContext, target Reg, insch 
 // --> [CodeGen exprRHS] < target2
 // --> AND target, target2, target
 func (m *BinaryOperatorBitAnd) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	codeGenAnd(m, context, context, insch)
+	codeGenAnd(m, context, target, insch)
 }
 
 func codeGenOr(m BinaryOperator, context *FunctionContext, target Reg, insch chan<- Instr) {

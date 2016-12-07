@@ -1,0 +1,4 @@
+begin
+  int x = 2 | 3;
+  println x
+end

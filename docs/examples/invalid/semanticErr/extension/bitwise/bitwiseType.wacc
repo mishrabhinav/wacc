@@ -1,0 +1,4 @@
+begin
+  int x = true & 3;
+  println x
+end
