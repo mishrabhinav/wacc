@@ -1298,18 +1298,7 @@ func (m *BinaryOperatorMult) CodeGen(context *FunctionContext, target Reg, insch
 	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 	context.PushStack(4)
 
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-	var target2 Reg
-	if lhs.Weight() > rhs.Weight() {
-		lhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		rhs.CodeGen(context, target2, insch)
-	} else {
-		rhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		lhs.CodeGen(context, target2, insch)
-	}
+	target2 := binaryOperatorSimple(m.GetRHS(), m.GetLHS(), context, target, insch)
 	binaryInstrMul := &SMULLInstr{RdLo: target, RdHi: target2, Rm: target,
 		Rs: target2}
 
@@ -1435,18 +1424,7 @@ func (m *BinaryOperatorAdd) CodeGen(context *FunctionContext, target Reg, insch 
 	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 	context.PushStack(4)
 
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-	var target2 Reg
-	if lhs.Weight() > rhs.Weight() {
-		lhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		rhs.CodeGen(context, target2, insch)
-	} else {
-		rhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		lhs.CodeGen(context, target2, insch)
-	}
+	target2 := binaryOperatorSimple(m.GetRHS(), m.GetLHS(), context, target, insch)
 
 	context.builtInFuncs.Use(mOverflowLbl)
 	context.builtInFuncs.Use(mThrowRuntimeErr)
@@ -1579,7 +1557,28 @@ func (m *BinaryOperatorNotEqual) CodeGen(context *FunctionContext, target Reg, i
 	codeGenComparators(m, context, target, insch, condNE)
 }
 
-//CodeGen generates code for BinaryOperatorAnd
+func binaryOperatorSimple(rhs Expression, lhs Expression, context *FunctionContext, target Reg, insch chan<- Instr) Reg {
+	var target2 Reg
+	if lhs.Weight() > rhs.Weight() {
+		lhs.CodeGen(context, target, insch)
+		target2 = context.GetReg(insch)
+		rhs.CodeGen(context, target2, insch)
+	} else {
+		rhs.CodeGen(context, target, insch)
+		target2 = context.GetReg(insch)
+		lhs.CodeGen(context, target2, insch)
+	}
+	return target2
+}
+
+func codeGenAnd(m BinaryOperator, context *FunctionContext, target Reg, insch chan<- Instr) {
+	target2 := binaryOperatorSimple(m.GetRHS(), m.GetLHS(), context, target, insch)
+	binaryInstrAnd := &ANDInstr{BaseBinaryInstr{dest: target, lhs: target2,
+		rhs: target}}
+	context.FreeReg(target2, insch)
+	insch <- binaryInstrAnd
+}
+
 //CodeGen generates code for BinaryOperatorAnd
 // If LHS.Weight > RHS.Weight LHS is executed first
 // otherwise RHS is executed first
@@ -1587,49 +1586,46 @@ func (m *BinaryOperatorNotEqual) CodeGen(context *FunctionContext, target Reg, i
 // --> [CodeGen exprRHS] < target2
 // --> AND target, target2, target
 func (m *BinaryOperatorAnd) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-	var target2 Reg
-	if lhs.Weight() > rhs.Weight() {
-		lhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		rhs.CodeGen(context, target2, insch)
-	} else {
-		rhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		lhs.CodeGen(context, target2, insch)
-	}
-	binaryInstrAnd := &ANDInstr{BaseBinaryInstr{dest: target, lhs: target2,
+	codeGenAnd(m, context, target, insch)
+}
+
+//CodeGen generates code for BinaryOperatorBitAnd
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> AND target, target2, target
+func (m *BinaryOperatorBitAnd) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	codeGenAnd(m, context, context, insch)
+}
+
+func codeGenOr(m BinaryOperator, context *FunctionContext, target Reg, insch chan<- Instr) {
+	target2 := binaryOperatorSimple(m.GetRHS(), m.GetLHS(), context, target, insch)
+
+	binaryInstrOrr := &ORRInstr{BaseBinaryInstr{dest: target, lhs: target2,
 		rhs: target}}
 	context.FreeReg(target2, insch)
-	insch <- binaryInstrAnd
+	insch <- binaryInstrOrr
 }
 
 //CodeGen generates code for BinaryOperatorOr
-//CodeGen generates code for BinaryOperatorOr
-//CodeGen generates code for BinaryOperatorAnd
 // If LHS.Weight > RHS.Weight LHS is executed first
 // otherwise RHS is executed first
 // --> [CodeGen exprLHS] < target
 // --> [CodeGen exprRHS] < target2
 // --> ORR target, target2, target
 func (m *BinaryOperatorOr) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	lhs := m.GetLHS()
-	rhs := m.GetRHS()
-	var target2 Reg
-	if lhs.Weight() > rhs.Weight() {
-		lhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		rhs.CodeGen(context, target2, insch)
-	} else {
-		rhs.CodeGen(context, target, insch)
-		target2 = context.GetReg(insch)
-		lhs.CodeGen(context, target2, insch)
-	}
-	binaryInstrOrr := &ORRInstr{BaseBinaryInstr{dest: target, lhs: target2,
-		rhs: target}}
-	context.FreeReg(target2, insch)
-	insch <- binaryInstrOrr
+	codeGenOr(m, context, target, insch)
+}
+
+//CodeGen generates code for BinaryOperatorBitOr
+// If LHS.Weight > RHS.Weight LHS is executed first
+// otherwise RHS is executed first
+// --> [CodeGen exprLHS] < target
+// --> [CodeGen exprRHS] < target2
+// --> ORR target, target2, target
+func (m *BinaryOperatorBitOr) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	codeGenOr(m, context, target, insch)
 }
 
 //CodeGen generates code for VoidExpr
