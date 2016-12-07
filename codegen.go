@@ -143,6 +143,8 @@ type FunctionContext struct {
 	stackSize    int
 	stack        []map[string]int
 	members      map[string]int
+	endLabels    []string
+	startLabels  []string
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
@@ -252,7 +254,6 @@ func (m *FunctionContext) ResolveVar(ident string) int {
 			}
 		}
 	}
-
 	panic(fmt.Sprintf("var %s not found in scope", ident))
 }
 
@@ -318,6 +319,42 @@ func createImmediateValuesFor(num int) []int {
 		values = append(values, od)
 	}
 	return values
+}
+
+// PopLastEndLabel returns the last endLabel used
+func (m *FunctionContext) PopLastEndLabel() string {
+	lastEndLabel := m.endLabels[len(m.endLabels)-1]
+	m.endLabels = m.endLabels[:len(m.endLabels)-1]
+	return lastEndLabel
+}
+
+// PushLastEndLabel adds the label to the stack of endLabels
+func (m *FunctionContext) PushLastEndLabel(endLabel string) {
+	m.endLabels = append(m.endLabels, endLabel)
+}
+
+// PeekLastEndLabel returns the last endLabel used
+func (m *FunctionContext) PeekLastEndLabel() string {
+	lastEndLabel := m.endLabels[len(m.endLabels)-1]
+	return lastEndLabel
+}
+
+// PopLastStartLabel returns the last startLabel used
+func (m *FunctionContext) PopLastStartLabel() string {
+	lastStartLabel := m.startLabels[len(m.startLabels)-1]
+	m.startLabels = m.startLabels[:len(m.startLabels)-1]
+	return lastStartLabel
+}
+
+// PushLastStartLabel adds the label to the stack of startLabels
+func (m *FunctionContext) PushLastStartLabel(startLabel string) {
+	m.startLabels = append(m.startLabels, startLabel)
+}
+
+// PeekLastStartLabel returns the last startLabel used
+func (m *FunctionContext) PeekLastStartLabel() string {
+	lastStartLabel := m.startLabels[len(m.startLabels)-1]
+	return lastStartLabel
 }
 
 //-----------------------------------------------------------------------------
@@ -424,6 +461,30 @@ func (m *BaseStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 // CodeGen for skip statements
 // --> [CodeGen next instruction]
 func (m *SkipStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+// CodeGen for continue statements
+// TODO: write comment
+// --> [Codegen next instruction]
+func (m *ContinueStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	//TODO: CLEAN UP SCOPE
+
+	labelStart := context.PeekLastStartLabel()
+	insch <- &BInstr{label: labelStart}
+
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+// CodeGen for break statements
+// TODO: write comment
+// --> [CodeGen next instruction]
+func (m *BreakStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	//TODO: CLEAN UP SCOPE
+
+	labelEnd := context.PeekLastEndLabel()
+	insch <- &BInstr{label: labelEnd}
+
 	m.BaseStatement.CodeGen(context, insch)
 }
 
@@ -805,6 +866,11 @@ func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	labelWhile := fmt.Sprintf("while%s", suffix)
 	labelEnd := fmt.Sprintf("end%s", suffix)
 
+	context.PushLastEndLabel(labelEnd)
+	context.PushLastStartLabel(labelWhile)
+
+	// CMP Check
+
 	insch <- &LABELInstr{ident: labelWhile}
 
 	// Condition
@@ -827,6 +893,9 @@ func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{label: labelWhile}
 
 	insch <- &LABELInstr{ident: labelEnd}
+
+	context.PopLastEndLabel();
+	context.PopLastStartLabel();
 
 	m.BaseStatement.CodeGen(context, insch)
 }
