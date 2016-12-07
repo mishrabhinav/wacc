@@ -32,7 +32,7 @@ STAT		<- (SKIP
 		/ PRINT EXPR
 		/ FCALL
 		/ IF EXPR THEN STAT (ELSE LCUR? STAT RCUR?)? FI
-		/ SWITCH EXPR ON (CASE EXPR COLON STAT)* (DEFAULT COLON STAT)? END
+		/ SWITCH EXPR? ON (CASE EXPR COLON STAT (FALLTHROUGH SEMI?)?)* (DEFAULT COLON STAT)? END
 		/ DO STAT WHILE EXPR DONE
 		/ WHILE EXPR DO STAT DONE) (SEMI STAT?)?
 
@@ -159,6 +159,7 @@ DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
 ELSE		<- 'else'	!IDCHAR SPACE
 EXIT		<- 'exit'	!IDCHAR SPACE
+FALLTHROUGH	<- 'fallthrough' !IDCHAR SPACE
 FALSE		<- 'false'	!IDCHAR SPACE
 FREE		<- 'free'	!IDCHAR SPACE
 FST		<- 'fst'	!IDCHAR SPACE
@@ -210,6 +211,7 @@ KEYWORD		<- ('begin'
 		/ 'end'
 		/ 'exit'
 		/ 'false'
+		/ 'fallthrough'
 		/ 'fi'
 		/ 'free'
 		/ 'fst'
