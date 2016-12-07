@@ -897,9 +897,9 @@ func (m *FunctionCallRHS) TypeCheck(ts *Scope, errch chan<- error) {
 		var recvT Type
 		switch m.obj[0] {
 		case '@':
-			recvT = ts.LookupMember(m.ident[1:])
+			recvT = ts.LookupMember(m.obj[1:])
 		default:
-			recvT = ts.Lookup(m.ident)
+			recvT = ts.Lookup(m.obj)
 		}
 
 		switch t := recvT.(type) {
