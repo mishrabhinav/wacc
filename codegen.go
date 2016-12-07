@@ -621,6 +621,8 @@ func (m *FunctionCallStat) CodeGen(alloc *RegAllocator, insch chan<- Instr) {
 	}
 
 	alloc.PopStack(len(m.args) * 4)
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 //CodeGen generates code for IfStatement

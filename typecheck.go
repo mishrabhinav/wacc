@@ -466,6 +466,8 @@ func (m *FunctionCallStat) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	m.mangledIdent = mangledIdent
+
+	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 // TypeCheck checks whether the statement has any type mismatches in expressions

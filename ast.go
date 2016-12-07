@@ -1420,31 +1420,29 @@ func parseStatement(node *node32) (Statement, error) {
 
 		stm = print
 	case ruleFCALL:
-		node = node.up
+		fnode := node.up
 		call := new(FunctionCallStat)
 
 		call.SetToken(&node.token32)
 
-		identNode := nextNode(node, ruleIDENT)
+		identNode := nextNode(fnode, ruleIDENT)
 		call.ident = identNode.match
 
-		arglistNode := nextNode(node, ruleARGLIST)
-		if arglistNode == nil {
-			return call, nil
-		}
+		arglistNode := nextNode(fnode, ruleARGLIST)
+		if arglistNode != nil {
+			for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
+				var err error
+				var expr Expression
 
-		for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
-			var err error
-			var expr Expression
+				if expr, err = parseExpr(argNode.up); err != nil {
+					return nil, err
+				}
 
-			if expr, err = parseExpr(argNode.up); err != nil {
-				return nil, err
+				call.args = append(call.args, expr)
 			}
-
-			call.args = append(call.args, expr)
 		}
 
-		return call, nil
+		stm = call
 	case ruleIF:
 		ifs := new(IfStatement)
 
