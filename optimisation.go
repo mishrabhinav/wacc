@@ -86,10 +86,7 @@ func (m *ReturnStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for ExitStatement
 func (m *ExitStatement) Optimise(context *OptimisationContext) Statement {
-	if m.next != nil {
-		m.SetNext(m.next.Optimise(context))
-	}
-
+	m.next = nil
 	return m
 }
 
