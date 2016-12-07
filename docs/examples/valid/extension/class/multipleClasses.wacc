@@ -16,6 +16,14 @@
       return @a
     }
 
+    void b(int x) {
+      @b = x
+    }
+
+    int b() {
+      return @b
+    }
+
     void foo() {
       println "bar"
     }
@@ -45,12 +53,14 @@
 
   call a->foo() ;
 
-  int y = call a->b() ;
+  int y = call a->a() ;
   println y ;
+  int z = call a->b() ;
+  println z ;
   y = call c->c();
   println y ;
 
-  call c->c(z + 1) ;
+  call c->c(y + 1) ;
 
   y = call c->c() ;
   println y

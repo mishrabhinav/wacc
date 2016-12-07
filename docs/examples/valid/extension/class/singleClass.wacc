@@ -8,14 +8,24 @@
       @b = y
     }
 
-    # Setter for member
+    # Setter for member a
     void a(int x) {
       @a = x
     }
 
-    # Getter for member
+    # Getter for member a
     int a() {
       return @a
+    }
+
+    # Setter for member b
+    void b(int x) {
+      @b = x
+    }
+
+    # Getter for member b
+    int b() {
+      return @b
     }
 
     void foo() {
