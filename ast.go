@@ -157,6 +157,8 @@ type ClassMember struct {
 	TokenBase
 	ident string
 	wtype Type
+	get   bool
+	set   bool
 }
 
 // ClassType represents a class in WACC
@@ -1777,11 +1779,56 @@ func parseInclude(node *node32) string {
 	return file
 }
 
+// autoGenerateGetSet generates getter and setter methods for the class members
+func autoGenerateGetSet(class *ClassType) (*ClassType, error) {
+	for _, member := range class.members {
+		if member.get {
+			autoGet := &FunctionDef{}
+			autoGet.returnType = member.wtype
+			autoGet.ident = member.ident
+
+			autoGet.body = &ReturnStatement{
+				expr: &Ident{ident: fmt.Sprintf("@%v", member.ident)},
+			}
+
+			class.methods = append(class.methods, autoGet)
+		}
+
+		if member.set {
+			autoSet := &FunctionDef{}
+			autoSet.returnType = VoidType{}
+			autoSet.ident = member.ident
+
+			param := &FunctionParam{
+				name:  "value",
+				wtype: member.wtype,
+			}
+
+			autoSet.params = append(autoSet.params, param)
+
+			autoSet.body = &AssignStatement{
+				target: &VarLHS{
+					ident: fmt.Sprintf("@%v", member.ident),
+				},
+				rhs: &ExpressionRHS{
+					expr: &Ident{ident: "value"},
+				},
+			}
+
+			class.methods = append(class.methods, autoSet)
+		}
+	}
+
+	return class, nil
+}
+
 // parseClass parses all the members declared in a class
 func parseClassMembers(node *node32) (*ClassMember, error) {
 	var err error
 
 	member := &ClassMember{}
+	member.get = false
+	member.set = false
 
 	member.SetToken(&node.token32)
 	member.ident = nextNode(node, ruleIDENT).match
@@ -1789,6 +1836,26 @@ func parseClassMembers(node *node32) (*ClassMember, error) {
 	member.wtype, err = parseType(nextNode(node, ruleTYPE).up)
 	if err != nil {
 		return nil, err
+	}
+
+	if node := nextNode(node, ruleGETSET); node != nil {
+		getset := node.up
+		if getset = nextNode(getset, ruleGET); getset != nil {
+			member.get = true
+		}
+
+		if getset = nextNode(getset, ruleSET); getset != nil {
+			member.set = true
+		}
+
+		if getset != nil {
+			if nextNode(getset.next, ruleGET) != nil ||
+				nextNode(getset.next, ruleSET) != nil {
+				return nil, fmt.Errorf(
+					"syntax error: GET/SET used multiple times",
+				)
+			}
+		}
 	}
 
 	return member, nil
@@ -1827,6 +1894,11 @@ func parseClass(node *node32) (*ClassType, error) {
 				node.match,
 			)
 		}
+	}
+
+	class, err := autoGenerateGetSet(class)
+	if err != nil {
+		return nil, err
 	}
 
 	return class, nil
