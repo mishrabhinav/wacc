@@ -1,27 +1,27 @@
-begin
-  class A is
+{
+  class A {
     int a;
     int b;
 
-    void init(int x, int y) is
+    void init(int x, int y) {
       @a = x ;
       @b = y
-    end
+    }
 
     # Setter for member
-    void a(int x) is
+    void a(int x) {
       @a = x
-    end
+    }
 
     # Getter for member
-    int a() is
+    int a() {
       return @a
-    end
+    }
 
-    void foo() is
+    void foo() {
       println "bar"
-    end
-  end
+    }
+  }
 
   # Initiate new class
   A a = new A() ;
@@ -37,4 +37,4 @@ begin
 
   # Set a member
   call a->a(y)
-end
+}

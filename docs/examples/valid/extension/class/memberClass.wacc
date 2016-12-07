@@ -22,9 +22,11 @@
   }
 
   class B {
+    A a;
     int c;
 
-    void init(int a) {
+    void init(int Aa, int Ab, int c) {
+      call @a->init(Aa, Ab)
       @c = a
     }
 
@@ -32,22 +34,15 @@
       @c = a
     }
 
-    int c() {
-      return @c
+    int a() {
+      return @a
     }
   }
 
-  A a = new A() ;
-  B c = new B() ;
+  B b = new B() ;
 
-  call a->init(2, 3) ;
-  call c->init(4) ;
+  call b->init(2, 3, 4) ;
 
-  call a->foo() ;
-
-  int y = call a->b() ;
-  int z = call c->c();
-
-  call a->a(y) ;
-  call c->c(z + 1)
+  A a = call b->a() ;
+  call a->foo()
 }
