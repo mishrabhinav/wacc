@@ -81,6 +81,12 @@ func semanticAnalysis(ast *AST) {
 	}
 }
 
+// optimisation optimises the AST by modifying and replacing nodes to make
+// the expression simpler
+func optimise(ast *AST) {
+	ast.Optimise()
+}
+
 // codeGeneration generates the assembly code for the input file and puts it in
 // a `.s` file
 func codeGeneration(ast *AST, flags *Flags) {
@@ -142,11 +148,16 @@ func main() {
 	// Generate AST from the WACC struct produced by the peg library
 	ast := generateASTFromWACC(wacc, ifm)
 
-	// Prints the AST in pretty format, if appropriate flag supplied
-	flags.PrintPrettyAST(ast)
-
 	// Perform semantic analysis on the AST
 	semanticAnalysis(ast)
+
+	if flags.optimise {
+		// Perform optimisation on the AST
+		optimise(ast)
+	}
+
+	// Prints the AST in pretty format, if appropriate flag supplied
+	flags.PrintPrettyAST(ast)
 
 	// Generate assembly code for the input wacc file
 	codeGeneration(ast, flags)

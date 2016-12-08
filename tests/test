@@ -179,6 +179,51 @@ testBackend() {
     fi
     rm -f $f
     rm -f $fs
+
+    ### Test optimised code
+
+    ./wacc_34 -optimise -file $fW
+    f="$(basename $fW)"
+    f="${f%.wacc}"
+    fs=$f".s"
+
+    arm-linux-gnueabi-gcc -o $f -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $fs
+    qemu-arm -L /usr/arm-linux-gnueabi/ $f < $INPUT > result.txt
+    LOCALEXIT=$?
+    REFEXIT=$(cat ${fW%.wacc}.refexit)
+    sed -i 's/0x[a-f0-9]\+/0x/g' result.txt
+
+    DIFF="$(diff result.txt ${fW%.wacc}.refout)"
+    # Print the result on test failure
+    if [ "$LOCALEXIT" -ne "$REFEXIT" ]; then
+      RESULT="${RED}Optimised Fail${NC}"
+      FAIL=$(($FAIL+1))
+      echo "-------- EXPECTED --------"
+      echo "Exit code ${REFEXIT}"
+      echo "----------  GOT ----------"
+      echo "Exit code ${LOCALEXIT}"
+      echo -e "$OUT $RESULT"
+      RETURN=1
+    elif [ -n "$DIFF" ]; then
+      RESULT="${RED}Optimised Fail${NC}"
+      FAIL=$(($FAIL+1))
+      echo "-------- EXPECTED --------"
+      cat ${fW%.wacc}.refout
+      echo "----------  GOT ----------"
+      cat result.txt
+      echo "------- DIFFERENCE -------"
+      diff result.txt ${fW%.wacc}.refout
+      echo -e "$OUT $RESULT"
+      RETURN=1
+    else
+      RESULT="${GREEN}Optimised Pass${NC}"
+      PASS=$(($PASS+1))
+      if [ "$SHOWPASS" = true ]; then
+        echo -e "$OUT $RESULT"
+      fi
+    fi
+    rm -f $f
+    rm -f $fs
   done < <(find $1 -name '*.wacc')
   rm -f result.txt
   rm -f *.core

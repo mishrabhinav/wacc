@@ -190,6 +190,7 @@ type Expression interface {
 	SetToken(*token32)
 	CodeGen(*FunctionContext, Reg, chan<- Instr)
 	Weight() int
+	Optimise(*OptimisationContext) Expression
 }
 
 // Statement is the interface for WACC statements
@@ -202,6 +203,7 @@ type Statement interface {
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*FunctionContext, chan<- Instr)
+	Optimise(*OptimisationContext) Statement
 }
 
 // TokenBase is the base structure that contains the token reference
@@ -263,6 +265,7 @@ type LHS interface {
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*FunctionContext, Reg, chan<- Instr)
+	Optimise(*OptimisationContext) LHS
 }
 
 // PairElemLHS is the struct for a pair on the lhs of an assignment
@@ -311,6 +314,7 @@ type RHS interface {
 	Token() *token32
 	SetToken(*token32)
 	CodeGen(*FunctionContext, Reg, chan<- Instr)
+	Optimise(*OptimisationContext) RHS
 }
 
 // PairLiterRHS is the struct for pair literals on the rhs of an assignment

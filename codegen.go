@@ -969,7 +969,9 @@ func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{cond: condNE, label: labelEnd}
 
 	//Body
-	m.body.CodeGen(context, insch)
+	if m.body != nil {
+		m.body.CodeGen(context, insch)
+	}
 
 	// After
 	m.after.CodeGen(context, insch)
@@ -2283,6 +2285,14 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 
 		// save previous pc for returning
 		ch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, lr}}}
+
+		if m.body == nil {
+			// return
+			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
+			ch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip, pc}}}
+			close(ch)
+			return
+		}
 
 		// save callee saved registers
 		ch <- &PUSHInstr{
