@@ -881,7 +881,6 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 		} else {
 			insch <- &BInstr{label: labelNextBody}
 		}
-
 	}
 
 	labelDefault := fmt.Sprintf("case_%v%s", maxIndex+1, suffix)
@@ -897,6 +896,8 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 	alloc.FreeReg(condReg, insch)
 
 	insch <- &LABELInstr{ident: labelEnd}
+
+	m.BaseStatement.CodeGen(alloc, insch)
 }
 
 // CodeGen generates code for DoWhileStatement

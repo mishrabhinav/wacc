@@ -761,6 +761,8 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	if m.defaultCase != nil {
 		m.defaultCase.TypeCheck(ts.Child(), errch)
 	}
+
+	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 // TypeCheck checks whether the left hand is a valid assignment target.
