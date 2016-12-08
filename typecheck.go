@@ -784,12 +784,15 @@ func (m *DoWhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		)
 	}
 
+	ts.loop = ts.loop + 1
 	m.body.TypeCheck(ts.Child(), errch)
+	ts.loop = ts.loop - 1
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *ForStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	ts.loop = ts.loop + 1
 	child := ts.Child()
 
 	switch t := m.init.(type) {
@@ -820,6 +823,7 @@ func (m *ForStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	m.body.TypeCheck(child, errch)
+	ts.loop = ts.loop - 1
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
