@@ -1,0 +1,6 @@
+begin
+	for (int i = 0, i < 2) do
+		i = 2
+	done
+end
+
