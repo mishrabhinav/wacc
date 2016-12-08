@@ -1500,6 +1500,79 @@ func parseType(node *node32) (Type, error) {
 	return wtype, nil
 }
 
+// parseOpOpStat parses the ++, --, ** side effects.
+func parseOpOpStat(node *node32) (RHS, error) {
+	rhs := new(ExpressionRHS)
+	rhs.SetToken(&node.token32)
+
+	lhs, err := parseExpr(nextNode(node, ruleASSIGNLHS).up)
+	if err != nil {
+		return nil, err
+	}
+
+	switch nextNode(node, ruleOPOP).up.pegRule {
+	case rulePLUSPLUS:
+		one := &IntLiteral{value: 1}
+		binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: one, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMINUSMINUS:
+		one := &IntLiteral{value: 1}
+		binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: one, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+	}
+
+	return rhs, nil
+}
+
+// parseOpEquStat parses the +=, -=, *=, /=, %= side effects.
+func parseOpEquStat(node *node32) (RHS, error) {
+	rhs := new(ExpressionRHS)
+	rhs.SetToken(&node.token32)
+
+	lhs, err := parseExpr(nextNode(node, ruleASSIGNLHS).up)
+	if err != nil {
+		return nil, err
+	}
+
+	exprNode := nextNode(node, ruleEXPR)
+	expr, err := parseExpr(exprNode.up)
+	if err != nil {
+		return nil, err
+	}
+
+	switch nextNode(node, ruleOPEQU).up.pegRule {
+	case rulePLUSEQU:
+		binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMINUSEQU:
+		binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleSTAREQU:
+		binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleDIVEQU:
+		binOp := &BinaryOperatorDiv{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMODEQU:
+		binOp := &BinaryOperatorMod{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+	}
+
+	return rhs, nil
+}
+
 // parseStatement parses a statement by checking which rule they start with
 // that defines them uniquely
 func parseStatement(node *node32) (Statement, error) {
@@ -1557,65 +1630,28 @@ func parseStatement(node *node32) (Statement, error) {
 				return nil, err
 			}
 
-		} else if opOpNode := nextNode(node, ruleOPOP); opOpNode != nil {
-			rhs := new(ExpressionRHS)
-			lhs, err := parseExpr(lhsNode.up)
-			if err != nil {
-				return nil, err
-			}
-
-			switch opOpNode.up.pegRule {
-			case rulePLUSPLUS:
-				one := &IntLiteral{value: 1}
-				binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: one, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleMINUSMINUS:
-				one := &IntLiteral{value: 1}
-				binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: one, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleSTARSTAR:
-				binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: lhs, lhs: lhs}}
-				rhs.expr = binOp
-			}
-
-			assign.rhs = rhs
 		} else {
-			rhs := new(ExpressionRHS)
-			lhs, err := parseExpr(lhsNode.up)
-			if err != nil {
-				return nil, err
+			switch assign.target.(type) {
+			case *VarLHS:
+			case *ArrayLHS:
+			default:
+				return nil, fmt.Errorf("syntax error: Side Effecting pairs not allowed")
 			}
 
-			exprNode := nextNode(node, ruleEXPR)
-			expr, err := parseExpr(exprNode.up)
-			if err != nil {
-				return nil, err
+			var rhs RHS
+
+			if opOpNode := nextNode(node, ruleOPOP); opOpNode != nil {
+				rhs, err = parseOpOpStat(node)
+				if err != nil {
+					return nil, err
+				}
+
+			} else {
+				rhs, err = parseOpEquStat(node)
+				if err != nil {
+					return nil, err
+				}
 			}
-
-			switch nextNode(node, ruleOPEQU).up.pegRule {
-			case rulePLUSEQU:
-				binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: expr, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleMINUSEQU:
-				binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: expr, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleSTAREQU:
-				binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: expr, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleDIVEQU:
-				binOp := &BinaryOperatorDiv{BinaryOperatorBase{rhs: expr, lhs: lhs}}
-				rhs.expr = binOp
-
-			case ruleMODEQU:
-				binOp := &BinaryOperatorMod{BinaryOperatorBase{rhs: expr, lhs: lhs}}
-				rhs.expr = binOp
-			}
-
 			assign.rhs = rhs
 		}
 
