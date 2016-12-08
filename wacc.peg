@@ -26,7 +26,7 @@ STAT		<- (SKIP
 		/ CONTINUE
 		/ BREAK
 		/ BEGIN STAT END
-		/ TYPE IDENT SPACE EQU ASSIGNRHS
+		/ (TYPE / VAR) IDENT SPACE EQU ASSIGNRHS
 		/ ASSIGNLHS EQU ASSIGNRHS
 		/ READ ASSIGNLHS
 		/ FREE EXPR
@@ -191,6 +191,7 @@ SND		<- 'snd'	!IDCHAR SPACE
 STRING		<- 'string'	!IDCHAR SPACE
 SWITCH		<- 'switch'	!IDCHAR SPACE
 TRUE		<- 'true'	!IDCHAR SPACE
+VAR		<- 'var'	!IDCHAR SPACE
 VOID		<- 'void'	!IDCHAR SPACE
 WHILE		<- 'while'	!IDCHAR SPACE
 
@@ -249,6 +250,7 @@ KEYWORD		<- ('begin'
 		/ 'switch'
 		/ 'then'
 		/ 'true'
+		/ 'var'
 		/ 'void'
 		/ 'while'
 		) !IDCHAR
