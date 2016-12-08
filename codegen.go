@@ -218,17 +218,6 @@ func (m *FunctionContext) PopStack(size int) {
 	m.stackSize -= size
 }
 
-func (m *FunctionContext) DeclareEnum(ident string, value int) {
-	if m.enums == nil {
-		m.enums = make(map[string]int)
-	}
-	m.enums[ident] = value
-}
-
-func (m *FunctionContext) RetrieveEnum(ident string) int {
-	return m.enums[ident]
-}
-
 // DeclareVar registers a new variable for use
 func (m *FunctionContext) DeclareVar(ident string, insch chan<- Instr) {
 	m.PushStack(4)
@@ -607,18 +596,6 @@ func (m *AssignStatement) CodeGen(context *FunctionContext, insch chan<- Instr) 
 
 	context.FreeReg(rhsReg, insch)
 	context.FreeReg(lhsReg, insch)
-
-	m.BaseStatement.CodeGen(context, insch)
-}
-
-//CodeGen generates code for EnumStatement
-func (m *EnumStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
-
-	for index := 0; index < len(m.enums); index++ {
-		ident := m.enums[index]
-		value := m.values[index]
-		context.DeclareEnum(ident, value.value)
-	}
 
 	m.BaseStatement.CodeGen(context, insch)
 }
@@ -1474,8 +1451,7 @@ func (m *StringLiteral) CodeGen(context *FunctionContext, target Reg, insch chan
 
 //CodeGen generates code for EnumLiteral
 func (m *EnumLiteral) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	enumVal := context.RetrieveEnum(m.value)
-	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{enumVal}}
+	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{m.value}}
 }
 
 //CodeGen generates code for PairLiteral
