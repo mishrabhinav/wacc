@@ -27,7 +27,7 @@ STAT		<- (SKIP
 		/ BREAK
 		/ BEGIN STAT END
 		/ (TYPE / VAR) IDENT SPACE EQU ASSIGNRHS
-		/ ASSIGNLHS EQU ASSIGNRHS
+		/ ASSIGNLHS ((EQU ASSIGNRHS) / (OPEQU EXPR) / OPOP)
 		/ READ ASSIGNLHS
 		/ FREE EXPR
 		/ RETURN EXPR?
@@ -51,6 +51,15 @@ ASSIGNRHS	<- NEWPAIR LPAR EXPR COMMA EXPR RPAR
 		/ PAIRELEM
 		/ FCALL
 		/ EXPR
+
+OPEQU		<- PLUSEQU
+		/ MINUSEQU
+		/ STAREQU
+		/ DIVEQU
+		/ MODEQU
+
+OPOP		<- PLUSPLUS
+		/ MINUSMINUS
 
 ARGLIST		<- EXPR (COMMA EXPR)*
 
@@ -265,12 +274,19 @@ LBRK		<- '['		SPACE
 RBRK		<- ']'		SPACE
 LPAR		<- '('		SPACE
 RPAR		<- ')'		SPACE
-STAR		<- '*'  ![=]	SPACE
+STAREQU		<- '*='		SPACE
+STAR		<- '*'  ![=*]	SPACE
+PLUSPLUS	<- '++'		SPACE
+PLUSEQU		<- '+='		SPACE
 PLUS		<- '+'  ![=]	SPACE
-MINUS		<- '-'  ![=>]	SPACE
+MINUSMINUS	<- '--'		SPACE
+MINUSEQU	<- '-='		SPACE
+MINUS		<- '-'  ![=]	SPACE
 BANG		<- '!'  ![=]	SPACE
 DIV		<- '/'  ![=]	SPACE
+DIVEQU		<- '/='		SPACE
 MOD		<- '%'  ![=>]	SPACE
+MODEQU		<- '%='		SPACE
 LT		<- '<'  ![=]	SPACE
 GT		<- '>'  ![=]	SPACE
 LE		<- '<='		SPACE
