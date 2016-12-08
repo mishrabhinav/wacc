@@ -251,6 +251,21 @@ func (m CharType) Match(t Type) bool {
 }
 
 // Match checks whether a type is assignable to the current type
+func (m EnumType) Match(t Type) bool {
+	switch o := t.(type) {
+	case *EnumType:
+		if m.name == "" {
+			return true
+		}
+		return m.name == o.name
+	case VoidType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Match checks whether a type is assignable to the current type
 func (m PairType) Match(t Type) bool {
 	switch o := t.(type) {
 	case PairType:
@@ -744,7 +759,7 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.cond.TypeCheck(ts, errch)
 	condT := m.cond.Type()
 
-	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT)) {
+	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT) || EnumType{}.Match(condT)) {
 		errch <- CreateTypeMismatchError(
 			m.cond.Token(),
 			IntType{},
@@ -1190,6 +1205,12 @@ func (m *Ident) TypeCheck(ts *Scope, errch chan<- error) {
 // operate on, all variables are declared, arrays are indexed properly.
 // The check is propagated recursively.
 func (m *IntLiteral) TypeCheck(ts *Scope, errch chan<- error) {
+}
+
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
+func (m *EnumLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
 // TypeCheck checks expression whether all operators get the type they can

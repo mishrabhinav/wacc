@@ -6,7 +6,7 @@ begin
     D;
   end;
 
-  foo x = foo->B;
+  enum foo x = foo->B;
 
   switch x {
     case foo->A:
