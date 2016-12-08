@@ -1206,6 +1206,17 @@ func (m *NewInstanceRHS) CodeGen(context *FunctionContext, target Reg, insch cha
 	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 	context.PushStack(4)
 
+	// evaluate constructor arguments
+	argL := len(m.args)
+	for i := argL - 1; i >= 0; i-- {
+		reg := context.GetReg(insch)
+		m.args[i].CodeGen(context, reg, insch)
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{reg}}}
+		context.PushStack(4)
+		context.FreeReg(reg, insch)
+	}
+
+	// create new instance
 	cT := m.wtype.(*ClassType)
 
 	leng := &ConstLoadOperand{len(cT.members) * 4}
@@ -1213,10 +1224,30 @@ func (m *NewInstanceRHS) CodeGen(context *FunctionContext, target Reg, insch cha
 
 	insch <- &BLInstr{BInstr{label: mMalloc}}
 
+	insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{r0}}}
+	context.PushStack(4)
+	argL++
+
+	// set up function arguments
+	for i := 0; i < 4 && i < argL; i++ {
+		insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{argRegs[i]}}}
+	}
+
+	// call constructor
+	insch <- &BLInstr{BInstr: BInstr{label: m.constr}}
+
 	insch <- &MOVInstr{dest: target, source: resReg}
+
+	if pl := argL; pl > 4 {
+		insch <- &ADDInstr{BaseBinaryInstr: BaseBinaryInstr{dest: sp, lhs: sp,
+			rhs: ImmediateOperand{(pl - 4) * 4}}}
+	}
+
+	context.PopStack(argL * 4)
 
 	insch <- &POPInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
 	context.PopStack(4)
+
 }
 
 //------------------------------------------------------------------------------
@@ -2369,7 +2400,11 @@ func (m *FunctionDef) CodeGen(strPool *StringPool, builtInFuncs *BuiltInFuncs) <
 		// returning
 		switch m.returnType.(type) {
 		case VoidType:
-			ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
+			if m.class == nil {
+				ch <- &MOVInstr{dest: resReg, source: ImmediateOperand{0}}
+			} else {
+				ch <- &MOVInstr{dest: resReg, source: ip}
+			}
 		}
 
 		ch <- &LABELInstr{fmt.Sprintf("%s_return", m.Symbol())}

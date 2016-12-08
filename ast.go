@@ -408,7 +408,6 @@ func (m *ExpressionRHS) Type() Type {
 // NewInstanceRHS is the for new class instance on the rhs of an assignment
 type NewInstanceRHS struct {
 	TokenBase
-	obj    string
 	constr string
 	wtype  Type
 	args   []Expression
@@ -1525,10 +1524,6 @@ func parseStatement(node *node32) (Statement, error) {
 			return nil, err
 		}
 
-		if newInst, ok := decl.rhs.(*NewInstanceRHS); ok {
-			newInst.obj = decl.ident
-		}
-
 		stm = decl
 	case ruleASSIGNLHS:
 		assign := new(AssignStatement)
@@ -1541,10 +1536,6 @@ func parseStatement(node *node32) (Statement, error) {
 		rhsNode := nextNode(node, ruleASSIGNRHS)
 		if assign.rhs, err = parseRHS(rhsNode.up); err != nil {
 			return nil, err
-		}
-
-		if newInst, ok := assign.rhs.(*NewInstanceRHS); ok {
-			newInst.obj = nextNode(lhsNode.up, ruleIDENT).match
 		}
 
 		stm = assign
