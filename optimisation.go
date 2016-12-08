@@ -446,10 +446,6 @@ func (m *VarLHS) Optimise(context *OptimisationContext) LHS {
 	return m
 }
 
-func (m *EnumStatement) Optimise(context *OptimisationContext) Statement {
-	return m
-}
-
 //Optimise optimises for PairLiterRHS
 func (m *PairLiterRHS) Optimise(context *OptimisationContext) RHS {
 	m.fst = m.fst.Optimise(context)
