@@ -148,14 +148,14 @@ func main() {
 	// Generate AST from the WACC struct produced by the peg library
 	ast := generateASTFromWACC(wacc, ifm)
 
-	// Prints the AST in pretty format, if appropriate flag supplied
-	flags.PrintPrettyAST(ast)
-
 	// Perform semantic analysis on the AST
 	semanticAnalysis(ast)
 
 	// Perform optimisation on the AST
 	optimise(ast)
+
+	// Prints the AST in pretty format, if appropriate flag supplied
+	flags.PrintPrettyAST(ast)
 
 	// Generate assembly code for the input wacc file
 	codeGeneration(ast, flags)
