@@ -272,10 +272,10 @@ func (stmt AssignStatement) aststring(indent string) string {
 //   - CONDITION
 //     - [bool]
 //   - THEN
-//     - [thenEXPR]
+//     - [thenSTAT]
 //   - ELSE
-//     - [elseEXPR]
-// thenEXPR and elseEXPR are recursed upon
+//     - [elseSTAT]
+// thenSTAT and elseSTAT are recursed upon
 func (stmt IfStatement) aststring(indent string) string {
 	var stmtStats string
 	var trueStats string
@@ -331,8 +331,8 @@ func (stmt IfStatement) aststring(indent string) string {
 //   - CONDITION
 //     - [bool]
 //   - DO
-//     - [doEXPR]
-// doEXPR is recursed upon
+//     - [doSTAT]
+// doSTAT is recursed upon
 func (stmt WhileStatement) aststring(indent string) string {
 	var body string
 	var doStats string
@@ -384,7 +384,6 @@ func (stmt SwitchStatement) aststring(indent string) string {
 		"CONDITION",
 		stmt.cond.aststring(getGreaterIndent(innerIndent)),
 	)
-
 	caseStats := addIndAndNewLine(innerIndent, "CASE")
 	innerCondStats := addIndAndNewLine(getGreaterIndent(innerIndent), "CONDITION")
 	innerDoStats := addIndAndNewLine(getGreaterIndent(innerIndent), "DO")
@@ -441,12 +440,64 @@ func (stmt DoWhileStatement) aststring(indent string) string {
 		doStats = fmt.Sprintf("%v%v", doStats, body)
 		st = st.GetNext()
 	}
+
 	body = st.aststring(getGreaterIndent(innerIndent))
 	doStats = fmt.Sprintf("%v%v", doStats, body)
 
 	loopStats := addIndAndNewLine(indent, "LOOP")
 
 	return fmt.Sprintf("%v%v%v", loopStats, doStats, condStats)
+}
+
+// Prints a ForLoop. Format:
+// - FOR LOOP
+//   - INIT
+//	  - [declare assign stat]
+//   - CONDITION
+//     - [bool]
+//   - AFTER
+//     -[assign stat]
+//   - DO
+//     - [doSTAT]
+// doSTAT is recursed upon
+func (stmt ForStatement) aststring(indent string) string {
+	var body string
+	var doStats string
+	innerIndent := getGreaterIndent(indent)
+
+	condStats := addIndentForFirst(
+		innerIndent,
+		"CONDITION",
+		stmt.cond.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	initStats := addIndentForFirst(
+		innerIndent,
+		"INIT",
+		stmt.init.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	afterStats := addIndentForFirst(
+		innerIndent,
+		"AFTER",
+		stmt.after.aststring(getGreaterIndent(innerIndent)),
+	)
+
+	doStats = addIndAndNewLine(innerIndent, "DO")
+
+	st := stmt.body
+	for st.GetNext() != nil {
+		body = st.aststring(getGreaterIndent(innerIndent))
+		doStats = fmt.Sprintf("%v%v", doStats, body)
+		st = st.GetNext()
+	}
+	body = st.aststring(getGreaterIndent(innerIndent))
+	doStats = fmt.Sprintf("%v%v", doStats, body)
+
+	loopStats := addIndAndNewLine(indent, "FOR LOOP")
+
+	return fmt.Sprintf("%v%v%v%v%v", loopStats, initStats,
+		condStats, afterStats, doStats)
 }
 
 // Prints FunctionParameters in function declaration.

@@ -76,6 +76,30 @@ func (m *BigIntError) Error() string {
 	)
 }
 
+// ForLoopError is a syntax error when the for loop isn't in the form
+// (DeclareAssignStatement; Cond; AssignStatement)
+type ForLoopError struct {
+	SyntaxError
+	err string
+}
+
+// CreateForLoopError creates an error from the token and err as a string
+func CreateForLoopError(token *token32, err string) error {
+	return &ForLoopError{
+		SyntaxError: CreateSyntaxError(token),
+		err:         err,
+	}
+}
+
+// Error creates the error string from the ForLoopError
+func (m *ForLoopError) Error() string {
+	return fmt.Sprintf(
+		"%s: %s",
+		m.SyntaxError.Error(),
+		m.err,
+	)
+}
+
 // MissingReturnError is a syntax error when a function does not return
 type MissingReturnError struct {
 	SyntaxError

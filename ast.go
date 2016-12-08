@@ -487,6 +487,15 @@ type DoWhileStatement struct {
 	body Statement
 }
 
+//ForStatement is the struct for a for statement
+type ForStatement struct {
+	BaseStatement
+	init  Statement
+	cond  Expression
+	after Statement
+	body  Statement
+}
+
 // FunctionParam is the struct for a function parameter
 type FunctionParam struct {
 	TokenBase
@@ -1694,6 +1703,32 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = switchs
+	case ruleFOR:
+		fors := new(ForStatement)
+
+		initNode := nextNode(node, ruleSTAT)
+		if fors.init, err = parseStatement(initNode.up); err != nil {
+			return nil, err
+		}
+
+		exprNode := nextNode(node, ruleEXPR)
+		if fors.cond, err = parseExpr(exprNode.up); err != nil {
+			return nil, err
+		}
+
+		afterNode := nextNode(initNode.next, ruleSTAT)
+		if fors.after, err = parseStatement(afterNode.up); err != nil {
+			return nil, err
+		}
+
+		bodyNode := nextNode(afterNode.next, ruleSTAT)
+		if fors.body, err = parseStatement(bodyNode.up); err != nil {
+			return nil, err
+		}
+
+		node = bodyNode
+
+		stm = fors
 	default:
 		return nil, fmt.Errorf(
 			"unexpected %s %s",

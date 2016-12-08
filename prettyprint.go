@@ -522,6 +522,7 @@ func (stmt *DoWhileStatement) istring(level int) string {
 	var indent = getIndentation(level)
 
 	st := stmt.body
+
 	for st.GetNext() != nil {
 		body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+1))
 		st = st.GetNext()
@@ -531,6 +532,32 @@ func (stmt *DoWhileStatement) istring(level int) string {
 
 	return fmt.Sprintf("%vdo\n%v\n%vwhile (%v) \n%vdone", indent, body,
 		indent, stmt.cond, indent)
+}
+
+// Prints a for loop. Format:
+//   "for ([init]; [cond]; [after]) do
+//    [body]*
+//    done"
+// Recurses on init, cond, after and (multiple) body.
+func (stmt *ForStatement) istring(level int) string {
+	var body string
+	//var init string
+	//var after string
+	var indent = getIndentation(level)
+
+	st := stmt.init
+
+	st = stmt.body
+
+	for st.GetNext() != nil {
+		body = fmt.Sprintf("%v\n%v ;", body, st.istring(level+1))
+		st = st.GetNext()
+	}
+
+	body = fmt.Sprintf("%v\n%v", body, st.istring(level+1))
+
+	return fmt.Sprintf("%vfor (%v; %v; %v) do%v\n%vdone",
+		indent, stmt.init, stmt.cond, stmt.after, body, indent)
 }
 
 // Prints a given function parameter. Format:

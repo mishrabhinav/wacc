@@ -23,6 +23,7 @@ type Flags struct {
 	printAST      bool
 	verbose       bool
 	printAssembly bool
+	noassembly    bool
 }
 
 // Parse defines all the flags and then parses the command line args
@@ -39,6 +40,8 @@ func (f *Flags) Parse() {
 		"Print different stages during compilation")
 	flag.BoolVar(&f.printAssembly, "assembly", false,
 		"Print assembly instructions to STD Output")
+	flag.BoolVar(&f.noassembly, "noassembly", false,
+		"Assembly file not produced, no assembly to STD Output")
 
 	flag.Parse()
 

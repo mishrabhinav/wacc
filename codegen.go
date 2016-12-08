@@ -792,38 +792,22 @@ func (m *IfStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 
 //CodeGen generates code for WhileStatement
 // while_%l
-// --> B cond_%l
-// do_%l
-// --> [CodeGen body]
-// cond_%l
 // --> [CodeGen cond] << reg
 // --> CMP reg, 1
-// --> BEQ do_%l
+// --> BNE end_%l
+// --> [CodeGen body]
+// --> B while_%l
 // end_%l
 // --> [CodeGen next instruction]
 func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	suffix := context.GetUniqueLabelSuffix()
 
 	labelWhile := fmt.Sprintf("while%s", suffix)
-	labelCond := fmt.Sprintf("cond%s", suffix)
-	labelDo := fmt.Sprintf("do%s", suffix)
 	labelEnd := fmt.Sprintf("end%s", suffix)
 
-	// CMP Check
-
 	insch <- &LABELInstr{ident: labelWhile}
-	insch <- &BInstr{label: labelCond}
-
-	//Body
-	insch <- &LABELInstr{ident: labelDo}
-	context.StartScope(insch)
-
-	m.body.CodeGen(context, insch)
-
-	context.CleanupScope(insch)
 
 	// Condition
-	insch <- &LABELInstr{ident: labelCond}
 	target := context.GetReg(insch)
 
 	m.cond.CodeGen(context, target, insch)
@@ -832,7 +816,15 @@ func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: &ImmediateOperand{1}}}
 
-	insch <- &BInstr{label: labelDo, cond: condEQ}
+	insch <- &BInstr{cond: condNE, label: labelEnd}
+	//Body
+	context.StartScope(insch)
+
+	m.body.CodeGen(context, insch)
+
+	context.CleanupScope(insch)
+
+	insch <- &BInstr{label: labelWhile}
 
 	insch <- &LABELInstr{ident: labelEnd}
 
@@ -936,6 +928,55 @@ func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr)
 	insch <- &BInstr{cond: condEQ, label: labelDo}
 
 	context.FreeReg(target, insch)
+
+	context.CleanupScope(insch)
+
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+//CodeGen generates code for ForStatement
+// --> [CodeGen init]
+// for_%l
+// --> [CodeGen cond] << reg
+// --> CMP reg, 1
+// --> BNE end_%l
+// --> [CodeGen body]
+// --> B for_%l
+// end_%l
+// --> [CodeGen next instruction]
+func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	suffix := context.GetUniqueLabelSuffix()
+
+	labelFor := fmt.Sprintf("for%s", suffix)
+	labelEnd := fmt.Sprintf("end%s", suffix)
+
+	// Initialization
+	context.StartScope(insch)
+
+	m.init.CodeGen(context, insch)
+
+	insch <- &LABELInstr{ident: labelFor}
+
+	// Condition
+	target := context.GetReg(insch)
+
+	m.cond.CodeGen(context, target, insch)
+
+	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: &ImmediateOperand{1}}}
+
+	context.FreeReg(target, insch)
+
+	insch <- &BInstr{cond: condNE, label: labelEnd}
+
+	//Body
+	m.body.CodeGen(context, insch)
+
+	// After
+	m.after.CodeGen(context, insch)
+
+	insch <- &BInstr{label: labelFor}
+
+	insch <- &LABELInstr{ident: labelEnd}
 
 	context.CleanupScope(insch)
 

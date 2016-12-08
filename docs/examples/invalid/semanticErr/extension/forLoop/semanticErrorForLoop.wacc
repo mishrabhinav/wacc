@@ -1,0 +1,5 @@
+begin
+	for i = i+1, i<2, i=3 do
+		i=i+1
+	done
+end

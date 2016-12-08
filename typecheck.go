@@ -782,6 +782,41 @@ func (m *DoWhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
+func (m *ForStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	child := ts.Child()
+
+	switch t := m.init.(type) {
+	case *DeclareAssignStatement:
+		t.TypeCheck(child, errch)
+	default:
+		errch <- CreateForLoopError(m.init.Token(),
+			"Declare Assign statement expected")
+	}
+
+	m.cond.TypeCheck(child, errch)
+	boolT := m.cond.Type()
+
+	if !(BoolType{}.Match(boolT)) {
+		errch <- CreateTypeMismatchError(
+			m.cond.Token(),
+			BoolType{},
+			boolT,
+		)
+	}
+
+	switch t := m.after.(type) {
+	case *AssignStatement:
+		t.TypeCheck(child, errch)
+	default:
+		errch <- CreateForLoopError(m.after.Token(),
+			"Assign statement expected")
+	}
+
+	m.body.TypeCheck(child, errch)
+
+	m.BaseStatement.TypeCheck(ts, errch)
+}
+
 // TypeCheck checks whether the left hand is a valid assignment target.
 // The check propagated recursively.
 func (m *PairElemLHS) TypeCheck(ts *Scope, errch chan<- error) {
