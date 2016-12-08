@@ -399,78 +399,218 @@ func (m *UnaryOperatorChr) Optimise(context *OptimisationContext) Expression {
 // BINARY OPERATOR OPTIMISATION
 //------------------------------------------------------------------------------
 
+func (m *BinaryOperatorBase) optimiseBinary(context *OptimisationContext) {
+	m.lhs = m.lhs.Optimise(context)
+	m.rhs = m.rhs.Optimise(context)
+}
+
+func getIntLiters(binExpr BinaryOperator) (lhsv, rhsv int, ok bool) {
+	lhs, ok1 := binExpr.GetLHS().(*IntLiteral)
+	rhs, ok2 := binExpr.GetRHS().(*IntLiteral)
+
+	ok = ok1 && ok2
+	if ok {
+		lhsv = lhs.value
+		rhsv = rhs.value
+	}
+
+	return
+}
+
+func getBoolLiters(binExpr BinaryOperator) (lhsv, rhsv bool, ok bool) {
+	ok = true
+
+	switch binExpr.GetLHS().(type) {
+	case *BoolLiteralFalse:
+		lhsv = false
+	case *BoolLiteralTrue:
+		lhsv = true
+	default:
+		ok = false
+	}
+
+	switch binExpr.GetRHS().(type) {
+	case *BoolLiteralFalse:
+		rhsv = false
+	case *BoolLiteralTrue:
+		rhsv = true
+	default:
+		ok = false
+	}
+
+	return
+}
+
+func getCharLiters(binExpr BinaryOperator) (lhsv, rhsv byte, ok bool) {
+	lhs, ok1 := binExpr.GetLHS().(*CharLiteral)
+	rhs, ok2 := binExpr.GetRHS().(*CharLiteral)
+
+	ok = ok1 && ok2
+	if ok {
+		lhsv = lhs.char[0]
+		rhsv = rhs.char[0]
+	}
+
+	return
+}
+
+func toWACCBool(b bool) Expression {
+	if b {
+		return &BoolLiteralTrue{}
+	}
+	return &BoolLiteralFalse{}
+}
+
 //Optimise optimises for BinaryOperatorMult
 func (m *BinaryOperatorMult) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv * rhsv}
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorDiv
 func (m *BinaryOperatorDiv) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv / rhsv}
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorMod
 func (m *BinaryOperatorMod) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv % rhsv}
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorAdd
 func (m *BinaryOperatorAdd) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv + rhsv}
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorSub
 func (m *BinaryOperatorSub) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv - rhsv}
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorGreaterThan
 func (m *BinaryOperatorGreaterThan) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv > rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv > rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorGreaterEqual
 func (m *BinaryOperatorGreaterEqual) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv >= rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv >= rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorLessThan
 func (m *BinaryOperatorLessThan) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv < rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv < rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorLessEqual
 func (m *BinaryOperatorLessEqual) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv <= rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv <= rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorEqual
 func (m *BinaryOperatorEqual) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv == rhsv)
+	}
+	if lhsv, rhsv, ok := getBoolLiters(m); ok {
+		return toWACCBool(lhsv == rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv == rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorNotEqual
 func (m *BinaryOperatorNotEqual) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return toWACCBool(lhsv != rhsv)
+	}
+	if lhsv, rhsv, ok := getBoolLiters(m); ok {
+		return toWACCBool(lhsv != rhsv)
+	}
+	if lhsv, rhsv, ok := getCharLiters(m); ok {
+		return toWACCBool(lhsv != rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorAnd
 func (m *BinaryOperatorAnd) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getBoolLiters(m); ok {
+		return toWACCBool(lhsv && rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorBitAnd
 func (m *BinaryOperatorBitAnd) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
 	return m
 }
 
 //Optimise optimises for BinaryOperatorOr
 func (m *BinaryOperatorOr) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getBoolLiters(m); ok {
+		return toWACCBool(lhsv || rhsv)
+	}
 	return m
 }
 
 //Optimise optimises for BinaryOperatorBitOr
 func (m *BinaryOperatorBitOr) Optimise(context *OptimisationContext) Expression {
+	m.BinaryOperatorBase.optimiseBinary(context)
 	return m
 }
 
