@@ -420,6 +420,11 @@ func (stat *FunctionCallStat) istring(level int) string {
 		params)
 }
 
+func (stmt *EnumLHS) istring(level int) string {
+	//TODO
+	return ""
+}
+
 // Prints an if statement. Format:
 //   "if [cond]
 //    then [trueStat]*
