@@ -151,8 +151,10 @@ func main() {
 	// Perform semantic analysis on the AST
 	semanticAnalysis(ast)
 
-	// Perform optimisation on the AST
-	optimise(ast)
+	if flags.optimise {
+		// Perform optimisation on the AST
+		optimise(ast)
+	}
 
 	// Prints the AST in pretty format, if appropriate flag supplied
 	flags.PrintPrettyAST(ast)
