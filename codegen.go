@@ -146,6 +146,7 @@ type FunctionContext struct {
 	endLabels    []string
 	startLabels  []string
 	stackSizes   []int
+	enums        map[string]int
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
@@ -215,6 +216,17 @@ func (m *FunctionContext) PushStack(size int) {
 // PopStack decreases the stack size by size
 func (m *FunctionContext) PopStack(size int) {
 	m.stackSize -= size
+}
+
+func (m *FunctionContext) DeclareEnum(ident string, value int) {
+	if m.enums == nil {
+		m.enums = make(map[string]int)
+	}
+	m.enums[ident] = value
+}
+
+func (m *FunctionContext) RetrieveEnum(ident string) int {
+	return m.enums[ident]
 }
 
 // DeclareVar registers a new variable for use
@@ -595,6 +607,18 @@ func (m *AssignStatement) CodeGen(context *FunctionContext, insch chan<- Instr) 
 
 	context.FreeReg(rhsReg, insch)
 	context.FreeReg(lhsReg, insch)
+
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+//CodeGen generates code for EnumLHS
+func (m *EnumLHS) CodeGen(context *FunctionContext, insch chan<- Instr) {
+
+	for index := 0; index < len(m.enums); index++ {
+		ident := m.enums[index]
+		value := m.values[index]
+		context.DeclareEnum(ident, value.value)
+	}
 
 	m.BaseStatement.CodeGen(context, insch)
 }
