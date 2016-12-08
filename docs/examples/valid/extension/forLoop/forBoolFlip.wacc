@@ -1,0 +1,6 @@
+begin
+  for int i = 0 ; i < 3 ; i = i+1 do
+    println i
+  done
+end
+
