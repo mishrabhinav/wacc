@@ -376,6 +376,14 @@ func (m *FunctionContext) PeekStackSize() int {
 	return lastStackSize
 }
 
+// Returns difference between last stack size saved
+// and current one
+func (m *FunctionContext) GetStackSizeDifference() int {
+	previousStackSize := m.PeekStackSize()
+	difference := m.stackSize - previousStackSize
+	return difference
+}
+
 //-----------------------------------------------------------------------------
 // GLOBAL SUPPORT FUNCTIONS
 //-----------------------------------------------------------------------------
@@ -488,9 +496,7 @@ func (m *SkipStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 // --> B start_%l
 // --> [Codegen next instruction]
 func (m *ContinueStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
-	previousStackSize := context.PeekStackSize()
-
-	difference := context.stackSize - previousStackSize
+	difference := context.GetStackSizeDifference()
 
 	for _, op := range createImmediateValuesFor(difference) {
 		insch <- &ADDInstr{
@@ -513,9 +519,7 @@ func (m *ContinueStatement) CodeGen(context *FunctionContext, insch chan<- Instr
 // --> B end_%l
 // --> [CodeGen next instruction]
 func (m *BreakStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
-	previousStackSize := context.PeekStackSize()
-
-	difference := context.stackSize - previousStackSize
+	difference := context.GetStackSizeDifference()
 
 	for _, op := range createImmediateValuesFor(difference) {
 		insch <- &ADDInstr{
