@@ -1777,6 +1777,8 @@ func parseStatement(node *node32) (Statement, error) {
 		if nextStat := semi.next; nextStat != nil {
 			if next, err = parseStatement(nextStat.up); err == nil {
 				stm.SetNext(next)
+			} else {
+				return nil, err
 			}
 		}
 	}
