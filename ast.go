@@ -1703,25 +1703,27 @@ func parseStatement(node *node32) (Statement, error) {
 			switchs.cond.SetToken(&condNode.token32)
 		}
 
-		for caseNode := nextNode(onNode, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {
-			var expr Expression
-			if expr, err = parseExpr(caseNode.up); err != nil {
+		for caseNode := nextNode(onNode, ruleCASE); caseNode != nil; caseNode = nextNode(caseNode.next, ruleCASE) {
+			exprNode := nextNode(caseNode, ruleEXPR)
+
+			if expr, err := parseExpr(exprNode.up); err == nil {
+				switchs.cases = append(switchs.cases, expr)
+			} else {
 				return nil, err
 			}
-			switchs.cases = append(switchs.cases, expr)
 
 			stmNode := nextNode(caseNode, ruleSTAT)
 
-			var stat Statement
-			if stat, err = parseStatement(stmNode.up); err != nil {
+			if stat, err := parseStatement(stmNode.up); err == nil {
+				switchs.bodies = append(switchs.bodies, stat)
+			} else {
 				return nil, err
 			}
-			switchs.bodies = append(switchs.bodies, stat)
 
-			ftNode := nextNode(stmNode, ruleFALLTHROUGH)
+			ftNode := stmNode.next
 
 			ft := false
-			if ftNode != nil {
+			if ftNode != nil && ftNode.pegRule == ruleFALLTHROUGH {
 				ft = true
 			}
 			switchs.fts = append(switchs.fts, ft)
@@ -1735,6 +1737,8 @@ func parseStatement(node *node32) (Statement, error) {
 				return nil, err
 			}
 		}
+
+		node = nextNode(node, ruleEND)
 
 		stm = switchs
 	case ruleFOR:
