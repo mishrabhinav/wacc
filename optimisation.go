@@ -260,6 +260,17 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 		context.EndScope()
 	}
 
+	if m.trueStat != nil {
+		context.StartScope()
+		m.trueStat = m.trueStat.Optimise(context)
+		context.EndScope()
+	}
+	if m.falseStat != nil {
+		context.StartScope()
+		m.falseStat = m.falseStat.Optimise(context)
+		context.EndScope()
+	}
+
 	if m.trueStat == nil {
 		m.trueStat = m.falseStat
 		m.falseStat = nil
@@ -284,9 +295,15 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
 	context.StartCondScope()
 	m.body = m.body.Optimise(context)
-
 	m.cond = m.cond.Optimise(context)
 	context.EndScope()
+
+	if m.body != nil {
+		context.StartScope()
+		m.cond = m.cond.Optimise(context)
+		m.body = m.body.Optimise(context)
+		context.EndScope()
+	}
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
@@ -316,6 +333,11 @@ func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
 		context.StartCondScope()
 		m.bodies[i] = stm.Optimise(context)
 		context.EndScope()
+		if m.bodies[i] != nil {
+			context.StartScope()
+			m.bodies[i] = m.bodies[i].Optimise(context)
+			context.EndScope()
+		}
 	}
 
 	for i := 0; i < len(m.bodies); i++ {
@@ -343,6 +365,13 @@ func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
 
 	m.cond = m.cond.Optimise(context)
 	context.EndScope()
+
+	if m.body != nil {
+		context.StartScope()
+		m.cond = m.cond.Optimise(context)
+		m.body = m.body.Optimise(context)
+		context.EndScope()
+	}
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
