@@ -267,26 +267,6 @@ func (stmt AssignStatement) aststring(indent string) string {
 	return fmt.Sprintf("%v%v%v", declareStats, lhsIndent, rhsIndent)
 }
 
-// Prints the ENUM. Format:
-func (stmt EnumStatement) aststring(indent string) string {
-	declareStats := fmt.Sprintf("%vENUM\n", addMinToIndent(indent))
-	innerIndent := getGreaterIndent(indent)
-	doubleInnerIndent := getGreaterIndent(innerIndent)
-	typeStats := fmt.Sprintf("%vNAME\n", addMinToIndent(innerIndent))
-
-	membersStats := fmt.Sprintf("%vVARIABLES\n", addMinToIndent(innerIndent))
-
-	typeTmp := fmt.Sprintf("%v%v\n", addMinToIndent(doubleInnerIndent), stmt.ident)
-	waccTypeStats := fmt.Sprintf("%v%v", typeStats, typeTmp)
-
-	for index := 0; index < len(stmt.enums); index++ {
-		newStats := fmt.Sprintf("%v%v\n", addMinToIndent(doubleInnerIndent), stmt.enums[index])
-		membersStats = fmt.Sprintf("%v%v", membersStats, newStats)
-	}
-
-	return fmt.Sprintf("%v%v%v", declareStats, waccTypeStats, membersStats)
-}
-
 // Prints an IfStatement. Format:
 // - IF
 //   - CONDITION
@@ -620,7 +600,7 @@ func (b BoolType) aststring(indent string) string {
 // - TYPE
 //   - enum
 func (e EnumType) aststring(indent string) string {
-	tmp := fmt.Sprintf("enum %v", e.name)
+	tmp := fmt.Sprintf("enum")
 	return addType(indent, tmp)
 }
 
