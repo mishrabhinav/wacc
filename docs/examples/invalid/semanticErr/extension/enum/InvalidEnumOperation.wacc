@@ -4,7 +4,7 @@ begin
     B;
     C;
     D;
-  end;
+  end
 
   bool x = foo->A >= foo->B
 end

@@ -4,5 +4,6 @@ begin
     B;
     C;
     D;
-  end;
+  end
+  skip
 end

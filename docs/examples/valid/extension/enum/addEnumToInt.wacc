@@ -4,7 +4,8 @@ begin
     B;
     C;
     D;
-  end;
+  end
 
-  int x = foo->A + foo->B;
+  int a = foo->A + 2;
+  println a
 end
