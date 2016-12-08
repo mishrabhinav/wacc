@@ -1,0 +1,9 @@
+begin
+	int i = 0;
+	do
+		i = i + 1;
+		println i;
+		continue;
+		println 3
+	while i < 3 done
+end

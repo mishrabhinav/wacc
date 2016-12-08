@@ -1,0 +1,11 @@
+begin
+	for int i = 0, i < 5, i=i+1 do
+		if i == 3
+		then
+			break;
+		else
+			println i
+		fi;
+	done
+end
+
