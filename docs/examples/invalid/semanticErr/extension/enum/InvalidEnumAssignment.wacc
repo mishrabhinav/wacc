@@ -1,0 +1,10 @@
+begin
+  enum foo {
+    A;
+    B;
+    C;
+    D;
+  };
+
+  foo x = foo->A;
+end
