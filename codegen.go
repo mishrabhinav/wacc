@@ -855,13 +855,7 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 	// Codegen Condition
 
 	condReg := alloc.GetReg(insch)
-
-	switch m.cond.(type) {
-	case *BoolLiteralTrue:
-		insch <- &MOVInstr{dest: condReg, source: &ImmediateOperand{1}}
-	default:
-		m.cond.CodeGen(alloc, condReg, insch)
-	}
+	m.cond.CodeGen(alloc, condReg, insch)
 
 	for index := 0; index < len(m.cases); index++ {
 		maxIndex = index

@@ -1657,6 +1657,7 @@ func parseStatement(node *node32) (Statement, error) {
 			}
 		} else {
 			switchs.cond = &BoolLiteralTrue{}
+			switchs.cond.SetToken(&condNode.token32)
 		}
 
 		for caseNode := nextNode(onNode, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {

@@ -1,0 +1,12 @@
+begin
+  switch {
+  case false:
+    println "false"
+  case true:
+    println "false"
+  case 2:
+    println "false"
+  default:
+    println "true"
+  }
+end

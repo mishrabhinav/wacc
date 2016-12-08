@@ -730,14 +730,9 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the statement has any type mismatches in expressions
 // and assignments. The check is propagated recursively
 func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
-	var condT Type
 
-	if m.cond != nil {
-		m.cond.TypeCheck(ts, errch)
-		condT = m.cond.Type()
-	} else {
-		condT = BoolType{}
-	}
+	m.cond.TypeCheck(ts, errch)
+	condT := m.cond.Type()
 
 	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT)) {
 		errch <- CreateTypeMismatchError(
@@ -751,6 +746,7 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		m.cases[index].TypeCheck(ts.Child(), errch)
 
 		exprT := m.cases[index].Type()
+
 		if !condT.Match(exprT) {
 			errch <- CreateTypeMismatchError(
 				m.cond.Token(),
