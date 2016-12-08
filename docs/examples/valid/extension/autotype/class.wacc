@@ -1,0 +1,16 @@
+begin
+  class A is
+    void init() is
+      skip
+    end
+
+    string hello() is
+      var str = "Hello World" ;
+      return str
+    end
+  end
+
+  var cls = new A() ;
+  var s = call cls->hello() ;
+  println s
+end
