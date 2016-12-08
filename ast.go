@@ -1551,9 +1551,72 @@ func parseStatement(node *node32) (Statement, error) {
 			return nil, err
 		}
 
-		rhsNode := nextNode(node, ruleASSIGNRHS)
-		if assign.rhs, err = parseRHS(rhsNode.up); err != nil {
-			return nil, err
+		if nextNode(node, ruleEQU) != nil {
+			rhsNode := nextNode(node, ruleASSIGNRHS)
+			if assign.rhs, err = parseRHS(rhsNode.up); err != nil {
+				return nil, err
+			}
+
+		} else if opOpNode := nextNode(node, ruleOPOP); opOpNode != nil {
+			rhs := new(ExpressionRHS)
+			lhs, err := parseExpr(lhsNode.up)
+			if err != nil {
+				return nil, err
+			}
+
+			switch opOpNode.up.pegRule {
+			case rulePLUSPLUS:
+				one := &IntLiteral{value: 1}
+				binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: one, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleMINUSMINUS:
+				one := &IntLiteral{value: 1}
+				binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: one, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleSTARSTAR:
+				binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: lhs, lhs: lhs}}
+				rhs.expr = binOp
+			}
+
+			assign.rhs = rhs
+		} else {
+			rhs := new(ExpressionRHS)
+			lhs, err := parseExpr(lhsNode.up)
+			if err != nil {
+				return nil, err
+			}
+
+			exprNode := nextNode(node, ruleEXPR)
+			expr, err := parseExpr(exprNode.up)
+			if err != nil {
+				return nil, err
+			}
+
+			switch nextNode(node, ruleOPEQU).up.pegRule {
+			case rulePLUSEQU:
+				binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleMINUSEQU:
+				binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleSTAREQU:
+				binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleDIVEQU:
+				binOp := &BinaryOperatorDiv{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+				rhs.expr = binOp
+
+			case ruleMODEQU:
+				binOp := &BinaryOperatorMod{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+				rhs.expr = binOp
+			}
+
+			assign.rhs = rhs
 		}
 
 		stm = assign
