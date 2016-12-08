@@ -469,6 +469,9 @@ func (m *ExpressionRHS) Optimise(context *OptimisationContext) RHS {
 
 //Optimise optimises for NewInstanceRHS
 func (m *NewInstanceRHS) Optimise(context *OptimisationContext) RHS {
+	for i, arg := range m.args {
+		m.args[i] = arg.Optimise(context)
+	}
 	return m
 }
 
