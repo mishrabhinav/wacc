@@ -139,7 +139,7 @@ type FunctionContext struct {
 	builtInFuncs *BuiltInFuncs
 	fname        string
 	labelCounter int
-	regs         []*ARMGenReg
+	regs         []Reg
 	stackSize    int
 	stack        []map[string]int
 	members      map[string]int
@@ -152,10 +152,10 @@ type FunctionContext struct {
 // purpose registers
 func CreateFunctionContext() *FunctionContext {
 	return &FunctionContext{
-		regs: []*ARMGenReg{
+		regs: []Reg{
 			r4, r5, r6, r7, r8, r9, r10, r11,
 		},
-		regUsage: []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		regUsage: make([]int, 16),
 	}
 }
 
@@ -180,12 +180,10 @@ func (m *FunctionContext) GetReg(insch chan<- Instr) Reg {
 }
 
 // FreeReg frees a register loading back the previous value if necessary
-func (m *FunctionContext) FreeReg(re Reg, insch chan<- Instr) {
-	if re.Reg() != m.regs[len(m.regs)-1].Reg() {
+func (m *FunctionContext) FreeReg(r Reg, insch chan<- Instr) {
+	if r.Reg() != m.regs[len(m.regs)-1].Reg() {
 		panic("Register free order mismatch")
 	}
-
-	r := re.(*ARMGenReg)
 
 	if m.regUsage[r.Reg()] > 1 {
 		insch <- &POPInstr{
@@ -198,7 +196,7 @@ func (m *FunctionContext) FreeReg(re Reg, insch chan<- Instr) {
 
 	m.regUsage[r.Reg()]--
 
-	m.regs = append([]*ARMGenReg{r}, m.regs[:len(m.regs)-1]...)
+	m.regs = append([]Reg{r}, m.regs[:len(m.regs)-1]...)
 }
 
 // GetUniqueLabelSuffix returns a new unique label suffix
