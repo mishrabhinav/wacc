@@ -316,6 +316,14 @@ func (m *VarLHS) Type() Type {
 	return m.wtype
 }
 
+// EnumLHS is the struct for an enum on the lhs of an assignment
+type EnumLHS struct {
+	BaseStatement
+	ident  string
+	enums  []string
+	values []IntLiteral
+}
+
 // RHS is the interface for the right hand side of an assignment
 type RHS interface {
 	aststring(indent string) string
@@ -1791,6 +1799,33 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = whiles
+	case ruleENUMDEF:
+		target := new(EnumLHS)
+
+		target.SetToken(&node.token32)
+
+		identNode := nextNode(node.up, ruleIDENT)
+		target.ident = identNode.match
+
+		for enumNode := nextNode(node.up, ruleENUMASSIGN); enumNode != nil; enumNode = nextNode(enumNode.next, ruleENUMASSIGN) {
+			var tmpIdent string
+			var tmpInt IntLiteral
+			//var err error
+
+			tmpIdentNode := nextNode(enumNode.up, ruleIDENT)
+			tmpIdent = tmpIdentNode.match
+
+			tmpInt = IntLiteral{value: len(target.enums)}
+
+			/*if expr, err = parse(exprNode.up); err != nil {
+				return nil, err
+			} */
+			target.enums = append(target.enums, tmpIdent)
+			target.values = append(target.values, tmpInt)
+
+		}
+
+		stm = target
 	case ruleSWITCH:
 		switchs := new(SwitchStatement)
 
