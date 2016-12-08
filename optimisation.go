@@ -8,6 +8,64 @@ package main
 
 // OptimisationContext holds information that can be useful during optimisation
 type OptimisationContext struct {
+	conditional []bool
+	literals    []map[string]Expression
+}
+
+// StartScope starts a new scope where variables can be declared
+func (m *OptimisationContext) StartScope() {
+	m.conditional = append([]bool{false}, m.conditional...)
+	m.literals = append([]map[string]Expression{nil}, m.literals...)
+}
+
+// StartCondScope starts a new scope where variables can be assigned but
+// execution is conditional. All assignments escaping it taint the variables
+func (m *OptimisationContext) StartCondScope() {
+	m.conditional = append([]bool{true}, m.conditional...)
+	m.literals = append([]map[string]Expression{nil}, m.literals...)
+}
+
+// EndScope discards the last opened scope
+func (m *OptimisationContext) EndScope() {
+	m.conditional = m.conditional[1:]
+	m.literals = m.literals[1:]
+}
+
+// DeclareLiteral assigns a literal expression to an identifier in the scope
+func (m *OptimisationContext) DeclareLiteral(ident string, expr Expression) {
+	if m.literals[0] == nil {
+		m.literals[0] = make(map[string]Expression)
+	}
+	m.literals[0][ident] = expr
+}
+
+// AssignLiteral assigns a literal expression to an identifier in some scope
+func (m *OptimisationContext) AssignLiteral(ident string, expr Expression) {
+	for i, lmap := range m.literals {
+		if m.conditional[i] {
+			expr = nil
+		}
+		if _, ok := lmap[ident]; ok {
+			lmap[ident] = expr
+		}
+	}
+}
+
+// LookupLiteral looks for a literal for the identifier in the scope
+// ok is true if found and has value
+func (m *OptimisationContext) LookupLiteral(ident string) (Expression, bool) {
+	for i, lmap := range m.literals {
+		if m.conditional[i] {
+			return nil, false
+		}
+		if expr, ok := lmap[ident]; ok {
+			if expr != nil {
+				return expr, ok
+			}
+			return nil, false
+		}
+	}
+	return nil, false
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +83,9 @@ func (m *SkipStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise for block statements
 func (m *BlockStatement) Optimise(context *OptimisationContext) Statement {
+	context.StartScope()
 	m.body = m.body.Optimise(context)
+	context.EndScope()
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
@@ -43,6 +103,21 @@ func (m *BlockStatement) Optimise(context *OptimisationContext) Statement {
 func (m *DeclareAssignStatement) Optimise(context *OptimisationContext) Statement {
 	m.rhs = m.rhs.Optimise(context)
 
+	switch eRHS := m.rhs.(type) {
+	case *ExpressionRHS:
+		switch e := eRHS.expr.(type) {
+		case *IntLiteral,
+			*CharLiteral,
+			*BoolLiteralTrue,
+			*BoolLiteralFalse:
+			context.DeclareLiteral(m.ident, e)
+		default:
+			context.DeclareLiteral(m.ident, nil)
+		}
+	default:
+		context.DeclareLiteral(m.ident, nil)
+	}
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -55,6 +130,23 @@ func (m *AssignStatement) Optimise(context *OptimisationContext) Statement {
 	m.target = m.target.Optimise(context)
 	m.rhs = m.rhs.Optimise(context)
 
+	if eLHS, lok := m.target.(*VarLHS); lok {
+		switch eRHS := m.rhs.(type) {
+		case *ExpressionRHS:
+			switch e := eRHS.expr.(type) {
+			case *IntLiteral,
+				*CharLiteral,
+				*BoolLiteralTrue,
+				*BoolLiteralFalse:
+				context.AssignLiteral(eLHS.ident, e)
+			default:
+				context.AssignLiteral(eLHS.ident, nil)
+			}
+		default:
+			context.AssignLiteral(eLHS.ident, nil)
+		}
+	}
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}
@@ -65,6 +157,10 @@ func (m *AssignStatement) Optimise(context *OptimisationContext) Statement {
 //Optimise optimises for ReadStatement
 func (m *ReadStatement) Optimise(context *OptimisationContext) Statement {
 	m.target = m.target.Optimise(context)
+
+	if eLHS, lok := m.target.(*VarLHS); lok {
+		context.AssignLiteral(eLHS.ident, nil)
+	}
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
@@ -155,9 +251,13 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 		return block.Optimise(context)
 	}
 
+	context.StartCondScope()
 	m.trueStat = m.trueStat.Optimise(context)
+	context.EndScope()
 	if m.falseStat != nil {
+		context.StartCondScope()
 		m.falseStat = m.falseStat.Optimise(context)
+		context.EndScope()
 	}
 
 	if m.trueStat == nil {
@@ -182,9 +282,11 @@ func (m *IfStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for WhileStatement
 func (m *WhileStatement) Optimise(context *OptimisationContext) Statement {
-	m.cond = m.cond.Optimise(context)
-
+	context.StartCondScope()
 	m.body = m.body.Optimise(context)
+
+	m.cond = m.cond.Optimise(context)
+	context.EndScope()
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
@@ -210,8 +312,25 @@ func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
 		m.cases[i] = cs.Optimise(context)
 	}
 
+	for i, stm := range m.bodies {
+		context.StartCondScope()
+		m.bodies[i] = stm.Optimise(context)
+		context.EndScope()
+	}
+
+	for i := 0; i < len(m.bodies); i++ {
+		if m.bodies[i] == nil {
+			m.bodies = append(m.bodies[:i], m.bodies[i+1:]...)
+			m.cases = append(m.cases[:i], m.cases[i+1:]...)
+		}
+	}
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
+	}
+
+	if len(m.bodies) == 0 {
+		return m.next
 	}
 
 	return m
@@ -219,9 +338,11 @@ func (m *SwitchStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for DoWhileStatement
 func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
-	m.cond = m.cond.Optimise(context)
-
+	context.StartCondScope()
 	m.body = m.body.Optimise(context)
+
+	m.cond = m.cond.Optimise(context)
+	context.EndScope()
 
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
@@ -328,6 +449,12 @@ func (m *NewInstanceRHS) Optimise(context *OptimisationContext) RHS {
 
 //Optimise optimises for Ident
 func (m *Ident) Optimise(context *OptimisationContext) Expression {
+	if liter, ok := context.LookupLiteral(m.ident); ok {
+		if !m.Type().Match(liter.Type()) {
+			panic("replacing wrong type")
+		}
+		return liter
+	}
 	return m
 }
 
@@ -636,7 +763,10 @@ func (m *ExprParen) Optimise(context *OptimisationContext) Expression {
 func (m *FunctionDef) Optimise() <-chan interface{} {
 	ch := make(chan interface{})
 	go func() {
-		m.body = m.body.Optimise(&OptimisationContext{})
+		ctx := &OptimisationContext{}
+		ctx.StartScope()
+		m.body = m.body.Optimise(ctx)
+		ctx.EndScope()
 		close(ch)
 	}()
 	return ch
@@ -653,7 +783,12 @@ func (m *AST) Optimise() {
 	for _, f := range m.functions {
 		chs = append(chs, f.Optimise())
 	}
-	m.main = m.main.Optimise(&OptimisationContext{})
+	{
+		ctx := &OptimisationContext{}
+		ctx.StartScope()
+		m.main = m.main.Optimise(ctx)
+		ctx.EndScope()
+	}
 
 	for _, ch := range chs {
 		<-ch
