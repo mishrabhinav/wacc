@@ -69,6 +69,23 @@ func (m IntType) MangleSymbol() string {
 	return m.String()
 }
 
+// EnumType is the WACC type for booleans
+type EnumType struct {
+	name string
+}
+
+// Prints enum Types. Format:
+//   "enum + *name*"
+func (e EnumType) String() string {
+	return fmt.Sprintf("enum %v", e.name)
+}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (e EnumType) MangleSymbol() string {
+	return e.String()
+}
+
 // BoolType is the WACC type for booleans
 type BoolType struct{}
 
@@ -322,6 +339,11 @@ type EnumLHS struct {
 	ident  string
 	enums  []string
 	values []IntLiteral
+}
+
+// Type returns the Type of the LHS
+func (m *EnumLHS) Type() Type {
+	return &EnumType{m.ident}
 }
 
 // RHS is the interface for the right hand side of an assignment
@@ -634,6 +656,18 @@ type IntLiteral struct {
 // Type returns the Type of the expression
 func (m *IntLiteral) Type() Type {
 	return IntType{}
+}
+
+// EnumLiteral is the struct to represent an integer literal
+type EnumLiteral struct {
+	TokenBase
+	ident string
+	value string
+}
+
+// Type returns the Type of the expression
+func (m *EnumLiteral) Type() Type {
+	return &EnumType{m.ident}
 }
 
 // BoolLiteralTrue is the struct to represent a true boolean literal
@@ -1210,6 +1244,12 @@ func parseExpr(node *node32) (Expression, error) {
 			push(&NullPair{})
 		case ruleIDENT:
 			push(&Ident{ident: enode.match})
+		case ruleENUMLITER:
+			enumLiter := &EnumLiteral{}
+			enumLiter.ident = nextNode(enode.up, ruleIDENT).match
+			enumLiter.value = nextNode(enode.up.next, ruleIDENT).match
+
+			push(enumLiter)
 		case ruleARRAYELEM:
 			arrElem, err := parseArrayElem(enode.up)
 			if err != nil {
@@ -1456,6 +1496,8 @@ func parseBaseType(node *node32) (Type, error) {
 		return VoidType{}, nil
 	case ruleCLASSTYPE:
 		return &ClassType{name: node.up.match}, nil
+	case ruleENUMTYPE:
+		return &EnumType{name: node.up.next.match}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
