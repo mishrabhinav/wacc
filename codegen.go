@@ -1472,6 +1472,12 @@ func (m *StringLiteral) CodeGen(context *FunctionContext, target Reg, insch chan
 		LoadInstr: LoadInstr{reg: target, value: &BasicLoadOperand{msg}}}
 }
 
+//CodeGen generates code for EnumLiteral
+func (m *EnumLiteral) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
+	enumVal := context.RetrieveEnum(m.value)
+	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{enumVal}}
+}
+
 //CodeGen generates code for PairLiteral
 // --> LDR r0, =8
 // --> BL malloc
@@ -1942,6 +1948,11 @@ func (m *Ident) Weight() int {
 
 //Weight returns weight of IntLiteral
 func (m *IntLiteral) Weight() int {
+	return 1
+}
+
+//Weight returns weight of IntLiteral
+func (m *EnumLiteral) Weight() int {
 	return 1
 }
 
