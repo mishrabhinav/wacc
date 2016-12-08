@@ -218,6 +218,21 @@ func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for ForStatement
 func (m *ForStatement) Optimise(context *OptimisationContext) Statement {
+	context.StartScope()
+	m.init = m.init.Optimise(context)
+	context.StartCondScope()
+	m.cond = m.cond.Optimise(context)
+	m.after = m.after.Optimise(context)
+	m.body = m.body.Optimise(context)
+	context.EndScope()
+	context.EndScope()
+
+	context.StartScope()
+	m.cond = m.cond.Optimise(context)
+	m.body = m.body.Optimise(context)
+	m.after = m.after.Optimise(context)
+	context.EndScope()
+
 	if m.next != nil {
 		m.SetNext(m.next.Optimise(context))
 	}

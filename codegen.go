@@ -969,7 +969,9 @@ func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{cond: condNE, label: labelEnd}
 
 	//Body
-	m.body.CodeGen(context, insch)
+	if m.body != nil {
+		m.body.CodeGen(context, insch)
+	}
 
 	// After
 	m.after.CodeGen(context, insch)
