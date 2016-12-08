@@ -242,11 +242,15 @@ func (m *ForStatement) Optimise(context *OptimisationContext) Statement {
 
 //Optimise optimises for PairElemLHS
 func (m *PairElemLHS) Optimise(context *OptimisationContext) LHS {
+	m.expr = m.expr.Optimise(context)
 	return m
 }
 
 //Optimise optimises for ArrayLHS
 func (m *ArrayLHS) Optimise(context *OptimisationContext) LHS {
+	for i, index := range m.index {
+		m.index[i] = index.Optimise(context)
+	}
 	return m
 }
 
@@ -257,26 +261,36 @@ func (m *VarLHS) Optimise(context *OptimisationContext) LHS {
 
 //Optimise optimises for PairLiterRHS
 func (m *PairLiterRHS) Optimise(context *OptimisationContext) RHS {
+	m.fst = m.fst.Optimise(context)
+	m.snd = m.snd.Optimise(context)
 	return m
 }
 
 //Optimise optimises for ArrayLiterRHS
 func (m *ArrayLiterRHS) Optimise(context *OptimisationContext) RHS {
+	for i, elem := range m.elements {
+		m.elements[i] = elem.Optimise(context)
+	}
 	return m
 }
 
 //Optimise optimises for PairElemRHS
 func (m *PairElemRHS) Optimise(context *OptimisationContext) RHS {
+	m.expr = m.expr.Optimise(context)
 	return m
 }
 
 //Optimise optimises for FunctionCallRHS
 func (m *FunctionCallRHS) Optimise(context *OptimisationContext) RHS {
+	for i, arg := range m.args {
+		m.args[i] = arg.Optimise(context)
+	}
 	return m
 }
 
 //Optimise optimises for ExpressionRHS
 func (m *ExpressionRHS) Optimise(context *OptimisationContext) RHS {
+	m.expr = m.expr.Optimise(context)
 	return m
 }
 
