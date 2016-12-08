@@ -5,7 +5,7 @@
 
 begin
 	int n = 0;
-	for int n = 0; n != 1; n=1 do
+	for int n = 0, n != 1, n=1 do
 		println "Change n"
 	done
 end
