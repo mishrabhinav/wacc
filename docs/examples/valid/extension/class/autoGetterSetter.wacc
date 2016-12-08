@@ -11,8 +11,7 @@
 
   string paint = "Silver";
 
-  Car audi = new Car();
-  call audi->init(4, paint);
+  Car audi = new Car(4, paint);
 
   paint = "Red";
 

@@ -26,8 +26,7 @@
     int c;
 
     void init(int Aa, int Ab, int c) {
-      @a = new A() ;
-      call @a->init(Aa, Ab) ;
+      @a = new A(Aa, Ab) ;
       @c = c
     }
 
@@ -40,9 +39,7 @@
     }
   }
 
-  B b = new B() ;
-
-  call b->init(2, 3, 4) ;
+  B b = new B(2, 3, 4) ;
 
   A a = call b->a() ;
   call a->foo()
