@@ -1656,7 +1656,7 @@ func parseStatement(node *node32) (Statement, error) {
 				return nil, err
 			}
 		} else {
-			switchs.cond = nil
+			switchs.cond = &BoolLiteralTrue{}
 		}
 
 		for caseNode := nextNode(onNode, ruleEXPR); caseNode != nil; caseNode = nextNode(caseNode.next, ruleEXPR) {

@@ -856,10 +856,11 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 
 	condReg := alloc.GetReg(insch)
 
-	if m.cond != nil {
-		m.cond.CodeGen(alloc, condReg, insch)
-	} else {
+	switch m.cond.(type) {
+	case *BoolLiteralTrue:
 		insch <- &MOVInstr{dest: condReg, source: &ImmediateOperand{1}}
+	default:
+		m.cond.CodeGen(alloc, condReg, insch)
 	}
 
 	for index := 0; index < len(m.cases); index++ {
