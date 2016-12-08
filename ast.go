@@ -333,8 +333,8 @@ func (m *VarLHS) Type() Type {
 	return m.wtype
 }
 
-// EnumLHS is the struct for an enum on the lhs of an assignment
-type EnumLHS struct {
+// EnumStatement is the struct for an enum on the lhs of an assignment
+type EnumStatement struct {
 	BaseStatement
 	ident  string
 	enums  []string
@@ -342,7 +342,7 @@ type EnumLHS struct {
 }
 
 // Type returns the Type of the LHS
-func (m *EnumLHS) Type() Type {
+func (m *EnumStatement) Type() Type {
 	return &EnumType{m.ident}
 }
 
@@ -1842,7 +1842,7 @@ func parseStatement(node *node32) (Statement, error) {
 
 		stm = whiles
 	case ruleENUMDEF:
-		target := new(EnumLHS)
+		target := new(EnumStatement)
 
 		target.SetToken(&node.token32)
 

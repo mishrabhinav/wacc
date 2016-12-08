@@ -268,7 +268,7 @@ func (stmt AssignStatement) aststring(indent string) string {
 }
 
 // Prints the ENUM. Format:
-func (stmt EnumLHS) aststring(indent string) string {
+func (stmt EnumStatement) aststring(indent string) string {
 	declareStats := fmt.Sprintf("%vENUM\n", addMinToIndent(indent))
 	innerIndent := getGreaterIndent(indent)
 	doubleInnerIndent := getGreaterIndent(innerIndent)

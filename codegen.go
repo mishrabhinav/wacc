@@ -611,8 +611,8 @@ func (m *AssignStatement) CodeGen(context *FunctionContext, insch chan<- Instr) 
 	m.BaseStatement.CodeGen(context, insch)
 }
 
-//CodeGen generates code for EnumLHS
-func (m *EnumLHS) CodeGen(context *FunctionContext, insch chan<- Instr) {
+//CodeGen generates code for EnumStatement
+func (m *EnumStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 
 	for index := 0; index < len(m.enums); index++ {
 		ident := m.enums[index]
