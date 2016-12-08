@@ -1070,6 +1070,61 @@ func (m *NewInstanceRHS) TypeCheck(ts *Scope, errch chan<- error) {
 	} else {
 		m.wtype = c
 	}
+
+	for _, arg := range m.args {
+		arg.TypeCheck(ts, errch)
+	}
+
+	var classname = ct.name
+
+	var overloads map[string]*FunctionDef
+	if len(classname) > 0 {
+		overloads = ts.LookupMethod(classname, "init")
+	}
+
+	if overloads == nil {
+		errch <- CreateCallingNonFunctionError(
+			m.Token(),
+			"init",
+		)
+	}
+
+	found := false
+	constr := ""
+
+	for symbol, fun := range overloads {
+		if len(fun.params) != len(m.args) {
+			continue
+		}
+
+		match := true
+
+		for i := 0; i < len(fun.params) && i < len(m.args) && match; i++ {
+			paramT := fun.params[i].wtype
+			argT := m.args[i].Type()
+			if !argT.Match(paramT) {
+				match = false
+			}
+		}
+
+		if match && found {
+			errch <- CreateAmbigousFunctionCallError(
+				m.Token(),
+				"ident",
+			)
+		}
+
+		if match {
+			found = true
+			constr = symbol
+		}
+	}
+
+	if !found {
+		errch <- CreateNoSuchOverloadError(m.Token(), "init")
+	}
+
+	m.constr = constr
 }
 
 // TypeCheck checks expression whether all operators get the type they can
