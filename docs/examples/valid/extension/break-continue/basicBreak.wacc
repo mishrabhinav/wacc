@@ -1,0 +1,10 @@
+begin
+	int i = 0;
+	while i < 3 do
+		i = i+1;
+		break;
+		println 0
+	done;
+	println i
+end
+
