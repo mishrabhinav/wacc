@@ -162,6 +162,46 @@ func (e *SemanticError) Error() string {
 	)
 }
 
+// ContinueNotInLoopError is a semantic error when a continue
+// statement is used outside a loop
+type ContinueNotInLoopError struct {
+	SemanticError
+}
+
+func (e *ContinueNotInLoopError) Error() string {
+	return fmt.Sprintf(
+		"%s: Continue cannot be used outside a loop",
+		e.SemanticError.Error(),
+	)
+}
+
+// CreateContinueNotInLoopError creates an error from the token
+func CreateContinueNotInLoopError(token *token32) error {
+	return &ContinueNotInLoopError{
+		SemanticError: CreateSemanticError(token),
+	}
+}
+
+// BreakNotInLoopError is a semantic error when a break
+// statement is used outside a loop
+type BreakNotInLoopError struct {
+	SemanticError
+}
+
+func (e *BreakNotInLoopError) Error() string {
+	return fmt.Sprintf(
+		"%s: Break cannot be used outside a loop",
+		e.SemanticError.Error(),
+	)
+}
+
+// CreateBreakNotInLoopError creates an error from the token
+func CreateBreakNotInLoopError(token *token32) error {
+	return &BreakNotInLoopError{
+		SemanticError: CreateSemanticError(token),
+	}
+}
+
 // VariableRedeclarationError is a semantic error when a variable is declared
 // again within the same scope
 type VariableRedeclarationError struct {

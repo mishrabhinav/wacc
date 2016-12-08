@@ -20,6 +20,7 @@ type Scope struct {
 	funcs      map[string]map[string]map[string]*FunctionDef
 	class      *ClassType
 	returnType Type
+	loop       int
 }
 
 // CreateRootScope creates a global scope that has no parent
@@ -46,6 +47,7 @@ func (m *Scope) Child() *Scope {
 		funcs:      m.funcs,
 		class:      m.class,
 		returnType: m.returnType,
+		loop:	    m.loop,
 	}
 }
 
@@ -721,8 +723,11 @@ func (m *WhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 			boolT,
 		)
 	}
+	ts.loop = ts.loop + 1
 
 	m.body.TypeCheck(ts.Child(), errch)
+
+	ts.loop = ts.loop - 1
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
@@ -779,12 +784,15 @@ func (m *DoWhileStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		)
 	}
 
+	ts.loop = ts.loop + 1
 	m.body.TypeCheck(ts.Child(), errch)
+	ts.loop = ts.loop - 1
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }
 
 func (m *ForStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	ts.loop = ts.loop + 1
 	child := ts.Child()
 
 	switch t := m.init.(type) {
@@ -815,6 +823,27 @@ func (m *ForStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	}
 
 	m.body.TypeCheck(child, errch)
+	ts.loop = ts.loop - 1
+
+	m.BaseStatement.TypeCheck(ts, errch)
+}
+
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
+func (m *ContinueStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	if ts.loop == 0 {
+		errch <- CreateContinueNotInLoopError(m.Token())
+	}
+
+	m.BaseStatement.TypeCheck(ts, errch)
+}
+
+// TypeCheck checks whether the statement has any type mismatches in expressions
+// and assignments. The check is propagated recursively
+func (m *BreakStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	if ts.loop == 0 {
+		errch <- CreateBreakNotInLoopError(m.Token())
+	}
 
 	m.BaseStatement.TypeCheck(ts, errch)
 }

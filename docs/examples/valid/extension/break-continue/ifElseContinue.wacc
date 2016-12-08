@@ -1,0 +1,11 @@
+begin
+	int i = 0;
+	while i < 5 do
+		i = i+1;
+		if i == 1 then
+			continue
+		else
+			println i
+		fi
+	done
+end

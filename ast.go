@@ -242,6 +242,16 @@ type SkipStatement struct {
 	BaseStatement
 }
 
+// Continue Statement is the struct for WACC continue statement
+type ContinueStatement struct {
+	BaseStatement
+}
+
+// BreakStatement is the struct for WACC break statement
+type BreakStatement struct {
+	BaseStatement
+}
+
 // BlockStatement is the struct for creating new block scope
 type BlockStatement struct {
 	BaseStatement
@@ -1499,6 +1509,10 @@ func parseStatement(node *node32) (Statement, error) {
 	switch node.pegRule {
 	case ruleSKIP:
 		stm = &SkipStatement{}
+	case ruleCONTINUE:
+		stm = &ContinueStatement{}
+	case ruleBREAK:
+		stm = &BreakStatement{}
 	case ruleBEGIN:
 		block := new(BlockStatement)
 

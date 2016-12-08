@@ -23,6 +23,8 @@ PARAMLIST	<- PARAM ( COMMA PARAM )*
 PARAM		<- TYPE IDENT SPACE
 
 STAT		<- (SKIP
+		/ CONTINUE
+		/ BREAK
 		/ BEGIN STAT END
 		/ TYPE IDENT SPACE EQU ASSIGNRHS
 		/ ASSIGNLHS EQU ASSIGNRHS
@@ -151,12 +153,14 @@ SPACE		<- ( [ \t\r\n]
 # Keywords
 #-------------------------------------------------------------------------------
 
+BREAK		<- 'break'	!IDCHAR SPACE
 BOOL		<- 'bool'	!IDCHAR SPACE
 CALL		<- 'call'	!IDCHAR SPACE
 CASE		<- 'case'	!IDCHAR SPACE
 CHAR		<- 'char'	!IDCHAR SPACE
 CHR		<- 'chr'	!IDCHAR SPACE
 CLASS		<- 'class'	!IDCHAR SPACE
+CONTINUE	<- 'continue'   !IDCHAR SPACE
 DEFAULT		<- 'default'	!IDCHAR SPACE
 DO		<- 'do'		!IDCHAR SPACE
 DONE		<- 'done'	!IDCHAR SPACE
@@ -206,11 +210,13 @@ FI		<- ('fi'
 		/ RCUR)		!IDCHAR SPACE
 
 KEYWORD		<- ('begin'
+		/ 'break'
 		/ 'bool'
 		/ 'call'
 		/ 'char'
 		/ 'chr'
 		/ 'class'
+		/ 'continue'
 		/ 'do'
 		/ 'done'
 		/ 'else'

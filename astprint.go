@@ -615,6 +615,16 @@ func (stmt SkipStatement) aststring(indent string) string {
 	return addIndAndNewLine(indent, "SKIP")
 }
 
+// Prints a CONTINUE statement, Format:
+// - CONTINUE
+func (stat ContinueStatement) aststring(indent string) string {
+	return addIndAndNewLine(indent, "CONTINUE")
+}
+
+func (stat BreakStatement) aststring(indent string) string {
+	return addIndAndNewLine(indent, "BREAK")
+}
+
 // Prints a useless BlockStatement.
 func (stmt BlockStatement) aststring(indent string) string {
 	return fmt.Sprintf("")

@@ -1,0 +1,41 @@
+begin
+	string bc = "Before continue";
+	string ac = "After continue";
+	string bb = "Before break";
+	string ab = "After break";
+        string nh = "Nothing here";
+
+# Should not throw any error
+# Because shadowing is allowed in child scope
+
+	int i = 10;
+
+	for int i = 0, i < 5, i=i+1 do
+
+		if i < 3
+		then
+			println bc;
+			println i;
+			continue;
+			println ac
+		else
+			if i < 4
+			then
+				println nh;
+				println i
+			else
+				println bb;
+				println i;
+				break;
+				println ab
+			fi
+		fi
+
+	done;
+
+	# i should be 10
+	# Because of shadowing
+
+	println i
+
+end

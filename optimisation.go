@@ -389,6 +389,20 @@ func (m *DoWhileStatement) Optimise(context *OptimisationContext) Statement {
 	return m
 }
 
+//Optimise optimises for BreakStatement
+func (m *BreakStatement) Optimise(context *OptimisationContext) Statement {
+	m.next = nil
+
+	return m
+}
+
+//Optimise optimises for ContinueStatement
+func (m *ContinueStatement) Optimise(context *OptimisationContext) Statement {
+	m.next = nil
+
+	return m
+}
+
 //Optimise optimises for ForStatement
 func (m *ForStatement) Optimise(context *OptimisationContext) Statement {
 	context.StartScope()

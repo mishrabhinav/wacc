@@ -143,6 +143,9 @@ type FunctionContext struct {
 	stackSize    int
 	stack        []map[string]int
 	members      map[string]int
+	endLabels    []string
+	startLabels  []string
+	stackSizes   []int
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
@@ -252,7 +255,6 @@ func (m *FunctionContext) ResolveVar(ident string) int {
 			}
 		}
 	}
-
 	panic(fmt.Sprintf("var %s not found in scope", ident))
 }
 
@@ -318,6 +320,68 @@ func createImmediateValuesFor(num int) []int {
 		values = append(values, od)
 	}
 	return values
+}
+
+// PopLastEndLabel returns the last endLabel used
+func (m *FunctionContext) PopLastEndLabel() string {
+	lastEndLabel := m.endLabels[len(m.endLabels)-1]
+	m.endLabels = m.endLabels[:len(m.endLabels)-1]
+	return lastEndLabel
+}
+
+// PushLastEndLabel adds the label to the stack of endLabels
+func (m *FunctionContext) PushLastEndLabel(endLabel string) {
+	m.endLabels = append(m.endLabels, endLabel)
+}
+
+// PeekLastEndLabel returns the last endLabel used
+func (m *FunctionContext) PeekLastEndLabel() string {
+	lastEndLabel := m.endLabels[len(m.endLabels)-1]
+	return lastEndLabel
+}
+
+// PopLastStartLabel returns the last startLabel used
+func (m *FunctionContext) PopLastStartLabel() string {
+	lastStartLabel := m.startLabels[len(m.startLabels)-1]
+	m.startLabels = m.startLabels[:len(m.startLabels)-1]
+	return lastStartLabel
+}
+
+// PushLastStartLabel adds the label to the stack of startLabels
+func (m *FunctionContext) PushLastStartLabel(startLabel string) {
+	m.startLabels = append(m.startLabels, startLabel)
+}
+
+// PeekLastStartLabel returns the last startLabel used
+func (m *FunctionContext) PeekLastStartLabel() string {
+	lastStartLabel := m.startLabels[len(m.startLabels)-1]
+	return lastStartLabel
+}
+
+// PopStackSize returns the last stackSize saved
+func (m *FunctionContext) PopStackSize() int {
+	lastStackSize := m.stackSizes[len(m.stackSizes)-1]
+	m.stackSizes = m.stackSizes[:len(m.stackSizes)-1]
+	return lastStackSize
+}
+
+// PushStackSize adds the label to the stack of stackSizes
+func (m *FunctionContext) PushStackSize() {
+	m.stackSizes = append(m.stackSizes, m.stackSize)
+}
+
+// PeekStackSize returns the last stackSize saved
+func (m *FunctionContext) PeekStackSize() int {
+	lastStackSize := m.stackSizes[len(m.stackSizes)-1]
+	return lastStackSize
+}
+
+// Returns difference between last stack size saved
+// and current one
+func (m *FunctionContext) GetStackSizeDifference() int {
+	previousStackSize := m.PeekStackSize()
+	difference := m.stackSize - previousStackSize
+	return difference
 }
 
 //-----------------------------------------------------------------------------
@@ -424,6 +488,51 @@ func (m *BaseStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 // CodeGen for skip statements
 // --> [CodeGen next instruction]
 func (m *SkipStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+// CodeGen for continue statements
+// restore Stack
+// --> B start_%l
+// --> [Codegen next instruction]
+func (m *ContinueStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	difference := context.GetStackSizeDifference()
+
+	for _, op := range createImmediateValuesFor(difference) {
+		insch <- &ADDInstr{
+			BaseBinaryInstr: BaseBinaryInstr{
+				dest: sp,
+				lhs:  sp,
+				rhs:  ImmediateOperand{op},
+			},
+		}
+	}
+
+	labelStart := context.PeekLastStartLabel()
+	insch <- &BInstr{label: labelStart}
+
+	m.BaseStatement.CodeGen(context, insch)
+}
+
+// CodeGen for break statements
+// restore Stack
+// --> B end_%l
+// --> [CodeGen next instruction]
+func (m *BreakStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
+	difference := context.GetStackSizeDifference()
+
+	for _, op := range createImmediateValuesFor(difference) {
+		insch <- &ADDInstr{
+			BaseBinaryInstr: BaseBinaryInstr{
+				dest: sp,
+				lhs:  sp,
+				rhs:  ImmediateOperand{op},
+			},
+		}
+	}
+	labelEnd := context.PeekLastEndLabel()
+	insch <- &BInstr{label: labelEnd}
+
 	m.BaseStatement.CodeGen(context, insch)
 }
 
@@ -802,8 +911,15 @@ func (m *IfStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	suffix := context.GetUniqueLabelSuffix()
 
-	labelWhile := fmt.Sprintf("while%s", suffix)
-	labelEnd := fmt.Sprintf("end%s", suffix)
+	context.PushStackSize();
+
+	labelWhile := fmt.Sprintf("while_start%s", suffix)
+	labelEnd := fmt.Sprintf("while_end%s", suffix)
+
+	context.PushLastEndLabel(labelEnd)
+	context.PushLastStartLabel(labelWhile)
+
+	// CMP Check
 
 	insch <- &LABELInstr{ident: labelWhile}
 
@@ -827,6 +943,11 @@ func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{label: labelWhile}
 
 	insch <- &LABELInstr{ident: labelEnd}
+
+	context.PopLastEndLabel()
+	context.PopLastStartLabel()
+
+	context.PopStackSize()
 
 	m.BaseStatement.CodeGen(context, insch)
 }
@@ -910,7 +1031,14 @@ func (m *SwitchStatement) CodeGen(alloc *FunctionContext, insch chan<- Instr) {
 func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	suffix := context.GetUniqueLabelSuffix()
 
-	labelDo := fmt.Sprintf("do%s", suffix)
+	labelDo := fmt.Sprintf("do_start%s", suffix)
+	labelEnd := fmt.Sprintf("do_end%s", suffix)
+	labelCond := fmt.Sprintf("do_cond%s", suffix)
+
+	context.PushStackSize();
+
+	context.PushLastEndLabel(labelEnd)
+	context.PushLastStartLabel(labelCond)
 
 	insch <- &LABELInstr{ident: labelDo}
 
@@ -920,15 +1048,23 @@ func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr)
 	m.body.CodeGen(context, insch)
 
 	// Condition
+	insch <- &LABELInstr{ident: labelCond}
+
 	target := context.GetReg(insch)
 
 	m.cond.CodeGen(context, target, insch)
 
 	insch <- &CMPInstr{BaseComparisonInstr{lhs: target, rhs: &ImmediateOperand{1}}}
+	context.FreeReg(target, insch)
 
 	insch <- &BInstr{cond: condEQ, label: labelDo}
 
-	context.FreeReg(target, insch)
+	insch <- &LABELInstr{ident: labelEnd}
+
+	context.PopLastEndLabel()
+	context.PopLastStartLabel()
+
+	context.PopStackSize()
 
 	context.CleanupScope(insch)
 
@@ -948,8 +1084,12 @@ func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr)
 func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	suffix := context.GetUniqueLabelSuffix()
 
-	labelFor := fmt.Sprintf("for%s", suffix)
-	labelEnd := fmt.Sprintf("end%s", suffix)
+	labelFor := fmt.Sprintf("for_start%s", suffix)
+	labelEnd := fmt.Sprintf("for_end%s", suffix)
+	labelAfter := fmt.Sprintf("for_after%s", suffix)
+
+	context.PushLastEndLabel(labelEnd)
+	context.PushLastStartLabel(labelAfter)
 
 	// Initialization
 	context.StartScope(insch)
@@ -970,18 +1110,31 @@ func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{cond: condNE, label: labelEnd}
 
 	//Body
+	context.PushStackSize();
+
+	context.StartScope(insch)
+
 	if m.body != nil {
 		m.body.CodeGen(context, insch)
 	}
 
 	// After
+	insch <- &LABELInstr{ident: labelAfter}
+
 	m.after.CodeGen(context, insch)
+
+	context.CleanupScope(insch)
 
 	insch <- &BInstr{label: labelFor}
 
 	insch <- &LABELInstr{ident: labelEnd}
 
 	context.CleanupScope(insch)
+
+	context.PopLastEndLabel()
+	context.PopLastStartLabel()
+
+	context.PopStackSize()
 
 	m.BaseStatement.CodeGen(context, insch)
 }
