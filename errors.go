@@ -247,6 +247,54 @@ func (e *UndeclaredVariableError) Error() string {
 	)
 }
 
+// EnumRedeclarationError is a semantic error when a variable is declared
+// again within the same scope
+type EnumRedeclarationError struct {
+	SemanticError
+	ident string
+}
+
+func (e *EnumRedeclarationError) Error() string {
+	return fmt.Sprintf(
+		"%s: class '%s' already declared",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
+// CreateEnumRedeclarationError creates an error from the token, variable
+// identifier, previous and new type
+func CreateEnumRedeclarationError(token *token32, ident string) error {
+	return &EnumRedeclarationError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// CreateUndeclaredEnumError creates an error from the token and variable
+// identifier
+func CreateUndeclaredEnumError(token *token32, ident string) error {
+	return &UndeclaredEnumError{
+		SemanticError: CreateSemanticError(token),
+		ident:         ident,
+	}
+}
+
+// UndeclaredEnumError is a semantic error when trying to access an
+// undeclared variable
+type UndeclaredEnumError struct {
+	SemanticError
+	ident string
+}
+
+func (e *UndeclaredEnumError) Error() string {
+	return fmt.Sprintf(
+		"%s: class '%s' is undeclared",
+		e.SemanticError.Error(),
+		e.ident,
+	)
+}
+
 // ClassRedeclarationError is a semantic error when a variable is declared
 // again within the same scope
 type ClassRedeclarationError struct {
