@@ -47,7 +47,7 @@ func (m *Scope) Child() *Scope {
 		funcs:      m.funcs,
 		class:      m.class,
 		returnType: m.returnType,
-		loop:	    m.loop,
+		loop:       m.loop,
 	}
 }
 

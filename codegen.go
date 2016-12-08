@@ -911,7 +911,7 @@ func (m *IfStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 func (m *WhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	suffix := context.GetUniqueLabelSuffix()
 
-	context.PushStackSize();
+	context.PushStackSize()
 
 	labelWhile := fmt.Sprintf("while_start%s", suffix)
 	labelEnd := fmt.Sprintf("while_end%s", suffix)
@@ -1035,7 +1035,7 @@ func (m *DoWhileStatement) CodeGen(context *FunctionContext, insch chan<- Instr)
 	labelEnd := fmt.Sprintf("do_end%s", suffix)
 	labelCond := fmt.Sprintf("do_cond%s", suffix)
 
-	context.PushStackSize();
+	context.PushStackSize()
 
 	context.PushLastEndLabel(labelEnd)
 	context.PushLastStartLabel(labelCond)
@@ -1110,7 +1110,7 @@ func (m *ForStatement) CodeGen(context *FunctionContext, insch chan<- Instr) {
 	insch <- &BInstr{cond: condNE, label: labelEnd}
 
 	//Body
-	context.PushStackSize();
+	context.PushStackSize()
 
 	context.StartScope(insch)
 
