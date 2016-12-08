@@ -1522,12 +1522,16 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = block
+	case ruleVAR:
+		fallthrough
 	case ruleTYPE:
 		decl := new(DeclareAssignStatement)
 
 		typeNode := nextNode(node, ruleTYPE)
-		if decl.wtype, err = parseType(typeNode.up); err != nil {
-			return nil, err
+		if typeNode != nil {
+			if decl.wtype, err = parseType(typeNode.up); err != nil {
+				return nil, err
+			}
 		}
 
 		identNode := nextNode(node, ruleIDENT)
