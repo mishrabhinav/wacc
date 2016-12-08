@@ -409,6 +409,7 @@ func (m *ExpressionRHS) Type() Type {
 type NewInstanceRHS struct {
 	TokenBase
 	wtype Type
+	args  []Expression
 }
 
 // Type returns the deduced type of the right hand side assignment source.
@@ -1401,6 +1402,20 @@ func parseRHS(node *node32) (RHS, error) {
 
 		newInst.wtype = &ClassType{name: identNode.match}
 
+		arglistNode := nextNode(node, ruleARGLIST)
+		if arglistNode != nil {
+			for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
+				var err error
+				var expr Expression
+
+				if expr, err = parseExpr(argNode.up); err != nil {
+					return nil, err
+				}
+
+				newInst.args = append(newInst.args, expr)
+			}
+		}
+
 		return newInst, nil
 	default:
 		return nil, fmt.Errorf("Unexpected rule %s %s", node.String(), node.match)
@@ -1506,6 +1521,21 @@ func parseStatement(node *node32) (Statement, error) {
 		rhsNode := nextNode(node, ruleASSIGNRHS)
 		if decl.rhs, err = parseRHS(rhsNode.up); err != nil {
 			return nil, err
+		}
+
+		if newInst, ok := decl.rhs.(*NewInstanceRHS); ok {
+			_ = newInst
+			fmt.Println("Works")
+			call := new(FunctionCallStat)
+
+			call.obj = decl.ident
+
+			call.ident = "init"
+
+			call.args = newInst.args
+
+			decl.SetNext(call)
+			decl.SetToken(&node.token32)
 		}
 
 		stm = decl
@@ -1746,7 +1776,13 @@ func parseStatement(node *node32) (Statement, error) {
 		var next Statement
 		if nextStat := semi.next; nextStat != nil {
 			if next, err = parseStatement(nextStat.up); err == nil {
-				stm.SetNext(next)
+				prevStm := stm
+				nextStm := stm.GetNext()
+				for nextStm != nil {
+					prevStm = stm.GetNext()
+					nextStm = nextStm.GetNext()
+				}
+				prevStm.SetNext(next)
 			}
 		}
 	}
