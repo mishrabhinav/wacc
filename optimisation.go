@@ -404,6 +404,10 @@ func (m *BinaryOperatorBase) optimiseBinary(context *OptimisationContext) {
 	m.rhs = m.rhs.Optimise(context)
 }
 
+func in32(value int) bool {
+	return -2147483648 <= value && value <= 2147483647
+}
+
 func getIntLiters(binExpr BinaryOperator) (lhsv, rhsv int, ok bool) {
 	lhs, ok1 := binExpr.GetLHS().(*IntLiteral)
 	rhs, ok2 := binExpr.GetRHS().(*IntLiteral)
@@ -464,7 +468,7 @@ func toWACCBool(b bool) Expression {
 //Optimise optimises for BinaryOperatorMult
 func (m *BinaryOperatorMult) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
-	if lhsv, rhsv, ok := getIntLiters(m); ok {
+	if lhsv, rhsv, ok := getIntLiters(m); ok && in32(lhsv*rhsv) {
 		return &IntLiteral{value: lhsv * rhsv}
 	}
 	return m
@@ -473,7 +477,7 @@ func (m *BinaryOperatorMult) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorDiv
 func (m *BinaryOperatorDiv) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
-	if lhsv, rhsv, ok := getIntLiters(m); ok {
+	if lhsv, rhsv, ok := getIntLiters(m); ok && rhsv != 0 {
 		return &IntLiteral{value: lhsv / rhsv}
 	}
 	return m
@@ -482,7 +486,7 @@ func (m *BinaryOperatorDiv) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorMod
 func (m *BinaryOperatorMod) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
-	if lhsv, rhsv, ok := getIntLiters(m); ok {
+	if lhsv, rhsv, ok := getIntLiters(m); ok && rhsv != 0 {
 		return &IntLiteral{value: lhsv % rhsv}
 	}
 	return m
@@ -491,7 +495,7 @@ func (m *BinaryOperatorMod) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorAdd
 func (m *BinaryOperatorAdd) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
-	if lhsv, rhsv, ok := getIntLiters(m); ok {
+	if lhsv, rhsv, ok := getIntLiters(m); ok && in32(lhsv+rhsv) {
 		return &IntLiteral{value: lhsv + rhsv}
 	}
 	return m
@@ -500,7 +504,7 @@ func (m *BinaryOperatorAdd) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorSub
 func (m *BinaryOperatorSub) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
-	if lhsv, rhsv, ok := getIntLiters(m); ok {
+	if lhsv, rhsv, ok := getIntLiters(m); ok && in32(lhsv-rhsv) {
 		return &IntLiteral{value: lhsv - rhsv}
 	}
 	return m
