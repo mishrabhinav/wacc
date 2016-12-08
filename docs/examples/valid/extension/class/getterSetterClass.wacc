@@ -34,9 +34,7 @@
       return @c
     }
   }
-  A a = new A() ;
-
-  call a->init(1, 5, 20) ;
+  A a = new A(1, 5, 20) ;
 
   int r = call a->a() ;
   println r ;

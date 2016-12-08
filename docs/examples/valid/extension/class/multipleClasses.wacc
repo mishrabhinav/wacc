@@ -45,11 +45,8 @@
     }
   }
 
-  A a = new A() ;
-  B c = new B() ;
-
-  call a->init(2, 3) ;
-  call c->init(4) ;
+  A a = new A(2, 3) ;
+  B c = new B(4) ;
 
   call a->foo() ;
 

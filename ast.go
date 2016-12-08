@@ -408,7 +408,9 @@ func (m *ExpressionRHS) Type() Type {
 // NewInstanceRHS is the for new class instance on the rhs of an assignment
 type NewInstanceRHS struct {
 	TokenBase
-	wtype Type
+	constr string
+	wtype  Type
+	args   []Expression
 }
 
 // Type returns the deduced type of the right hand side assignment source.
@@ -1400,6 +1402,20 @@ func parseRHS(node *node32) (RHS, error) {
 		identNode := nextNode(node, ruleIDENT)
 
 		newInst.wtype = &ClassType{name: identNode.match}
+
+		arglistNode := nextNode(node, ruleARGLIST)
+		if arglistNode != nil {
+			for argNode := nextNode(arglistNode.up, ruleEXPR); argNode != nil; argNode = nextNode(argNode.next, ruleEXPR) {
+				var err error
+				var expr Expression
+
+				if expr, err = parseExpr(argNode.up); err != nil {
+					return nil, err
+				}
+
+				newInst.args = append(newInst.args, expr)
+			}
+		}
 
 		return newInst, nil
 	default:

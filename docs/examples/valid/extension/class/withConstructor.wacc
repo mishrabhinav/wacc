@@ -31,6 +31,7 @@
 
   # Get a member
   int y = call a->b() ;
+  println y;
 
   # Set a member
   call a->a(y)
