@@ -510,7 +510,7 @@ func (m *IntLiteral) Optimise(context *OptimisationContext) Expression {
 }
 
 func (m *EnumLiteral) Optimise(context *OptimisationContext) Expression {
-	return m
+	return &IntLiteral{value: m.value}
 }
 
 //Optimise optimises for BoolLiteralTrue
