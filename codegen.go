@@ -146,7 +146,6 @@ type FunctionContext struct {
 	endLabels    []string
 	startLabels  []string
 	stackSizes   []int
-	enums        map[string]int
 }
 
 // CreateFunctionContext returns an contextator initialized with all the general
