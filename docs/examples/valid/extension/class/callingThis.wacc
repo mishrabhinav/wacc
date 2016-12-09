@@ -1,0 +1,21 @@
+begin
+  class A is
+    void init() is
+      skip
+    end
+
+    int twentyone() is
+      return 21
+    end
+
+    int answer() is
+      int a = call @this->twentyone() ;
+      int b = call @this->twentyone() ;
+      return a + b
+    end
+  end
+
+  A a = new A() ;
+  int ans = call a->answer() ;
+  println ans
+end
