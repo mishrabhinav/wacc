@@ -256,6 +256,8 @@ func (m IntType) Match(t Type) bool {
 	switch t.(type) {
 	case IntType:
 		return true
+	case *EnumType:
+		return true
 	case VoidType:
 		return true
 	default:
@@ -295,6 +297,8 @@ func (m *EnumType) Match(t Type) bool {
 			return true
 		}
 		return m.ident == o.ident
+	case IntType:
+		return true
 	case VoidType:
 		return true
 	default:
@@ -1542,6 +1546,7 @@ func typeCheckArithmetic(m BinaryOperator, ts *Scope, errch chan<- error) {
 
 	switch lhsT.(type) {
 	case IntType:
+	case *EnumType:
 	default:
 		errch <- CreateTypeMismatchError(
 			m.GetLHS().Token(),
