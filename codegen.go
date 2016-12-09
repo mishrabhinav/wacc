@@ -795,7 +795,13 @@ func (m *FunctionCallStat) CodeGen(context *FunctionContext, insch chan<- Instr)
 	}
 
 	// if method call resolve the obj and pass it as first argument
-	if len(m.obj) > 0 {
+	switch {
+	case m.obj == "@this":
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+
+		context.PushStack(4)
+		argL++
+	case len(m.obj) > 0:
 		reg := context.GetReg(insch)
 
 		context.ResolveVarToRegister(m.obj, reg, insch)
@@ -1305,7 +1311,13 @@ func (m *FunctionCallRHS) CodeGen(context *FunctionContext, target Reg, insch ch
 	}
 
 	// if method call resolve the obj and pass it as first argument
-	if len(m.obj) > 0 {
+	switch {
+	case m.obj == "@this":
+		insch <- &PUSHInstr{BaseStackInstr: BaseStackInstr{regs: []Reg{ip}}}
+
+		context.PushStack(4)
+		argL++
+	case len(m.obj) > 0:
 		reg := context.GetReg(insch)
 
 		context.ResolveVarToRegister(m.obj, reg, insch)
