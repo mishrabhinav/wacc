@@ -85,7 +85,7 @@ func (e EnumType) String() string {
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (e EnumType) MangleSymbol() string {
-	return e.String()
+	return fmt.Sprintf("enum_%v", e.ident)
 }
 
 // BoolType is the WACC type for booleans
@@ -197,7 +197,7 @@ func (m *ClassType) String() string {
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m *ClassType) MangleSymbol() string {
-	return m.name
+	return fmt.Sprintf("class_%v", m.name)
 }
 
 // Expression is the interface for WACC expressions
