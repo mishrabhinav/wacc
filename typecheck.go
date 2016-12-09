@@ -15,6 +15,7 @@ package main
 type Scope struct {
 	parent     *Scope
 	vars       map[string]Type
+	enums      map[string]*EnumType
 	classes    map[string]*ClassType
 	members    map[string]Type
 	funcs      map[string]map[string]map[string]*FunctionDef
@@ -28,6 +29,7 @@ func CreateRootScope() *Scope {
 	scope := &Scope{
 		parent:  nil,
 		vars:    make(map[string]Type),
+		enums:   make(map[string]*EnumType),
 		classes: make(map[string]*ClassType),
 		members: make(map[string]Type),
 		funcs:   make(map[string]map[string]map[string]*FunctionDef),
@@ -42,6 +44,7 @@ func (m *Scope) Child() *Scope {
 	return &Scope{
 		parent:     m,
 		vars:       make(map[string]Type),
+		enums:      m.enums,
 		classes:    m.classes,
 		members:    m.members,
 		funcs:      m.funcs,
@@ -77,6 +80,22 @@ func (m *Scope) LookupMember(ident string) Type {
 	}
 
 	return t
+}
+
+// LookupEnum tries to return the enum given it's identifier
+// returns nil if not found.
+func (m *Scope) LookupEnum(ident string, field string) (Type, int) {
+	e, ok := m.enums[ident]
+	if !ok {
+		return InvalidType{}, 0
+	}
+
+	val, ok := e.values[field]
+	if !ok {
+		return InvalidType{}, 0
+	}
+
+	return e, val
 }
 
 // LookupFunction tries to return the function given it's identifier
@@ -186,6 +205,24 @@ func (m *Scope) DeclareMethod(class, ident, symbol string, f *FunctionDef) *Func
 	return nil
 }
 
+// DeclareEnum registers a new enum in the scope returning the previous
+// one in case of redeclaration, nil otherwise
+func (m *Scope) DeclareEnum(ident string, e *EnumType) *EnumType {
+	if m.enums == nil {
+		m.enums = make(map[string]*EnumType)
+	}
+
+	pe, ok := m.enums[ident]
+
+	m.enums[ident] = e
+
+	if ok {
+		return pe
+	}
+
+	return nil
+}
+
 // DeclareClass registers a new class in the scope returning the previous
 // one in case of redeclaration, nil otherwise
 func (m *Scope) DeclareClass(ident string, c *ClassType) *ClassType {
@@ -219,6 +256,8 @@ func (m IntType) Match(t Type) bool {
 	switch t.(type) {
 	case IntType:
 		return true
+	case *EnumType:
+		return true
 	case VoidType:
 		return true
 	default:
@@ -242,6 +281,23 @@ func (m BoolType) Match(t Type) bool {
 func (m CharType) Match(t Type) bool {
 	switch t.(type) {
 	case CharType:
+		return true
+	case VoidType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Match checks whether a type is assignable to the current type
+func (m *EnumType) Match(t Type) bool {
+	switch o := t.(type) {
+	case *EnumType:
+		if m.ident == "" {
+			return true
+		}
+		return m.ident == o.ident
+	case IntType:
 		return true
 	case VoidType:
 		return true
@@ -297,6 +353,16 @@ func (m *AST) TypeCheck() []error {
 
 	go func() {
 		global := CreateRootScope()
+
+		// add the enums to the scope
+		for _, e := range m.enums {
+			if pe := global.DeclareEnum(e.ident, e); pe != nil {
+				errch <- CreateEnumRedeclarationError(
+					e.Token(),
+					e.ident,
+				)
+			}
+		}
 
 		// add the classes and methods to the scope
 		for _, c := range m.classes {
@@ -744,7 +810,7 @@ func (m *SwitchStatement) TypeCheck(ts *Scope, errch chan<- error) {
 	m.cond.TypeCheck(ts, errch)
 	condT := m.cond.Type()
 
-	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT)) {
+	if !(BoolType{}.Match(condT) || IntType{}.Match(condT) || CharType{}.Match(condT) || (&EnumType{}).Match(condT)) {
 		errch <- CreateTypeMismatchError(
 			m.cond.Token(),
 			IntType{},
@@ -1195,6 +1261,24 @@ func (m *IntLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks expression whether all operators get the type they can
 // operate on, all variables are declared, arrays are indexed properly.
 // The check is propagated recursively.
+func (m *EnumLiteral) TypeCheck(ts *Scope, errch chan<- error) {
+	t, val := ts.LookupEnum(m.ident, m.field)
+
+	switch t.(type) {
+	case InvalidType:
+		errch <- CreateUndeclaredEnumError(
+			m.Token(),
+			m.ident,
+		)
+	}
+
+	m.value = val
+	m.wtype = t
+}
+
+// TypeCheck checks expression whether all operators get the type they can
+// operate on, all variables are declared, arrays are indexed properly.
+// The check is propagated recursively.
 func (m *BoolLiteralFalse) TypeCheck(ts *Scope, errch chan<- error) {
 }
 
@@ -1463,6 +1547,7 @@ func typeCheckArithmetic(m BinaryOperator, ts *Scope, errch chan<- error) {
 
 	switch lhsT.(type) {
 	case IntType:
+	case *EnumType:
 	default:
 		errch <- CreateTypeMismatchError(
 			m.GetLHS().Token(),

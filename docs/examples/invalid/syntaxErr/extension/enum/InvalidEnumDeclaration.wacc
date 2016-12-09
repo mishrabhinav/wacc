@@ -1,0 +1,8 @@
+begin
+  foo {
+    A;
+    B;
+    C;
+    D;
+  };
+end

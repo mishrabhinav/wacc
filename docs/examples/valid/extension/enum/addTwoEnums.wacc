@@ -1,0 +1,13 @@
+begin
+  enum foo is
+    A = 100;
+    B = 120;
+    C;
+    D;
+  end
+
+  int x = foo->A + foo->B ;
+  println x;
+  var y = foo->C + foo->B ;
+  println y
+end

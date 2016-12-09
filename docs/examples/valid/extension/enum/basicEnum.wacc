@@ -1,0 +1,9 @@
+begin
+  enum foo is
+    A;
+    B;
+    C;
+    D;
+  end
+  skip
+end

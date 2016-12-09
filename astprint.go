@@ -596,6 +596,14 @@ func (b BoolType) aststring(indent string) string {
 	return addType(indent, "bool")
 }
 
+// Prints an Enum Type. Format:
+// - TYPE
+//   - enum
+func (e EnumType) aststring(indent string) string {
+	tmp := fmt.Sprintf("enum")
+	return addType(indent, tmp)
+}
+
 // Prints and char Type. Format:
 // - TYPE
 //   - char
@@ -730,6 +738,12 @@ func (ident Ident) aststring(indent string) string {
 // Prints a literal on a new line.
 func (liter IntLiteral) aststring(indent string) string {
 	return addIndAndNewLine(indent, strconv.Itoa(liter.value))
+}
+
+// Prints bool literal "true" on a new line.
+func (liter EnumLiteral) aststring(indent string) string {
+	tmp := fmt.Sprintf("%v->%v", liter.ident, liter.value)
+	return addIndAndNewLine(indent, tmp)
 }
 
 // Prints bool literal "true" on a new line.

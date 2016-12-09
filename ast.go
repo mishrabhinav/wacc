@@ -69,6 +69,25 @@ func (m IntType) MangleSymbol() string {
 	return m.String()
 }
 
+// EnumType is the WACC type for booleans
+type EnumType struct {
+	TokenBase
+	ident  string
+	values map[string]int
+}
+
+// Prints enum Types. Format:
+//   "enum + *name*"
+func (e EnumType) String() string {
+	return fmt.Sprintf("enum %v", e.ident)
+}
+
+// MangleSymbol returns the type in a form that is ready to be included in
+// the mangled function symbol
+func (e EnumType) MangleSymbol() string {
+	return fmt.Sprintf("enum_%v", e.ident)
+}
+
 // BoolType is the WACC type for booleans
 type BoolType struct{}
 
@@ -178,7 +197,7 @@ func (m *ClassType) String() string {
 // MangleSymbol returns the type in a form that is ready to be included in
 // the mangled function symbol
 func (m *ClassType) MangleSymbol() string {
-	return m.name
+	return fmt.Sprintf("class_%v", m.name)
 }
 
 // Expression is the interface for WACC expressions
@@ -559,6 +578,7 @@ type AST struct {
 	functions []*FunctionDef
 	includes  []string
 	classes   []*ClassType
+	enums     []*EnumType
 }
 
 // nodeRange given a node returns a channel from which all nodes at the same
@@ -626,6 +646,20 @@ type IntLiteral struct {
 // Type returns the Type of the expression
 func (m *IntLiteral) Type() Type {
 	return IntType{}
+}
+
+// EnumLiteral is the struct to represent an integer literal
+type EnumLiteral struct {
+	TokenBase
+	wtype Type
+	ident string
+	field string
+	value int
+}
+
+// Type returns the Type of the expression
+func (m *EnumLiteral) Type() Type {
+	return m.wtype
 }
 
 // BoolLiteralTrue is the struct to represent a true boolean literal
@@ -1202,6 +1236,12 @@ func parseExpr(node *node32) (Expression, error) {
 			push(&NullPair{})
 		case ruleIDENT:
 			push(&Ident{ident: enode.match})
+		case ruleENUMLITER:
+			enumLiter := &EnumLiteral{}
+			enumLiter.ident = nextNode(enode.up, ruleIDENT).match
+			enumLiter.field = nextNode(enode.up.next, ruleIDENT).match
+
+			push(enumLiter)
 		case ruleARRAYELEM:
 			arrElem, err := parseArrayElem(enode.up)
 			if err != nil {
@@ -1448,6 +1488,8 @@ func parseBaseType(node *node32) (Type, error) {
 		return VoidType{}, nil
 	case ruleCLASSTYPE:
 		return &ClassType{name: node.up.match}, nil
+	case ruleENUMTYPE:
+		return &EnumType{ident: node.up.next.match}, nil
 	default:
 		return nil, fmt.Errorf("Unknown type: %s", node.up.match)
 	}
@@ -1791,6 +1833,7 @@ func parseStatement(node *node32) (Statement, error) {
 		}
 
 		stm = whiles
+
 	case ruleSWITCH:
 		switchs := new(SwitchStatement)
 
@@ -2083,6 +2126,44 @@ func parseClass(node *node32) (*ClassType, error) {
 	return class, nil
 }
 
+func parseEnum(node *node32) (*EnumType, error) {
+	enum := &EnumType{}
+
+	enum.SetToken(&node.token32)
+
+	enum.ident = nextNode(node, ruleIDENT).match
+
+	enum.values = make(map[string]int)
+
+	var i int
+	for enumNode := nextNode(node, ruleENUMASSIGN); enumNode != nil; enumNode = nextNode(enumNode.next, ruleENUMASSIGN) {
+		enumIdent := nextNode(enumNode.up, ruleIDENT).match
+
+		if value := nextNode(enumNode.up, ruleINTLITER); value != nil {
+			num, err := strconv.ParseInt(value.match, 10, 32)
+			if err != nil {
+				// number does not fit into WACC integer size
+				numerr := err.(*strconv.NumError)
+				switch numerr.Err {
+				case strconv.ErrRange:
+					return nil, CreateBigIntError(
+						&value.token32,
+						value.match,
+					)
+				}
+				return nil, err
+			}
+
+			i = int(num)
+		}
+
+		enum.values[enumIdent] = i
+		i++
+	}
+
+	return enum, nil
+}
+
 // parse the main WACC block that contains all function definitions and the main
 // body
 func parseWACC(node *node32, ifm *IncludeFiles) (*AST, error) {
@@ -2093,21 +2174,30 @@ func parseWACC(node *node32, ifm *IncludeFiles) (*AST, error) {
 		case ruleBEGIN:
 		case ruleEND:
 		case ruleSPACE:
-		case ruleCLASSDEF:
-			c, err := parseClass(node.up)
-			ast.classes = append(ast.classes, c)
+		case ruleENUMDEF:
+			e, err := parseEnum(node.up)
 			if err != nil {
 				return nil, err
 			}
+
+			ast.enums = append(ast.enums, e)
+		case ruleCLASSDEF:
+			c, err := parseClass(node.up)
+			if err != nil {
+				return nil, err
+			}
+
+			ast.classes = append(ast.classes, c)
 		case ruleINCL:
 			i := parseInclude(node.up)
 			ast.includes = append(ast.includes, i)
 		case ruleFUNC:
 			f, err := parseFunction(node.up)
-			ast.functions = append(ast.functions, f)
 			if err != nil {
 				return nil, err
 			}
+
+			ast.functions = append(ast.functions, f)
 		case ruleSTAT:
 			var err error
 			ast.main, err = parseStatement(node.up)
@@ -2163,6 +2253,9 @@ func appendIncludedFiles(ast *AST, ifm *IncludeFiles) {
 
 		waccIncl := parseInput(absoluteFile)
 		astIncl := generateASTFromWACC(waccIncl, ifm)
+
+		ast.enums = append(ast.enums,
+			astIncl.enums...)
 
 		ast.classes = append(ast.classes,
 			astIncl.classes...)

@@ -1,0 +1,11 @@
+begin
+  enum foo is
+    A;
+    B;
+    C;
+    D;
+  end
+
+  int a = foo->A + 2;
+  println a
+end

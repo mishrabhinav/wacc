@@ -1,0 +1,10 @@
+begin
+  enum foo is
+    A;
+    B;
+    C;
+    D;
+  end
+
+  bool x = foo->A >= foo->B
+end

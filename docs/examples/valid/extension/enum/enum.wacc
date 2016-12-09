@@ -1,0 +1,27 @@
+begin
+  enum foo is
+    A ;
+    B;
+    C;
+    D;
+  end
+
+  enum foo x = foo->B;
+
+  switch x {
+    case foo->A:
+      println "A"
+    case foo->B:
+      println "B"
+    case foo->C:
+      println "C"
+    case foo->D:
+      println "D"
+  };
+
+  x = foo->D;
+
+  if (x == foo->D) then
+    println "Done"
+  fi
+end
