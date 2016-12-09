@@ -84,18 +84,18 @@ func (m *Scope) LookupMember(ident string) Type {
 
 // LookupEnum tries to return the enum given it's identifier
 // returns nil if not found.
-func (m *Scope) LookupEnum(ident string, field string) (int, bool) {
+func (m *Scope) LookupEnum(ident string, field string) (Type, int) {
 	e, ok := m.enums[ident]
 	if !ok {
-		return 0, false
+		return InvalidType{}, 0
 	}
 
 	val, ok := e.values[field]
 	if !ok {
-		return 0, false
+		return InvalidType{}, 0
 	}
 
-	return val, true
+	return e, val
 }
 
 // LookupFunction tries to return the function given it's identifier
@@ -1262,17 +1262,18 @@ func (m *IntLiteral) TypeCheck(ts *Scope, errch chan<- error) {
 // operate on, all variables are declared, arrays are indexed properly.
 // The check is propagated recursively.
 func (m *EnumLiteral) TypeCheck(ts *Scope, errch chan<- error) {
-	val, ok := ts.LookupEnum(m.ident, m.field)
+	t, val := ts.LookupEnum(m.ident, m.field)
 
-	if !ok {
+	switch t.(type) {
+	case InvalidType:
 		errch <- CreateUndeclaredEnumError(
 			m.Token(),
 			m.ident,
 		)
-	} else {
-		m.value = val
 	}
 
+	m.value = val
+	m.wtype = t
 }
 
 // TypeCheck checks expression whether all operators get the type they can
