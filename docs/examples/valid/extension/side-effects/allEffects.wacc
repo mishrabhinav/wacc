@@ -1,0 +1,22 @@
+{
+  int a = 15;
+  println a;
+
+  a += 1 ;
+  println a;
+
+  a -= 1;
+  println a;
+
+  a /= 5;
+  println a;
+
+  a %= 2;
+  println a;
+
+  a++;
+  println a;
+
+  a--;
+  println a
+}

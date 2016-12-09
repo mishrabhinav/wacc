@@ -1,0 +1,8 @@
+{
+  pair(int, int) p = newpair(10, 3);
+
+  fst p += 10;
+  int a = fst p;
+
+  println a
+}

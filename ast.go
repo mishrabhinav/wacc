@@ -1500,6 +1500,79 @@ func parseType(node *node32) (Type, error) {
 	return wtype, nil
 }
 
+// parseOpOpStat parses the ++, --, ** side effects.
+func parseOpOpStat(node *node32) (RHS, error) {
+	rhs := new(ExpressionRHS)
+	rhs.SetToken(&node.token32)
+
+	lhs, err := parseExpr(nextNode(node, ruleASSIGNLHS).up)
+	if err != nil {
+		return nil, err
+	}
+
+	switch nextNode(node, ruleOPOP).up.pegRule {
+	case rulePLUSPLUS:
+		one := &IntLiteral{value: 1}
+		binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: one, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMINUSMINUS:
+		one := &IntLiteral{value: 1}
+		binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: one, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+	}
+
+	return rhs, nil
+}
+
+// parseOpEquStat parses the +=, -=, *=, /=, %= side effects.
+func parseOpEquStat(node *node32) (RHS, error) {
+	rhs := new(ExpressionRHS)
+	rhs.SetToken(&node.token32)
+
+	lhs, err := parseExpr(nextNode(node, ruleASSIGNLHS).up)
+	if err != nil {
+		return nil, err
+	}
+
+	exprNode := nextNode(node, ruleEXPR)
+	expr, err := parseExpr(exprNode.up)
+	if err != nil {
+		return nil, err
+	}
+
+	switch nextNode(node, ruleOPEQU).up.pegRule {
+	case rulePLUSEQU:
+		binOp := &BinaryOperatorAdd{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMINUSEQU:
+		binOp := &BinaryOperatorSub{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleSTAREQU:
+		binOp := &BinaryOperatorMult{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleDIVEQU:
+		binOp := &BinaryOperatorDiv{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+
+	case ruleMODEQU:
+		binOp := &BinaryOperatorMod{BinaryOperatorBase{rhs: expr, lhs: lhs}}
+		binOp.SetToken(&node.token32)
+		rhs.expr = binOp
+	}
+
+	return rhs, nil
+}
+
 // parseStatement parses a statement by checking which rule they start with
 // that defines them uniquely
 func parseStatement(node *node32) (Statement, error) {
@@ -1551,9 +1624,35 @@ func parseStatement(node *node32) (Statement, error) {
 			return nil, err
 		}
 
-		rhsNode := nextNode(node, ruleASSIGNRHS)
-		if assign.rhs, err = parseRHS(rhsNode.up); err != nil {
-			return nil, err
+		if nextNode(node, ruleEQU) != nil {
+			rhsNode := nextNode(node, ruleASSIGNRHS)
+			if assign.rhs, err = parseRHS(rhsNode.up); err != nil {
+				return nil, err
+			}
+
+		} else {
+			switch assign.target.(type) {
+			case *VarLHS:
+			case *ArrayLHS:
+			default:
+				return nil, fmt.Errorf("syntax error: Side Effecting pairs not allowed")
+			}
+
+			var rhs RHS
+
+			if opOpNode := nextNode(node, ruleOPOP); opOpNode != nil {
+				rhs, err = parseOpOpStat(node)
+				if err != nil {
+					return nil, err
+				}
+
+			} else {
+				rhs, err = parseOpEquStat(node)
+				if err != nil {
+					return nil, err
+				}
+			}
+			assign.rhs = rhs
 		}
 
 		stm = assign
