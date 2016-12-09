@@ -1,0 +1,8 @@
+begin
+  var a = newpair(3, 4) ;
+  var b = newpair('c', 'e') ;
+  var c = newpair(a, b) ;
+  var d = snd c ;
+  var e = snd d ;
+  println e
+end

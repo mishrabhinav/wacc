@@ -434,6 +434,12 @@ func (m *BlockStatement) TypeCheck(ts *Scope, errch chan<- error) {
 // TypeCheck checks whether the statement has any type mismatches in expressions
 // and assignments. The check is propagated recursively
 func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
+	m.rhs.TypeCheck(ts, errch)
+
+	if m.wtype == nil {
+		m.wtype = m.rhs.Type()
+	}
+
 	switch m.wtype.(type) {
 	case VoidType:
 		errch <- CreateInvalidVoidTypeError(
@@ -451,7 +457,6 @@ func (m *DeclareAssignStatement) TypeCheck(ts *Scope, errch chan<- error) {
 		)
 	}
 
-	m.rhs.TypeCheck(ts, errch)
 	if rhsT := m.rhs.Type(); !m.wtype.Match(rhsT) {
 		errch <- CreateTypeMismatchError(
 			m.rhs.Token(),
