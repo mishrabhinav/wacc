@@ -2134,9 +2134,27 @@ func parseEnum(node *node32) (*EnumType, error) {
 
 	enum.values = make(map[string]int)
 
-	i := 0
+	var i int
 	for enumNode := nextNode(node, ruleENUMASSIGN); enumNode != nil; enumNode = nextNode(enumNode.next, ruleENUMASSIGN) {
 		enumIdent := nextNode(enumNode.up, ruleIDENT).match
+
+		if value := nextNode(enumNode.up, ruleINTLITER); value != nil {
+			num, err := strconv.ParseInt(value.match, 10, 32)
+			if err != nil {
+				// number does not fit into WACC integer size
+				numerr := err.(*strconv.NumError)
+				switch numerr.Err {
+				case strconv.ErrRange:
+					return nil, CreateBigIntError(
+						&value.token32,
+						value.match,
+					)
+				}
+				return nil, err
+			}
+
+			i = int(num)
+		}
 
 		enum.values[enumIdent] = i
 		i++
