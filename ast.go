@@ -651,6 +651,7 @@ func (m *IntLiteral) Type() Type {
 // EnumLiteral is the struct to represent an integer literal
 type EnumLiteral struct {
 	TokenBase
+	wtype Type
 	ident string
 	field string
 	value int
@@ -658,7 +659,7 @@ type EnumLiteral struct {
 
 // Type returns the Type of the expression
 func (m *EnumLiteral) Type() Type {
-	return &EnumType{ident: m.ident}
+	return m.wtype
 }
 
 // BoolLiteralTrue is the struct to represent a true boolean literal
