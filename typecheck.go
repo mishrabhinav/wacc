@@ -73,6 +73,10 @@ func (m *Scope) Lookup(ident string) Type {
 // LookupMember tries to search for the type of a given member
 // It returns InvalidType if not found
 func (m *Scope) LookupMember(ident string) Type {
+	if ident == "this" {
+		return m.class
+	}
+
 	t, ok := m.members[ident]
 
 	if !ok {
