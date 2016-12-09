@@ -540,6 +540,9 @@ func (m *NullPair) Optimise(context *OptimisationContext) Expression {
 
 //Optimise optimises for ArrayElem
 func (m *ArrayElem) Optimise(context *OptimisationContext) Expression {
+	for i, index := range m.indexes {
+		m.indexes[i] = index.Optimise(context)
+	}
 	return m
 }
 
@@ -547,28 +550,84 @@ func (m *ArrayElem) Optimise(context *OptimisationContext) Expression {
 // UNARY OPERATOR OPTIMISATION
 //------------------------------------------------------------------------------
 
+func (m *UnaryOperatorBase) optimiseUnary(context *OptimisationContext) {
+	m.expr = m.expr.Optimise(context)
+}
+
+func getIntLiter(unaryExpr UnaryOperator) (value int, ok bool) {
+	val, ok := unaryExpr.GetExpression().(*IntLiteral)
+
+	if ok {
+		value = val.value
+	}
+
+	return
+}
+
+func getBoolLiter(unaryExpr UnaryOperator) (value bool, ok bool) {
+	ok = true
+
+	switch unaryExpr.GetExpression().(type) {
+	case *BoolLiteralFalse:
+		value = false
+	case *BoolLiteralTrue:
+		value = true
+	default:
+		ok = false
+	}
+
+	return
+}
+
+func getCharLiter(unaryExpr UnaryOperator) (value byte, ok bool) {
+	val, ok := unaryExpr.GetExpression().(*CharLiteral)
+
+	if ok {
+		value = val.char[0]
+	}
+
+	return
+}
+
 //Optimise optimises for UnaryOperatorNot
 func (m *UnaryOperatorNot) Optimise(context *OptimisationContext) Expression {
+	m.UnaryOperatorBase.optimiseUnary(context)
+	if val, ok := getBoolLiter(m); ok {
+		return toWACCBool(!val)
+	}
 	return m
 }
 
 //Optimise optimises for UnaryOperatorNegate
 func (m *UnaryOperatorNegate) Optimise(context *OptimisationContext) Expression {
+	m.UnaryOperatorBase.optimiseUnary(context)
+	if val, ok := getIntLiter(m); ok && in32(-val) {
+		return &IntLiteral{value: -val}
+	}
 	return m
 }
 
 //Optimise optimises for UnaryOperatorLen
 func (m *UnaryOperatorLen) Optimise(context *OptimisationContext) Expression {
+	m.UnaryOperatorBase.optimiseUnary(context)
 	return m
 }
 
 //Optimise optimises for UnaryOperatorOrd
 func (m *UnaryOperatorOrd) Optimise(context *OptimisationContext) Expression {
+	m.UnaryOperatorBase.optimiseUnary(context)
+	if val, ok := getCharLiter(m); ok {
+		return &IntLiteral{value: int(val)}
+	}
 	return m
 }
 
 //Optimise optimises for UnaryOperatorChr
 func (m *UnaryOperatorChr) Optimise(context *OptimisationContext) Expression {
+	m.UnaryOperatorBase.optimiseUnary(context)
+	if val, ok := getCharLiter(m); ok {
+		return &CharLiteral{char: string([]byte{byte(val)})}
+	}
 	return m
 }
 
@@ -777,6 +836,9 @@ func (m *BinaryOperatorAnd) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorBitAnd
 func (m *BinaryOperatorBitAnd) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv & rhsv}
+	}
 	return m
 }
 
@@ -792,6 +854,9 @@ func (m *BinaryOperatorOr) Optimise(context *OptimisationContext) Expression {
 //Optimise optimises for BinaryOperatorBitOr
 func (m *BinaryOperatorBitOr) Optimise(context *OptimisationContext) Expression {
 	m.BinaryOperatorBase.optimiseBinary(context)
+	if lhsv, rhsv, ok := getIntLiters(m); ok {
+		return &IntLiteral{value: lhsv | rhsv}
+	}
 	return m
 }
 
