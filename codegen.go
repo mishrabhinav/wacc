@@ -1450,7 +1450,7 @@ func (m *StringLiteral) CodeGen(context *FunctionContext, target Reg, insch chan
 
 //CodeGen generates code for EnumLiteral
 func (m *EnumLiteral) CodeGen(context *FunctionContext, target Reg, insch chan<- Instr) {
-	insch <- &MOVInstr{dest: target, source: &ImmediateOperand{m.value}}
+	insch <- &LDRInstr{LoadInstr{reg: target, value: &ConstLoadOperand{m.value}}}
 }
 
 //CodeGen generates code for PairLiteral
